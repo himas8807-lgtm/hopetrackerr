@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0a0a0f">
+    <meta name="description" content="BTS COMEBACK MISSION - Hyung Line Streaming Competition Dashboard">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    
+    <title>BTS COMEBACK MISSION - HYUNG LINE</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <!-- ==================== LOADING OVERLAY ==================== -->
+    <div id="loading" class="loading-overlay">
+        <div class="loader">
+            <div class="loader-ring"></div>
+            <div class="loader-ring"></div>
+            <div class="loader-ring"></div>
+            <p>ACCESSING DATABASE...</p>
+        </div>
+    </div>
+    
+    <!-- ==================== LOGIN SCREEN ==================== -->
+    <div id="login-screen" class="screen active">
+        <div class="login-container">
+            <div class="cyber-grid"></div>
+            <div class="floating-particles">
+                <span></span><span></span><span></span><span></span><span></span>
+            </div>
+            
+            <div class="login-content">
+                <div class="logo-section">
+                    <div class="bts-logo">⟭⟬</div>
+                    <h1 class="title">BTS COMEBACK MISSION</h1>
+                    <p class="subtitle">HYUNG LINE EDITION</p>
+                </div>
+
+                <div class="login-box">
+                    <form id="login-form" onsubmit="return false;">
+                        <div class="input-group">
+                            <label for="agent-input"><span class="label-icon">🔑</span> AGENT IDENTIFICATION</label>
+                            <div class="input-wrapper">
+                                <input type="text" id="agent-input" placeholder="Enter Agent Number (e.g., AGENT001)" autocomplete="off">
+                                <span class="input-icon">👤</span>
+                            </div>
+                            <button type="submit" id="login-btn" class="btn-primary">
+                                <span class="btn-text">ACCESS DASHBOARD</span>
+                                <span class="btn-icon">→</span>
+                            </button>
+                        </div>
+                    </form>
+
+                    <div class="divider">
+                        <span class="divider-line"></span><span class="divider-text">OR</span><span class="divider-line"></span>
+                    </div>
+
+                    <form id="find-form" onsubmit="return false;">
+                        <div class="input-group">
+                            <label for="instagram-input"><span class="label-icon">📱</span> FIND AGENT ID</label>
+                            <div class="input-wrapper">
+                                <input type="text" id="instagram-input" placeholder="Enter Instagram username..." autocomplete="off">
+                                <span class="input-icon">@</span>
+                            </div>
+                            <button type="submit" id="find-btn" class="btn-secondary">
+                                <span class="btn-text">LOOKUP ID</span><span class="btn-icon">🔍</span>
+                            </button>
+                        </div>
+                    </form>
+                    <div id="find-result" class="result-box"></div>
+                </div>
+
+                <div class="login-footer">
+                    <div class="connection-status"><div class="pulse-dot"></div><span>SYSTEM ONLINE</span></div>
+                    <div class="version-info">v5.0 | Spy Battle Protocol</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== DASHBOARD SCREEN ==================== -->
+    <div id="dashboard-screen" class="screen">
+        
+        <!-- ==================== SIDEBAR ==================== -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-container">
+                    <div class="logo-symbol">⟭⟬</div>
+                    <div class="logo-text-group">
+                        <span class="logo-title">BTS COMEBACK</span>
+                        <span class="logo-subtitle">MISSION</span>
+                    </div>
+                </div>
+                <button id="close-sidebar" class="close-btn">✕</button>
+            </div>
+
+            <div class="agent-card">
+                <div class="agent-avatar" id="agent-avatar"></div>
+                <div class="agent-details">
+                    <div class="agent-name" id="agent-name">Agent</div>
+                    <div class="agent-team" id="agent-team">Team</div>
+                    <div class="agent-id" id="agent-id">ID: ---</div>
+                </div>
+            </div>
+
+            <div class="week-selector">
+                <label for="week-select">
+                    <span class="selector-icon">📅</span> MISSION WEEK
+                </label>
+                <div class="select-wrapper">
+                    <select id="week-select"></select>
+                    <span class="select-arrow">▼</span>
+                </div>
+            </div>
+
+            <nav class="nav-links">
+                
+                <!-- MAIN -->
+                <div class="nav-section">
+                    <span class="nav-section-title">MAIN</span>
+                    
+                    <a href="#" class="nav-link active" data-page="home">
+                        <span class="nav-icon">🏠</span>
+                        <span class="nav-text">Mission Control</span>
+                    </a>
+                    
+                    <a href="#" class="nav-link" data-page="guide">
+                        <span class="nav-icon">📚</span>
+                        <span class="nav-text">Agent Manual</span>
+                    </a>
+                    
+                    <a href="#" class="nav-link" data-page="profile">
+                        <span class="nav-icon">👤</span>
+                        <span class="nav-text">My Profile</span>
+                    </a>
+
+                    <a href="#" class="nav-link" data-page="drawer">
+                        <span class="nav-icon">🎒</span>
+                        <span class="nav-text">Badge Drawer</span>
+                        <span class="notification-dot" id="dot-drawer"></span>
+                    </a>
+                </div>
+                
+                <!-- MISSIONS -->
+                <div class="nav-section">
+                    <span class="nav-section-title">MISSIONS</span>
+                    
+                    <a href="#" class="nav-link" data-page="goals">
+                        <span class="nav-icon">🎯</span>
+                        <span class="nav-text">Goal Progress</span>
+                    </a>
+
+                    <!-- NAMJOON'S BRAIN LINK -->
+                    <a href="#" class="nav-link" data-page="namjoon">
+                        <span class="nav-icon">🧠</span>
+                        <span class="nav-text">The 148 Protocol</span>
+                    </a>
+                    
+                    <a href="#" class="nav-link" data-page="album2x">
+                        <span class="nav-icon">💿</span>
+                        <span class="nav-text">Album 2X</span>
+                    </a>
+                    
+                    <a href="#" class="nav-link" data-page="secret-missions">
+                        <span class="nav-icon">🔒</span>
+                        <span class="nav-text">Secret Missions</span>
+                        <span class="notification-dot" id="dot-mission"></span>
+                    </a>
+
+                    <a href="#" class="nav-link" data-page="sotd">
+                        <span class="nav-icon">🎬</span>
+                        <span class="nav-text">Song of Day</span>
+                        <span class="notification-dot" id="dot-sotd"></span>
+                    </a>
+                </div>
+                
+                <!-- ANALYTICS -->
+                <div class="nav-section">
+                    <span class="nav-section-title">INTEL</span>
+                    
+                    <a href="#" class="nav-link" data-page="rankings">
+                        <span class="nav-icon">🏆</span>
+                        <span class="nav-text">Rankings</span>
+                    </a>
+
+                    <a href="#" class="nav-link" data-page="team-level">
+                        <span class="nav-icon">📊</span>
+                        <span class="nav-text">Team Levels</span>
+                    </a>
+                    
+                    <a href="#" class="nav-link" data-page="comparison">
+                        <span class="nav-icon">⚔️</span>
+                        <span class="nav-text">Comparison</span>
+                    </a>
+                </div>
+                
+                <!-- RESOURCES -->
+                <div class="nav-section">
+                    <span class="nav-section-title">COMMS & TOOLS</span>
+                    
+                    <a href="#" class="nav-link" data-page="playlists">
+                        <span class="nav-icon">🎧</span>
+                        <span class="nav-text">Playlists</span>
+                    </a>
+
+                    <a href="#" class="nav-link" data-page="streaming-tips">
+                        <span class="nav-icon">📡</span>
+                        <span class="nav-text">Streaming Tips</span>
+                    </a>
+                    
+                    <a href="#" class="nav-link" data-page="chat">
+                        <span class="nav-icon">💬</span>
+                        <span class="nav-text">Secret Comms</span>
+                        <span class="notification-dot" id="dot-chat"></span>
+                    </a>
+
+                    <a href="#" class="nav-link" data-page="gc-links">
+                        <span class="nav-icon">🔗</span>
+                        <span class="nav-text">Group Chats</span>
+                    </a>
+                    
+                    <a href="#" class="nav-link" data-page="announcements">
+                        <span class="nav-icon">📢</span>
+                        <span class="nav-text">Announcements</span>
+                        <span class="notification-dot" id="dot-announce"></span>
+                    </a>
+
+                    <a href="#" class="nav-link" data-page="summary">
+                        <span class="nav-icon">📋</span>
+                        <span class="nav-text">Weekly Results</span>
+                        <span class="notification-dot" id="dot-summary"></span>
+                    </a>
+                </div>
+
+                <!-- ADMIN (Inserted via JS) -->
+                
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="sync-status">
+                    <span class="sync-icon">🔄</span>
+                    <span id="last-update">--:--</span>
+                </div>
+                <button id="logout-btn">
+                    <span class="logout-icon">⏻</span> LOGOUT
+                </button>
+            </div>
+        </aside>
+
+        <div class="sidebar-overlay" id="sidebar-overlay"></div>
+        
+        <!-- ==================== MAIN CONTENT AREA ==================== -->
+        <main class="main-content">
+            <header class="mobile-header">
+                <button id="menu-btn" class="menu-btn">
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                </button>
+                <div class="header-logo">
+                    <span class="header-logo-icon">⟭⟬</span>
+                    <span class="header-logo-text">BTS COMEBACK MISSION</span>
+                </div>
+                <div class="header-spacer"></div>
+            </header>
+
+            <div class="pages-wrapper">
+                
+                <!-- HOME -->
+                <section id="page-home" class="page active">
+                    <div class="page-header">
+                        <div class="page-title-section">
+                            <h1>Mission Control</h1>
+                            <p id="current-week" class="page-subtitle">Week: Loading...</p>
+                        </div>
+                        <div class="page-actions">
+                            <button class="refresh-btn" onclick="loadPage('home')">🔄</button>
+                        </div>
+                    </div>
+                    <div class="quick-stats-section"></div>
+                    <div class="section-header"><h2>📋 Active Missions</h2></div>
+                    <div class="missions-grid"></div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><span class="header-icon">🏆</span> Top Agents</h3>
+                            <a href="#" class="card-link" onclick="event.preventDefault(); loadPage('rankings');">View All →</a>
+                        </div>
+                        <div class="card-body" id="home-top-agents"></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><span class="header-icon">🎭</span> Battle Standings</h3>
+                            <a href="#" class="card-link" onclick="event.preventDefault(); loadPage('comparison');">Details →</a>
+                        </div>
+                        <div class="card-body" id="home-standings"></div>
+                    </div>
+                </section>
+
+                <!-- GUIDE -->
+                <section id="page-guide" class="page"></section>
+
+                <!-- PROFILE -->
+                <section id="page-profile" class="page">
+                    <div class="page-header"><h1>👤 Agent Profile</h1></div>
+                    <div class="profile-card">
+                        <div class="profile-header">
+                            <div class="profile-avatar" id="profile-avatar"></div>
+                            <div class="profile-info">
+                                <h2 id="profile-name">Agent Name</h2>
+                                <p id="profile-team" class="profile-team-name">Team</p>
+                                <p id="profile-id" class="profile-agent-id">ID: ---</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stats-grid" id="profile-stats"></div>
+                    <div class="card">
+                        <div class="card-header"><h3><span class="header-icon">🎵</span> Track Streams</h3></div>
+                        <div class="card-body scrollable" id="profile-tracks"></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><h3><span class="header-icon">💿</span> Album Streams</h3></div>
+                        <div class="card-body scrollable" id="profile-albums"></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><h3><span class="header-icon">🎖️</span> Badges</h3></div>
+                        <div class="card-body" id="profile-badges"></div>
+                    </div>
+                </section>
+
+                <!-- GOALS -->
+                <section id="page-goals" class="page">
+                    <div class="page-header"><h1>🎯 Goals Progress</h1></div>
+                    <div id="goals-content"></div>
+                </section>
+
+                <!-- NAMJOON'S BRAIN (Fixed Structure) -->
+                <section id="page-namjoon" class="page">
+                    <div class="page-header">
+                         <h1>🧠 The 148 Protocol</h1>
+                         <p class="page-subtitle">Strategic Analysis</p>
+                    </div>
+                    <div id="namjoon-content"></div>
+                </section>
+
+                <!-- ALBUM 2X -->
+                <section id="page-album2x" class="page">
+                    <div class="page-header"><h1>💿 Album 2X Mission</h1></div>
+                    <div id="album2x-content"></div>
+                </section>
+
+                <!-- SECRET MISSIONS -->
+                <section id="page-secret-missions" class="page">
+                    <div class="page-header"><h1>🔒 Secret Missions</h1></div>
+                    <div id="secret-missions-content"></div>
+                </section>
+
+                <!-- SOTD -->
+                <section id="page-sotd" class="page">
+                    <div class="page-header"><h1>🎬 Song of the Day</h1></div>
+                    <div id="sotd-content"></div>
+                </section>
+
+                <!-- RANKINGS -->
+                <section id="page-rankings" class="page">
+                    <div class="page-header"><h1>🏆 Rankings</h1></div>
+                    <div id="rankings-list"></div>
+                </section>
+
+                <!-- TEAM LEVEL -->
+                <section id="page-team-level" class="page">
+                    <div class="page-header"><h1>📊 Team Levels</h1></div>
+                    <div id="team-level-content"></div>
+                </section>
+
+                <!-- COMPARISON -->
+                <section id="page-comparison" class="page">
+                    <div class="page-header"><h1>⚔️ Team Comparison</h1></div>
+                    <div id="comparison-content"></div>
+                </section>
+
+                <!-- PLAYLISTS -->
+                <section id="page-playlists" class="page">
+                    <div class="page-header"><h1>🎧 Playlists</h1></div>
+                    <div id="playlists-content"></div>
+                </section>
+
+                <!-- CHAT -->
+                <section id="page-chat" class="page">
+                    <div class="page-header"><h1>💬 Secret Comms</h1></div>
+                    <div id="chat-content"></div>
+                </section>
+
+                <!-- ANNOUNCEMENTS -->
+                <section id="page-announcements" class="page">
+                    <div class="page-header"><h1>📢 Announcements</h1></div>
+                    <div id="announcements-content"></div>
+                </section>
+
+                <!-- GC LINKS -->
+                <section id="page-gc-links" class="page">
+                    <div class="page-header"><h1>🔗 GC Links</h1></div>
+                    <div id="gc-links-content"></div>
+                </section>
+
+                <!-- HELPER ROLES -->
+                <section id="page-helper-roles" class="page">
+                    <div class="page-header"><h1>🎖️ Helper Roles</h1></div>
+                    <div id="helper-roles-content"></div>
+                </section>
+
+                <!-- DRAWER -->
+                <section id="page-drawer" class="page">
+                    <div class="page-header"><h1>🎒 My Drawer</h1></div>
+                    <div id="drawer-content"></div>
+                </section>
+
+                <!-- SUMMARY -->
+                <section id="page-summary" class="page">
+                    <div class="page-header"><h1>📋 Weekly Summary</h1></div>
+                    <div id="summary-content"></div>
+                </section>
+
+               <!-- STREAMING TIPS -->
+                <section id="page-streaming-tips" class="page">
+                    <div class="page-header">
+                        <h1>📚 Streaming Protocols</h1>
+                        <p class="page-subtitle">Official Spotify Guidelines</p>
+                    </div>
+                    
+                    <div id="tips-container">
+                        <!-- Tip 1 -->
+                        <div class="card" style="border-left: 3px solid #9d4edd; margin-bottom: 15px;">
+                            <div class="card-body" style="padding: 15px;">
+                                <h3 style="color:#fff; font-size:14px; margin:0 0 5px 0;">💿 Album Streaming</h3>
+                                <p style="font-size:12px; color:#ccc; margin:0; line-height:1.5;">Top-to-bottom streaming is recommended. If repeating an album, play other songs or playlists in between.</p>
+                            </div>
+                        </div>
+
+                        <!-- Tip 2 -->
+                        <div class="card" style="border-left: 3px solid #ff4444; margin-bottom: 15px;">
+                            <div class="card-body" style="padding: 15px;">
+                                <h3 style="color:#ff6b6b; font-size:14px; margin:0 0 5px 0;">⚠️ Artist Looping Warning</h3>
+                                <p style="font-size:12px; color:#ccc; margin:0; line-height:1.5;">Playing the same artist continuously can reduce recommendations. Balanced listening protects long-term performance.</p>
+                            </div>
+                        </div>
+
+                        <!-- Tip 3 -->
+                        <div class="card" style="border-left: 3px solid #00d4ff; margin-bottom: 15px;">
+                            <div class="card-body" style="padding: 15px;">
+                                <h3 style="color:#00d4ff; font-size:14px; margin:0 0 5px 0;">🔄 Reusing Playlists</h3>
+                                <p style="font-size:12px; color:#ccc; margin:0; line-height:1.5;">You can reuse playlists on the same day. Just avoid constant repetition and switch between albums/playlists.</p>
+                            </div>
+                        </div>
+
+                        <!-- Tip 4 -->
+                        <div class="card" style="border-left: 3px solid #7b2cbf; margin-bottom: 15px;">
+                            <div class="card-body" style="padding: 15px;">
+                                <h3 style="color:#e0aaff; font-size:14px; margin:0 0 5px 0;">🌙 Night Streaming</h3>
+                                <p style="font-size:12px; color:#ccc; margin:0; line-height:1.5;">Queue 2-3 shorter playlists if you can't interact for 2-3 hours. <strong style="color:#fff;">Turn Autoplay OFF</strong> to avoid random playback.</p>
+                            </div>
+                        </div>
+
+                        <!-- Tip 5 -->
+                        <div class="card" style="border-left: 3px solid #00ff88; margin-bottom: 15px;">
+                            <div class="card-body" style="padding: 15px;">
+                                <h3 style="color:#00ff88; font-size:14px; margin:0 0 5px 0;">🔊 Volume Matters</h3>
+                                <p style="font-size:12px; color:#ccc; margin:0; line-height:1.5;">Keep volume at <strong style="color:#fff;">50% or higher</strong>. Muted playback or extremely low volume may be filtered as low-quality streams.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+    <!-- ==================== TOAST & MODALS ==================== -->
+    <div id="toast-container"></div>
+    
+    <div id="modal-container" class="modal-container" hidden>
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <button class="modal-close">✕</button>
+            <div class="modal-body" id="modal-body"></div>
+        </div>
+    </div>
+    <!-- ==================== LIBRARIES ==================== -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- ==================== APP SCRIPT ==================== -->
+    <script src="app.js"></script>
+</body>
+</html>
