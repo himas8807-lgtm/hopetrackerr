@@ -9,7 +9,8 @@ if (!DEBUG_MODE) {
 }
 // ==================== MAIN CONFIG ====================
 const CONFIG = {
-    API_URL: 'https://script.google.com/macros/s/AKfycbx5ArHi5Ws0NxMa9nhORy6bZ7ZYpW4urPIap24tax9H1HLuGQxYRCgTVwDaKOMrZ7JOGA/exec',
+    API_URL: 'https://uspezooqcdrwaqxcqojn.supabase.co',
+    SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVzcGV6b29xY2Ryd2FxeGNxb2puIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAwMTk5NTIsImV4cCI6MjA4NTU5NTk1Mn0.4LHNAEys-bg7aDjgEVk6dXw3McZu5VNnK2h0OsvqwPg', 
     
     ADMIN_AGENT_NO: 'AGENT000',
 
@@ -621,47 +622,39 @@ function renderGuide(pageName) {
 
 // ==================== API ====================
 async function api(action, params = {}) {
-    const url = new URL(CONFIG.API_URL);
-    url.searchParams.set('action', action);
-    
-    // 1. Add normal parameters
-    Object.entries(params).forEach(([k, v]) => { 
-        if (v != null) url.searchParams.set(k, typeof v === 'object' ? JSON.stringify(v) : v); 
-    });
-
-    // 2. 🔥 CACHE BUSTER: Forces a fresh request every time
-    url.searchParams.set('_t', Date.now()); 
-
-    console.log('📡 API Request:', action, params);
+    console.log('📡 Supabase Request:', action, params);
 
     try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 30000);
         
-        // 3. Simple fetch (No custom headers to avoid CORS errors)
-        const res = await fetch(url.toString(), { 
-            signal: controller.signal,
-            method: 'GET'
+        const res = await fetch(CONFIG.API_URL, { 
+            method: 'POST', // Changed from GET to POST
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${CONFIG.SUPABASE_KEY}`
+            },
+            body: JSON.stringify({
+                action,
+                agentNo: STATE.agentNo, // Automatically include identity
+                week: STATE.week,       // Automatically include week
+                ...params
+            }),
+            signal: controller.signal
         });
         
         clearTimeout(timeout);
-        const text = await res.text();
+        const data = await res.json();
         
-        let data;
-        try { 
-            data = JSON.parse(text); 
-        } catch (e) { 
-            console.error("JSON Parse Error:", text);
-            throw new Error('Invalid JSON response'); 
-        }
+        // Handle common Supabase/Edge Function errors
+        if (data.error) throw new Error(data.error);
 
-        // 4. Update the global Last Updated time immediately
+        // Keep your timestamp logic
         if (data.lastUpdated) { 
             STATE.lastUpdated = data.lastUpdated; 
             updateTime(); 
         }
         
-        if (data.error) throw new Error(data.error);
         return data;
 
     } catch (e) {
@@ -5089,16 +5082,16 @@ async function loadDashboard() {
     
     try {
         // 2. Fetch Fresh Data (No Cache Check)
+        // ... inside loadDashboard() ...
         const dashboardData = await api('getDashboardData', { 
             agentNo: STATE.agentNo, 
             week: ''
         });
-        
-        console.log("📥 Fresh Data Loaded:", dashboardData.lastUpdated);
 
-        // 3. Update State
+        // UPDATE THIS MAPPING SECTION:
         STATE.weeks = dashboardData.availableWeeks || [];
-        STATE.week = dashboardData.week || dashboardData.currentWeek || STATE.weeks[0];
+        STATE.week = dashboardData.week || dashboardData.currentWeek;
+        
         STATE.data = {
             agentNo: dashboardData.agent.agentNo,
             week: dashboardData.week,
@@ -5106,19 +5099,17 @@ async function loadDashboard() {
             profile: dashboardData.agent.profile,
             stats: dashboardData.agent.stats,
             rank: dashboardData.agent.rank,
-            teamRank: dashboardData.agent.teamRank,
-            trackContributions: dashboardData.agent.trackContributions,
-            albumContributions: dashboardData.agent.albumContributions,
-            album2xStatus: dashboardData.agent.album2xStatus,
-            teamInfo: {
-                level: dashboardData.team.level,
-                teamXP: dashboardData.team.teamXP,
-                winner: dashboardData.team.isWinner,
-                trackGoalPassed: dashboardData.team.missions?.tracksPassed,
-                albumGoalPassed: dashboardData.team.missions?.albumsPassed,
-                album2xPassed: dashboardData.team.missions?.album2xPassed
+            // Map Supabase columns to GAS names so the rest of your app doesn't break
+            album2xStatus: {
+                passed: dashboardData.agent.album2xStatus?.passed,
+                tracks: dashboardData.agent.album2xStatus?.tracks || {}
             },
-            lastUpdated: dashboardData.lastUpdated
+            teamInfo: {
+                teamXP: dashboardData.team?.teamXP || 0,
+                trackGoalPassed: dashboardData.team?.missions?.tracksPassed,
+                albumGoalPassed: dashboardData.team?.missions?.albumsPassed,
+                album2xPassed: dashboardData.team?.missions?.album2xPassed
+            }
         };
 
         // 4. Switch Screens & Render
@@ -11877,6 +11868,28 @@ Do you wish to proceed?`;
     }
 }
 window.applyForLeave = applyForLeave;
+
+async function handleManualSync() {
+    if (STATE.isLoading) return;
+    
+    loading(true);
+    try {
+        const res = await api('refreshAgentStats');
+        
+        if (res.alreadySynced) {
+            showToast(res.message, 'info');
+        } else {
+            showToast('✅ Stats updated from Last.fm!', 'success');
+            await loadDashboard(); // Reload data to show new XP
+        }
+    } catch (e) {
+        showToast('❌ Sync failed: ' + e.message, 'error');
+    } finally {
+        loading(false);
+    }
+}
+// Export to window for button use
+window.handleManualSync = handleManualSync;
 
 
 
