@@ -11867,23 +11867,71 @@ Do you wish to proceed?`;
 }
 window.applyForLeave = applyForLeave;
 
+// ==================== SYNC FUNCTIONALITY ====================
+
 async function handleManualSync() {
+    const syncBtn = document.getElementById('syncBtn');
+    const floatingBtn = document.getElementById('floatingSyncBtn');
+    
     if (STATE.isLoading) return;
     
+    // Disable both buttons
+    [syncBtn, floatingBtn].forEach(btn => {
+        if (btn) {
+            btn.disabled = true;
+            btn.classList.add('syncing');
+        }
+    });
+    
+    if (syncBtn) {
+        const textEl = syncBtn.querySelector('.sync-text');
+        if (textEl) textEl.textContent = 'Syncing...';
+    }
+    
     loading(true);
+    
     try {
-        const res = await api('refreshAgentStats');
+        const res = await api('refreshAgentStats', {
+            agentNo: STATE.agentNo,
+            week: STATE.currentWeek
+        });
         
         if (res.alreadySynced) {
-            showToast(res.message, 'info');
-        } else {
+            showToast(res.message || '⏱️ Recently synced. Try again in a few minutes.', 'info');
+        } else if (res.success) {
             showToast('✅ Stats updated from Last.fm!', 'success');
-            await loadDashboard(); // Reload data to show new XP
+            
+            // Show stats summary
+            if (res.stats) {
+                setTimeout(() => {
+                    showToast(`📊 ${res.stats.trackScrobbles} tracks | ${res.stats.albumScrobbles} albums`, 'info');
+                }, 1500);
+            }
+            
+            // Reload current page data
+            await loadDashboard();
+            
+        } else if (res.error) {
+            showToast('⚠️ ' + res.error, 'warning');
         }
     } catch (e) {
+        console.error('Sync error:', e);
         showToast('❌ Sync failed: ' + e.message, 'error');
     } finally {
         loading(false);
+        
+        // Reset buttons
+        [syncBtn, floatingBtn].forEach(btn => {
+            if (btn) {
+                btn.disabled = false;
+                btn.classList.remove('syncing');
+            }
+        });
+        
+        if (syncBtn) {
+            const textEl = syncBtn.querySelector('.sync-text');
+            if (textEl) textEl.textContent = 'Sync Stats';
+        }
     }
 }
 // Export to window for button use
