@@ -5052,15 +5052,26 @@ async function handleFind() {
     if (!handle) { showResult('Enter Instagram', true); return; }
     loading(true);
     try {
-        if (STATE.allAgents.length === 0) await loadAllAgents();
-        const found = STATE.allAgents.find(a => String(a.instagram||a.ig||'').toLowerCase().replace('@','') === handle || String(a.name||'').toLowerCase().includes(handle));
-        if (!found) throw new Error('Not found');
+        // Fetch agents from Supabase
+        const res = await api('getAllAgents');
+        STATE.allAgents = res.agents || [];
+        
+        // Match using the new column name 'instagram' provided by the Edge Function
+        const found = STATE.allAgents.find(a => 
+            String(a.instagram || '').toLowerCase().replace('@','') === handle || 
+            String(a.name || '').toLowerCase().includes(handle)
+        );
+
+        if (!found) throw new Error('Operative not found in database');
+        
         showResult(`Agent ID: <strong>${found.agentNo}</strong>`, false);
         if($('agent-input')) $('agent-input').value = found.agentNo;
-    } catch (e) { showResult(e.message, true); } 
-    finally { loading(false); }
+    } catch (e) { 
+        showResult(e.message, true); 
+    } finally { 
+        loading(false); 
+    }
 }
-
 // ==================== LOAD DASHBOARD ====================
 
 let notificationInterval = null;
