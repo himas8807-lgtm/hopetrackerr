@@ -8673,3 +8673,113 @@ function ensureStreakCSS() {
     border-color: #00ff88;
     color: #000;
 }
+/* ==================== SYNC BUTTON STYLES ==================== */
+
+/* Inline Sync Button (for page headers) */
+.sync-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #7b2cbf 0%, #9d4edd 100%);
+    color: white;
+    border: none;
+    border-radius: 25px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: 'Rajdhani', sans-serif;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(123, 44, 191, 0.3);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.sync-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(123, 44, 191, 0.4);
+    background: linear-gradient(135deg, #9d4edd 0%, #c77dff 100%);
+}
+
+.sync-button:active {
+    transform: translateY(0);
+}
+
+.sync-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.sync-button.syncing .sync-icon {
+    animation: spin 1s linear infinite;
+}
+
+.sync-button .sync-icon {
+    font-size: 16px;
+}
+
+/* Floating Sync Button (always visible) */
+.floating-sync-btn {
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #7b2cbf 0%, #9d4edd 100%);
+    color: white;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(123, 44, 191, 0.5);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.floating-sync-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 30px rgba(123, 44, 191, 0.6);
+}
+
+.floating-sync-btn:active {
+    transform: scale(0.95);
+}
+
+.floating-sync-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.floating-sync-btn.syncing {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+    .floating-sync-btn {
+        bottom: 80px; /* Above mobile nav if you have one */
+        right: 15px;
+        width: 50px;
+        height: 50px;
+        font-size: 20px;
+    }
+    
+    .sync-button {
+        padding: 8px 15px;
+        font-size: 12px;
+    }
+    
+    .sync-button .sync-text {
+        display: none; /* Hide text on mobile, show only icon */
+    }
+}
