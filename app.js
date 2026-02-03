@@ -9,7 +9,7 @@ if (!DEBUG_MODE) {
 }
 // ==================== MAIN CONFIG ====================
 const CONFIG = {
-    API_URL: 'https://uspezooqcdrwaqxcqojn.supabase.co',
+    API_URL: 'https://uspezooqcdrwaqxcqojn.supabase.co/functions/v1/bts-sync',
     SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVzcGV6b29xY2Ryd2FxeGNxb2puIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAwMTk5NTIsImV4cCI6MjA4NTU5NTk1Mn0.4LHNAEys-bg7aDjgEVk6dXw3McZu5VNnK2h0OsvqwPg', 
     
     ADMIN_AGENT_NO: 'AGENT000',
@@ -625,28 +625,22 @@ async function api(action, params = {}) {
     console.log('📡 Supabase Request:', action, params);
 
     try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 30000);
-        
         const res = await fetch(CONFIG.API_URL, { 
-            method: 'POST', // Changed from GET to POST
+            method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${CONFIG.SUPABASE_KEY}`
             },
             body: JSON.stringify({
                 action,
-                agentNo: STATE.agentNo, // Automatically include identity
-                week: STATE.week,       // Automatically include week
+                agentNo: STATE.agentNo, 
+                week: STATE.week,       
                 ...params
-            }),
-            signal: controller.signal
+            })
         });
         
-        clearTimeout(timeout);
         const data = await res.json();
         
-        // Handle common Supabase/Edge Function errors
         if (data.error) throw new Error(data.error);
 
         // Keep your timestamp logic
@@ -656,7 +650,6 @@ async function api(action, params = {}) {
         }
         
         return data;
-
     } catch (e) {
         console.error('API Network Error:', e);
         throw e;
@@ -5083,34 +5076,28 @@ async function loadDashboard() {
     try {
         // 2. Fetch Fresh Data (No Cache Check)
         // ... inside loadDashboard() ...
-        const dashboardData = await api('getDashboardData', { 
-            agentNo: STATE.agentNo, 
-            week: ''
-        });
+         const dashboardData = await api('getDashboardData');
 
-        // UPDATE THIS MAPPING SECTION:
         STATE.weeks = dashboardData.availableWeeks || [];
-        STATE.week = dashboardData.week || dashboardData.currentWeek;
+        STATE.week = dashboardData.week || "Week 9";
         
         STATE.data = {
             agentNo: dashboardData.agent.agentNo,
             week: dashboardData.week,
-            resultsReleased: dashboardData.resultsReleased,
             profile: dashboardData.agent.profile,
             stats: dashboardData.agent.stats,
             rank: dashboardData.agent.rank,
-            // Map Supabase columns to GAS names so the rest of your app doesn't break
+            // Maps Supabase structure to the format your frontend expects
             album2xStatus: {
-                passed: dashboardData.agent.album2xStatus?.passed,
-                tracks: dashboardData.agent.album2xStatus?.tracks || {}
+                passed: dashboardData.agent.stats?.album2xPassed || false,
+                tracks: dashboardData.agent.stats?.album2xDetails || {}
             },
             teamInfo: {
-                teamXP: dashboardData.team?.teamXP || 0,
-                trackGoalPassed: dashboardData.team?.missions?.tracksPassed,
-                albumGoalPassed: dashboardData.team?.missions?.albumsPassed,
-                album2xPassed: dashboardData.team?.missions?.album2xPassed
+                // Ensure these match what your Edge Function returns
+                resultsReleased: dashboardData.resultsReleased || false
             }
         };
+        
 
         // 4. Switch Screens & Render
         $('login-screen').classList.remove('active');
