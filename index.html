@@ -159,7 +159,6 @@
                         <span class="nav-text">Goal Progress</span>
                     </a>
 
-                    <!-- NAMJOON'S BRAIN LINK -->
                     <a href="#" class="nav-link" data-page="namjoon">
                         <span class="nav-icon">🧠</span>
                         <span class="nav-text">The 148 Protocol</span>
@@ -240,8 +239,6 @@
                         <span class="notification-dot" id="dot-summary"></span>
                     </a>
                 </div>
-
-                <!-- ADMIN (Inserted via JS) -->
                 
             </nav>
 
@@ -308,13 +305,14 @@
                 <!-- GUIDE -->
                 <section id="page-guide" class="page"></section>
 
-                <!-- PROFILE -->
+                <!-- PROFILE (FIXED) -->
                 <section id="page-profile" class="page">
-                    <div class="page-header"><h1>👤 Agent Profile</h1></div>
-                    <button id="syncBtn" class="sync-button" onclick="handleManualSync()">
-                        <span class="sync-icon">🔄</span>
-                        <span class="sync-text">Sync Stats</span>
-                    </button>
+                    <div class="page-header">
+                        <h1>👤 Agent Profile</h1>
+                        <button id="syncBtn" class="sync-button" onclick="handleManualSync()">
+                            <span class="sync-icon">🔄</span>
+                            <span class="sync-text">Sync Stats</span>
+                        </button>
                     </div>
                     <div class="profile-card">
                         <div class="profile-header">
@@ -347,11 +345,11 @@
                     <div id="goals-content"></div>
                 </section>
 
-                <!-- NAMJOON'S BRAIN (Fixed Structure) -->
+                <!-- NAMJOON'S BRAIN -->
                 <section id="page-namjoon" class="page">
                     <div class="page-header">
-                         <h1>🧠 The 148 Protocol</h1>
-                         <p class="page-subtitle">Strategic Analysis</p>
+                        <h1>🧠 The 148 Protocol</h1>
+                        <p class="page-subtitle">Strategic Analysis</p>
                     </div>
                     <div id="namjoon-content"></div>
                 </section>
@@ -434,7 +432,7 @@
                     <div id="summary-content"></div>
                 </section>
 
-               <!-- STREAMING TIPS -->
+                <!-- STREAMING TIPS -->
                 <section id="page-streaming-tips" class="page">
                     <div class="page-header">
                         <h1>📚 Streaming Protocols</h1>
@@ -442,7 +440,6 @@
                     </div>
                     
                     <div id="tips-container">
-                        <!-- Tip 1 -->
                         <div class="card" style="border-left: 3px solid #9d4edd; margin-bottom: 15px;">
                             <div class="card-body" style="padding: 15px;">
                                 <h3 style="color:#fff; font-size:14px; margin:0 0 5px 0;">💿 Album Streaming</h3>
@@ -450,7 +447,6 @@
                             </div>
                         </div>
 
-                        <!-- Tip 2 -->
                         <div class="card" style="border-left: 3px solid #ff4444; margin-bottom: 15px;">
                             <div class="card-body" style="padding: 15px;">
                                 <h3 style="color:#ff6b6b; font-size:14px; margin:0 0 5px 0;">⚠️ Artist Looping Warning</h3>
@@ -458,7 +454,6 @@
                             </div>
                         </div>
 
-                        <!-- Tip 3 -->
                         <div class="card" style="border-left: 3px solid #00d4ff; margin-bottom: 15px;">
                             <div class="card-body" style="padding: 15px;">
                                 <h3 style="color:#00d4ff; font-size:14px; margin:0 0 5px 0;">🔄 Reusing Playlists</h3>
@@ -466,7 +461,6 @@
                             </div>
                         </div>
 
-                        <!-- Tip 4 -->
                         <div class="card" style="border-left: 3px solid #7b2cbf; margin-bottom: 15px;">
                             <div class="card-body" style="padding: 15px;">
                                 <h3 style="color:#e0aaff; font-size:14px; margin:0 0 5px 0;">🌙 Night Streaming</h3>
@@ -474,7 +468,6 @@
                             </div>
                         </div>
 
-                        <!-- Tip 5 -->
                         <div class="card" style="border-left: 3px solid #00ff88; margin-bottom: 15px;">
                             <div class="card-body" style="padding: 15px;">
                                 <h3 style="color:#00ff88; font-size:14px; margin:0 0 5px 0;">🔊 Volume Matters</h3>
@@ -483,12 +476,15 @@
                         </div>
                     </div>
                 </section>
-        <!-- ==================== FLOATING SYNC BUTTON ==================== -->
+
+            </div><!-- END pages-wrapper -->
+        </main>
+    </div><!-- END dashboard-screen -->
+
+    <!-- ==================== FLOATING SYNC BUTTON ==================== -->
     <button id="floatingSyncBtn" class="floating-sync-btn" onclick="handleManualSync()" title="Sync Stats from Last.fm">
         🔄
     </button>
-
-    <!-- ==================== TOAST & MODALS ==================== -->
 
     <!-- ==================== TOAST & MODALS ==================== -->
     <div id="toast-container"></div>
@@ -500,8 +496,10 @@
             <div class="modal-body" id="modal-body"></div>
         </div>
     </div>
+
     <!-- ==================== LIBRARIES ==================== -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
     <!-- ==================== APP SCRIPT ==================== -->
     <script src="app.js"></script>
 </body>
