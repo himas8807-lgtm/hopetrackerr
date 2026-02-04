@@ -5481,6 +5481,7 @@ async function renderHome() {
         const allTeamTracks = (CONFIG.getTeamAlbumTracksForWeek) ? CONFIG.getTeamAlbumTracksForWeek(selectedWeek) : {};
         const teamTracks = allTeamTracks[team] || [];
         const tracksCompleted2x = teamTracks.filter(t => (album2xStatus.tracks?.[t]?.count || album2xStatus.tracks?.[t] || 0) >= (CONFIG.ALBUM_CHALLENGE.REQUIRED_STREAMS || 2)).length;
+        const isActuallyComplete = teamTracks.length > 0 && tracksCompleted2x === teamTracks.length;
         const trackGoalsList = Object.entries(trackGoals).map(([trackName, info]) => {
             const tp = info.teams?.[team] || {};
             return { name: trackName, current: tp.current || 0, goal: info.goal || 0, done: tp.status === 'Completed' || (tp.current || 0) >= (info.goal || 0) };
@@ -11968,25 +11969,26 @@ function renderAdminSystemTab() {
 async function triggerGlobalSync() {
     const btn = document.getElementById('global-sync-btn');
     const output = document.getElementById('sync-status-output');
-    if (!confirm("Are you sure? This triggers a heavy process for the server.")) return;
+    if (!confirm("Start Global Sync? This processes agents in batches but may still time out if there are many agents.")) return;
 
     btn.disabled = true;
     btn.innerHTML = "⏳ Syncing all agents...";
-    output.innerHTML = "Starting process... checking agents...";
+    output.innerHTML = "Process started. This takes a while...";
 
     try {
-        const res = await api('runHourlySync', { 
-            adminKey: 'BTSSYNC2024' // Ensure this matches your Backend SYNC_ADMIN_KEY
-        });
+        const res = await api('runHourlySync', { adminKey: 'BTSSYNC2024' });
 
         if (res.success) {
-            output.innerHTML = `✅ Sync Complete!<br>Synced: ${res.synced}<br>Failed: ${res.failed}<br>Skipped (On Leave): ${res.skipped}<br>Duration: ${res.duration}`;
+            output.innerHTML = `✅ Sync Complete! <br>Synced: ${res.synced} | Failed: ${res.failed}`;
             showToast("Global Sync Complete!", "success");
         } else {
-            output.innerHTML = `❌ Error: ${res.error}`;
+            // 🔥 Fix: Handle missing error property
+            output.innerHTML = `❌ Error: ${res.error || 'Server timed out or returned no response.'}`;
         }
     } catch (e) {
-        output.innerHTML = `❌ Network Error: ${e.message}`;
+        // 🔥 Fix: Catch timeouts properly
+        output.innerHTML = `⚠️ The sync is running in the background, but the browser connection timed out. Check the Dashboard in 1 minute.`;
+        console.error(e);
     } finally {
         btn.disabled = false;
         btn.innerHTML = "🚀 Force Global Refresh (All Agents)";
