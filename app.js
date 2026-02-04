@@ -2398,6 +2398,7 @@ function showAdminPanel() {
             <button type="button" class="admin-tab active" data-tab="create">Create Mission</button>
             <button type="button" class="admin-tab" data-tab="active">Active</button>
             <button type="button" class="admin-tab" data-tab="confirm">📋 Confirm</button>
+            <button type="button" class="admin-tab" data-tab="system">⚙️ System</button>
             <button type="button" class="admin-tab" data-tab="leaves">🛑 On Leave</button> 
             <button type="button" class="admin-tab" data-tab="assets">Badge Preview</button>
             <button type="button" class="admin-tab" data-tab="history">History</button>
@@ -2406,6 +2407,7 @@ function showAdminPanel() {
             <div id="admin-tab-create" class="admin-tab-content active"></div>
             <div id="admin-tab-active" class="admin-tab-content"></div>
             <div id="admin-tab-confirm" class="admin-tab-content"></div>
+            <div id="admin-tab-system" class="admin-tab-content"></div>
             <div id="admin-tab-leaves" class="admin-tab-content"></div>
             <div id="admin-tab-assets" class="admin-tab-content"></div>
             <div id="admin-tab-history" class="admin-tab-content"></div>
@@ -2479,6 +2481,9 @@ function switchAdminTab(tabName) {
             break;
         case 'confirm':                    
             renderWeekConfirmation();
+            break;
+        case 'system':
+            renderAdminSystemTab();
             break;
         case 'leaves':
             loadLeavesAdmin(); 
@@ -5475,8 +5480,7 @@ async function renderHome() {
         const album2xStatus = STATE.data?.album2xStatus || {};
         const allTeamTracks = (CONFIG.getTeamAlbumTracksForWeek) ? CONFIG.getTeamAlbumTracksForWeek(selectedWeek) : {};
         const teamTracks = allTeamTracks[team] || [];
-        const tracksCompleted2x = teamTracks.filter(t => (album2xStatus.tracks?.[t] || 0) >= (CONFIG.ALBUM_CHALLENGE?.REQUIRED_STREAMS || 2)).length;
-
+        const tracksCompleted2x = teamTracks.filter(t => {const trackData = album2xStatus.tracks?.[t];
         const trackGoalsList = Object.entries(trackGoals).map(([trackName, info]) => {
             const tp = info.teams?.[team] || {};
             return { name: trackName, current: tp.current || 0, goal: info.goal || 0, done: tp.status === 'Completed' || (tp.current || 0) >= (info.goal || 0) };
@@ -11939,6 +11943,56 @@ async function handleManualSync() {
 }
 // Export to window for button use
 window.handleManualSync = handleManualSync;
+
+function renderAdminSystemTab() {
+    const container = document.getElementById('admin-tab-system');
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="card" style="border-color: #ff4444; background: rgba(255,68,68,0.05);">
+            <div class="card-header"><h3>⚙️ Global System Sync</h3></div>
+            <div class="card-body" style="padding: 20px; text-align: center;">
+                <p style="color: #ccc; font-size: 13px; margin-bottom: 20px;">
+                    This will force the backend to fetch Last.fm data for <strong>ALL active agents</strong> for the current week. 
+                    <br><br><span style="color: #ff6b6b;">⚠️ This may take 30-60 seconds depending on the number of agents.</span>
+                </p>
+                <button id="global-sync-btn" onclick="triggerGlobalSync()" class="btn-primary" style="width: 100%; padding: 15px; background: #ff4444;">
+                    🚀 Force Global Refresh (All Agents)
+                </button>
+                <div id="sync-status-output" style="margin-top: 20px; color: #888; font-size: 12px; font-family: monospace;"></div>
+            </div>
+        </div>
+    `;
+}
+
+async function triggerGlobalSync() {
+    const btn = document.getElementById('global-sync-btn');
+    const output = document.getElementById('sync-status-output');
+    if (!confirm("Are you sure? This triggers a heavy process for the server.")) return;
+
+    btn.disabled = true;
+    btn.innerHTML = "⏳ Syncing all agents...";
+    output.innerHTML = "Starting process... checking agents...";
+
+    try {
+        const res = await api('runHourlySync', { 
+            adminKey: 'BTSSYNC2024' // Ensure this matches your Backend SYNC_ADMIN_KEY
+        });
+
+        if (res.success) {
+            output.innerHTML = `✅ Sync Complete!<br>Synced: ${res.synced}<br>Failed: ${res.failed}<br>Skipped (On Leave): ${res.skipped}<br>Duration: ${res.duration}`;
+            showToast("Global Sync Complete!", "success");
+        } else {
+            output.innerHTML = `❌ Error: ${res.error}`;
+        }
+    } catch (e) {
+        output.innerHTML = `❌ Network Error: ${e.message}`;
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = "🚀 Force Global Refresh (All Agents)";
+    }
+}
+window.triggerGlobalSync = triggerGlobalSync;
 
 
 
