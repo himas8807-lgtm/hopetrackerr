@@ -5098,6 +5098,9 @@ async function loadDashboard() {
             profile: dashboardData.agent.profile,
             stats: dashboardData.agent.stats,
             rank: dashboardData.agent.rank,
+            teamRank: dashboardData.agent.teamRank,
+            trackContributions: dashboardData.agent.trackContributions || {},
+            albumContributions: dashboardData.agent.albumContributions || {},
             // Maps Supabase structure to the format your frontend expects
             album2xStatus: {
                 passed: dashboardData.agent.stats?.album2xPassed || false,
