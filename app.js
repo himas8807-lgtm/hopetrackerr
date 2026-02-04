@@ -5480,7 +5480,7 @@ async function renderHome() {
         const album2xStatus = STATE.data?.album2xStatus || {};
         const allTeamTracks = (CONFIG.getTeamAlbumTracksForWeek) ? CONFIG.getTeamAlbumTracksForWeek(selectedWeek) : {};
         const teamTracks = allTeamTracks[team] || [];
-        const tracksCompleted2x = teamTracks.filter(t => {const trackData = album2xStatus.tracks?.[t];
+        const tracksCompleted2x = teamTracks.filter(t => (album2xStatus.tracks?.[t]?.count || album2xStatus.tracks?.[t] || 0) >= (CONFIG.ALBUM_CHALLENGE.REQUIRED_STREAMS || 2)).length;
         const trackGoalsList = Object.entries(trackGoals).map(([trackName, info]) => {
             const tp = info.teams?.[team] || {};
             return { name: trackName, current: tp.current || 0, goal: info.goal || 0, done: tp.status === 'Completed' || (tp.current || 0) >= (info.goal || 0) };
