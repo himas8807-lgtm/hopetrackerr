@@ -192,7 +192,7 @@ const ACTIVITY_CONFIG = {
         },
         '_earned': {
             icon: '🎖️',
-            template: (data) => `<strong>${data.name}</strong> earned the <strong class="highlight">${data.}</strong> !`,
+            template: (data) => `<strong>${data.name}</strong> earned the <strong class="highlight">${data.badge}</strong> badge!`,
             color: '#7b2cbf'
         },
         'goal_completed': {
@@ -6153,7 +6153,7 @@ function stopUnreadCheck() {
         unreadCheckInterval = null;
     }
 }
-// ==================== DRAWER (FIXED BADGE SECTION) ====================
+// ==================== DRAWER (FIXED - WORKING VERSION) ====================
 async function renderDrawer() {
     const container = $('drawer-content');
     if (!container) return;
@@ -6184,6 +6184,7 @@ async function renderDrawer() {
     const agentTeam = STATE.allWeeksData?.agentTeam || team;
     
     if (STATE.allWeeksData?.weeks?.length > 0) {
+        // ✅ KEEP ORIGINAL ORDER - Don't sort the weeks themselves
         STATE.allWeeksData.weeks.forEach(weekData => {
             const weekName = weekData.week;
             const weekXP = parseInt(weekData.stats?.totalXP) || 0;
@@ -6195,7 +6196,9 @@ async function renderDrawer() {
             overallAlbumStreams += weekAlbums;
             if (weekXP > 0) weeksParticipated++;
             
-            allXpBadges = allXpBadges.concat(getLevelBadges(STATE.agentNo, weekXP, weekName));
+            // Get badges for this week
+            const weekBadges = getLevelBadges(STATE.agentNo, weekXP, weekName);
+            allXpBadges = allXpBadges.concat(weekBadges);
             
             const album2xBadge = getAlbum2xBadgeForWeek(STATE.agentNo, weekData, weekName);
             if (album2xBadge) allSpecialBadges.push(album2xBadge);
@@ -6213,12 +6216,28 @@ async function renderDrawer() {
         if (album2xBadge) allSpecialBadges.push(album2xBadge);
     }
     
+    // ✅ SORT BADGES BY WEEK NUMBER (Newest First) - After collecting all
+    allXpBadges.sort((a, b) => {
+        const weekNumA = parseInt(a.week?.replace(/\D/g, '')) || 0;
+        const weekNumB = parseInt(b.week?.replace(/\D/g, '')) || 0;
+        return weekNumB - weekNumA; // Descending (Week 9 first)
+    });
+    
+    // Dedupe special badges
     const seenBadges = new Set();
     const uniqueSpecialBadges = allSpecialBadges.filter(b => {
+        if (!b || !b.name) return false;
         const key = `${b.name}_${b.week}`;
         if (seenBadges.has(key)) return false;
         seenBadges.add(key);
         return true;
+    });
+    
+    // ✅ SORT SPECIAL BADGES (Newest First)
+    uniqueSpecialBadges.sort((a, b) => {
+        const weekNumA = parseInt(a.week?.replace(/\D/g, '')) || 0;
+        const weekNumB = parseInt(b.week?.replace(/\D/g, '')) || 0;
+        return weekNumB - weekNumA;
     });
     
     const totalBadgeCount = uniqueSpecialBadges.length + allXpBadges.length;
@@ -6323,7 +6342,7 @@ async function renderDrawer() {
                     <!-- XP Badges -->
                     ${allXpBadges.length > 0 ? `
                         <div>
-                            <div style="color: #888; font-size: 10px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px;">⭐ XP Badges</div>
+                            <div style="color: #888; font-size: 10px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px;">⭐ XP Badges (Newest First)</div>
                             
                             <!-- Visible Badges -->
                             <div class="badge-grid">
@@ -6338,8 +6357,8 @@ async function renderDrawer() {
                                     </div>
                                 </div>
                                 
-                                <button onclick="toggleHiddenBadges(this)" class="btn-secondary" style="width: 100%; margin-top: 12px; padding: 10px; font-size: 12px; background:rgba(255,255,255,0.05);">
-                                    View All Badges →
+                                <button onclick="toggleHiddenBadges(this)" class="btn-secondary" style="width: 100%; margin-top: 12px; padding: 10px; font-size: 12px; background: rgba(255,255,255,0.05);">
+                                    View ${hiddenXpBadges.length} Older Badges →
                                 </button>
                             ` : ''}
                         </div>
@@ -6394,6 +6413,8 @@ async function renderDrawer() {
     STATE.lastChecked.album2xBadge = album2xStatus.passed || false;
     saveNotificationState();
 }
+
+// ==================== TOGGLE HIDDEN BADGES ====================
 function toggleHiddenBadges(button) {
     const hiddenContainer = document.getElementById('hidden-xp-badges');
     if (!hiddenContainer) return;
@@ -6405,7 +6426,7 @@ function toggleHiddenBadges(button) {
         button.textContent = '← Show Less';
     } else {
         hiddenContainer.style.display = 'none';
-        button.textContent = 'View All Badges →';
+        button.textContent = 'View Older Badges →';
     }
 }
 // ==================== PROFILE (UPDATED: APPLY LEAVE) ====================
