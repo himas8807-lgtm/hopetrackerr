@@ -192,7 +192,7 @@ const ACTIVITY_CONFIG = {
         },
         '_earned': {
             icon: '🎖️',
-            template: (data) => `<strong>${data.name}</strong> earned the <strong class="highlight">${data.}</strong> !`,
+            template: (data) => `<strong>${data.name}</strong> earned the <strong class="highlight">${data.badge}</strong> badge!`,
             color: '#7b2cbf'
         },
         'goal_completed': {
