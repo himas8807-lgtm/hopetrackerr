@@ -5097,12 +5097,12 @@ async function loadDashboard() {
     
     try {
         // 2. Fetch Fresh Data (No Cache Check)
-        // ... inside loadDashboard() ...
-         const dashboardData = await api('getDashboardData');
+        const dashboardData = await api('getDashboardData');
 
         STATE.weeks = dashboardData.availableWeeks || [];
         STATE.week = dashboardData.week || "Week 9";
         
+        // ✅ FIXED: Proper object structure
         STATE.data = {
             agentNo: dashboardData.agent.agentNo,
             week: dashboardData.week,
@@ -5112,16 +5112,13 @@ async function loadDashboard() {
             teamRank: dashboardData.agent.teamRank,
             trackContributions: dashboardData.agent.trackContributions || {},
             albumContributions: dashboardData.agent.albumContributions || {},
-            // Maps Supabase structure to the format your frontend expects
-            album2xStatus: dashboardData.agent.album2xStatus || { passed: false, tracks: {} }
-            },
+            album2xStatus: dashboardData.agent.album2xStatus || { passed: false, tracks: {} },
+            // ✅ teamInfo is NOW INSIDE STATE.data
             teamInfo: {
-                // Ensure these match what your Edge Function returns
                 resultsReleased: dashboardData.resultsReleased || false
             }
         };
         
-
         // 4. Switch Screens & Render
         $('login-screen').classList.remove('active');
         $('login-screen').style.display = 'none';
@@ -5138,9 +5135,9 @@ async function loadDashboard() {
         setTimeout(() => {
             if (typeof initStreakTracker === 'function') initStreakTracker();
             if (typeof updateActivityFeedUI === 'function') {
-               updateActivityFeedUI(); // Run once immediately
-               if (window.activityInterval) clearInterval(window.activityInterval);
-               window.activityInterval = setInterval(updateActivityFeedUI, 60000);
+                updateActivityFeedUI();
+                if (window.activityInterval) clearInterval(window.activityInterval);
+                window.activityInterval = setInterval(updateActivityFeedUI, 60000);
             }
             if (typeof setupNotificationChecks === 'function') setupNotificationChecks();
             
