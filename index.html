@@ -4,11 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#0a0a0f">
-    <meta name="description" content="BTS COMEBACK MISSION - Hyung Line Streaming Competition Dashboard">
+    <meta name="description" content="HopeTracker - BTS COMEBACK MISSION - Hyung Line Streaming Competition Dashboard">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     
-    <title>BTS COMEBACK MISSION - HYUNG LINE</title>
+    <title>HopeTracker | BTS COMEBACK MISSION</title>
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -40,6 +40,8 @@
             
             <div class="login-content">
                 <div class="logo-section">
+                    <!-- HopeTracker branding above main logo -->
+                    <div class="hopetracker-brand">HOPETRACKER</div>
                     <div class="bts-logo">⟭⟬</div>
                     <h1 class="title">BTS COMEBACK MISSION</h1>
                     <p class="subtitle">HYUNG LINE EDITION</p>
@@ -48,31 +50,50 @@
                 <div class="login-box">
                     <form id="login-form" onsubmit="return false;">
                         <div class="input-group">
-                            <label for="agent-input"><span class="label-icon">🔑</span> AGENT IDENTIFICATION</label>
+                            <!-- Agent ID Input -->
+                            <label for="agent-input">
+                                <span class="label-icon">🆔</span> AGENT IDENTIFICATION
+                            </label>
                             <div class="input-wrapper">
                                 <input type="text" id="agent-input" placeholder="Enter Agent Number (e.g., AGENT001)" autocomplete="off">
                                 <span class="input-icon">👤</span>
                             </div>
-                            <button type="submit" id="login-btn" class="btn-primary">
-                                <span class="btn-text">ACCESS DASHBOARD</span>
+
+                            <!-- Password Input -->
+                            <label for="password-input" style="margin-top: 15px;">
+                                <span class="label-icon">🔑</span> ACCESS KEY
+                            </label>
+                            <div class="input-wrapper">
+                                <input type="password" id="password-input" placeholder="Enter Password" autocomplete="current-password">
+                                <span class="input-icon">🔒</span>
+                            </div>
+
+                            <!-- Single Login Button -->
+                            <button type="submit" id="login-btn" class="btn-primary" style="margin-top: 20px;">
+                                <span class="btn-text">AUTHENTICATE</span>
                                 <span class="btn-icon">→</span>
                             </button>
                         </div>
                     </form>
 
                     <div class="divider">
-                        <span class="divider-line"></span><span class="divider-text">OR</span><span class="divider-line"></span>
+                        <span class="divider-line"></span>
+                        <span class="divider-text">OR</span>
+                        <span class="divider-line"></span>
                     </div>
 
                     <form id="find-form" onsubmit="return false;">
                         <div class="input-group">
-                            <label for="instagram-input"><span class="label-icon">📱</span> FIND AGENT ID</label>
+                            <label for="instagram-input">
+                                <span class="label-icon">📱</span> FIND AGENT ID
+                            </label>
                             <div class="input-wrapper">
                                 <input type="text" id="instagram-input" placeholder="Enter Instagram username..." autocomplete="off">
                                 <span class="input-icon">@</span>
                             </div>
                             <button type="submit" id="find-btn" class="btn-secondary">
-                                <span class="btn-text">LOOKUP ID</span><span class="btn-icon">🔍</span>
+                                <span class="btn-text">LOOKUP ID</span>
+                                <span class="btn-icon">🔍</span>
                             </button>
                         </div>
                     </form>
@@ -80,8 +101,14 @@
                 </div>
 
                 <div class="login-footer">
-                    <div class="connection-status"><div class="pulse-dot"></div><span>SYSTEM ONLINE</span></div>
-                    <div class="version-info">v5.0 | Spy Battle Protocol</div>
+                    <div class="connection-status">
+                        <div class="pulse-dot"></div>
+                        <span>SYSTEM ONLINE</span>
+                    </div>
+                    <!-- HopeTracker in footer -->
+                    <div class="version-info">
+                        <span class="hopetracker-tag">HopeTracker</span> v5.0 | Spy Battle Protocol
+                    </div>
                 </div>
             </div>
         </div>
@@ -247,6 +274,11 @@
                     <span class="sync-icon">🔄</span>
                     <span id="last-update">--:--</span>
                 </div>
+                <!-- HopeTracker in sidebar footer -->
+                <div class="sidebar-brand">
+                    <span class="brand-icon">🌟</span>
+                    <span class="brand-name">HopeTracker</span>
+                </div>
                 <button id="logout-btn">
                     <span class="logout-icon">⏻</span> LOGOUT
                 </button>
@@ -305,7 +337,7 @@
                 <!-- GUIDE -->
                 <section id="page-guide" class="page"></section>
 
-                <!-- PROFILE (FIXED) -->
+                <!-- PROFILE -->
                 <section id="page-profile" class="page">
                     <div class="page-header">
                         <h1>👤 Agent Profile</h1>
@@ -321,6 +353,11 @@
                                 <h2 id="profile-name">Agent Name</h2>
                                 <p id="profile-team" class="profile-team-name">Team</p>
                                 <p id="profile-id" class="profile-agent-id">ID: ---</p>
+                                
+                                <!-- Change Password Button -->
+                                <button onclick="changeAgentPassword()" class="change-password-btn">
+                                    ⚙️ CHANGE ACCESS KEY
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -440,38 +477,38 @@
                     </div>
                     
                     <div id="tips-container">
-                        <div class="card" style="border-left: 3px solid #9d4edd; margin-bottom: 15px;">
-                            <div class="card-body" style="padding: 15px;">
-                                <h3 style="color:#fff; font-size:14px; margin:0 0 5px 0;">💿 Album Streaming</h3>
-                                <p style="font-size:12px; color:#ccc; margin:0; line-height:1.5;">Top-to-bottom streaming is recommended. If repeating an album, play other songs or playlists in between.</p>
+                        <div class="card tip-card tip-album">
+                            <div class="card-body">
+                                <h3>💿 Album Streaming</h3>
+                                <p>Top-to-bottom streaming is recommended. If repeating an album, play other songs or playlists in between.</p>
                             </div>
                         </div>
 
-                        <div class="card" style="border-left: 3px solid #ff4444; margin-bottom: 15px;">
-                            <div class="card-body" style="padding: 15px;">
-                                <h3 style="color:#ff6b6b; font-size:14px; margin:0 0 5px 0;">⚠️ Artist Looping Warning</h3>
-                                <p style="font-size:12px; color:#ccc; margin:0; line-height:1.5;">Playing the same artist continuously can reduce recommendations. Balanced listening protects long-term performance.</p>
+                        <div class="card tip-card tip-warning">
+                            <div class="card-body">
+                                <h3>⚠️ Artist Looping Warning</h3>
+                                <p>Playing the same artist continuously can reduce recommendations. Balanced listening protects long-term performance.</p>
                             </div>
                         </div>
 
-                        <div class="card" style="border-left: 3px solid #00d4ff; margin-bottom: 15px;">
-                            <div class="card-body" style="padding: 15px;">
-                                <h3 style="color:#00d4ff; font-size:14px; margin:0 0 5px 0;">🔄 Reusing Playlists</h3>
-                                <p style="font-size:12px; color:#ccc; margin:0; line-height:1.5;">You can reuse playlists on the same day. Just avoid constant repetition and switch between albums/playlists.</p>
+                        <div class="card tip-card tip-reuse">
+                            <div class="card-body">
+                                <h3>🔄 Reusing Playlists</h3>
+                                <p>You can reuse playlists on the same day. Just avoid constant repetition and switch between albums/playlists.</p>
                             </div>
                         </div>
 
-                        <div class="card" style="border-left: 3px solid #7b2cbf; margin-bottom: 15px;">
-                            <div class="card-body" style="padding: 15px;">
-                                <h3 style="color:#e0aaff; font-size:14px; margin:0 0 5px 0;">🌙 Night Streaming</h3>
-                                <p style="font-size:12px; color:#ccc; margin:0; line-height:1.5;">Queue 2-3 shorter playlists if you can't interact for 2-3 hours. <strong style="color:#fff;">Turn Autoplay OFF</strong> to avoid random playback.</p>
+                        <div class="card tip-card tip-night">
+                            <div class="card-body">
+                                <h3>🌙 Night Streaming</h3>
+                                <p>Queue 2-3 shorter playlists if you can't interact for 2-3 hours. <strong>Turn Autoplay OFF</strong> to avoid random playback.</p>
                             </div>
                         </div>
 
-                        <div class="card" style="border-left: 3px solid #00ff88; margin-bottom: 15px;">
-                            <div class="card-body" style="padding: 15px;">
-                                <h3 style="color:#00ff88; font-size:14px; margin:0 0 5px 0;">🔊 Volume Matters</h3>
-                                <p style="font-size:12px; color:#ccc; margin:0; line-height:1.5;">Keep volume at <strong style="color:#fff;">50% or higher</strong>. Muted playback or extremely low volume may be filtered as low-quality streams.</p>
+                        <div class="card tip-card tip-volume">
+                            <div class="card-body">
+                                <h3>🔊 Volume Matters</h3>
+                                <p>Keep volume at <strong>50% or higher</strong>. Muted playback or extremely low volume may be filtered as low-quality streams.</p>
                             </div>
                         </div>
                     </div>
@@ -479,12 +516,13 @@
 
             </div><!-- END pages-wrapper -->
         </main>
-    </div><!-- END dashboard-screen -->
 
-    <!-- ==================== FLOATING SYNC BUTTON ==================== -->
-    <button id="floatingSyncBtn" class="floating-sync-btn" onclick="handleManualSync()" title="Sync Stats from Last.fm">
-        🔄
-    </button>
+        <!-- ==================== FLOATING SYNC BUTTON (Inside Dashboard) ==================== -->
+        <button id="floatingSyncBtn" class="floating-sync-btn" onclick="handleManualSync()" title="Sync Stats from Last.fm">
+            🔄
+        </button>
+
+    </div><!-- END dashboard-screen -->
 
     <!-- ==================== TOAST & MODALS ==================== -->
     <div id="toast-container"></div>
