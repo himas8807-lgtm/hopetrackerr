@@ -6153,6 +6153,20 @@ function stopUnreadCheck() {
         unreadCheckInterval = null;
     }
 }
+function toggleHiddenBadges(button) {
+    const hiddenContainer = document.getElementById('hidden-xp-badges');
+    if (!hiddenContainer) return;
+    
+    const isHidden = hiddenContainer.style.display === 'none';
+    
+    if (isHidden) {
+        hiddenContainer.style.display = 'block';
+        button.textContent = '← Show Less';
+    } else {
+        hiddenContainer.style.display = 'none';
+        button.textContent = 'View All Badges →';
+    }
+}
 // ==================== DRAWER (FIXED BADGE SECTION) ====================
 async function renderDrawer() {
     const container = $('drawer-content');
