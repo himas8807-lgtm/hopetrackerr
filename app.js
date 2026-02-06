@@ -11449,31 +11449,32 @@ window.addEventListener('beforeunload', () => {
 });
 // ==================== HELPER FUNCTIONS FOR DRAWER ====================
 
-window.toggleHiddenBadges = function(btn) {
-    const container = document.getElementById('hidden-xp-badges');
-    if (!container) {
-        console.error("Badge container not found");
-        return;
-    }
+// ==================== TOGGLE HIDDEN BADGES (FIXED) ====================
+window.toggleHiddenBadges = function(button) {
+    const hiddenContainer = document.getElementById('hidden-xp-badges');
+    if (!hiddenContainer) return;
     
-    const isExpanded = container.classList.contains('expanded');
+    // Check current state
+    const isHidden = hiddenContainer.style.display === 'none';
     
-    if (isExpanded) {
-        // Collapse
-        container.classList.remove('expanded');
-        btn.innerHTML = `View All Badges →`;
-        // Scroll back to the top of the badge section so the user isn't lost
-        btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (isHidden) {
+        // OPEN
+        hiddenContainer.style.display = 'block';
+        hiddenContainer.classList.add('expanded');
+        button.innerHTML = `↑ Show Less`;
+        
+        // Haptic feedback
+        if (navigator.vibrate) navigator.vibrate(10);
     } else {
-        // Expand
-        container.classList.add('expanded');
-        btn.innerHTML = `↑ Show Less`;
+        // CLOSE
+        hiddenContainer.style.display = 'none';
+        hiddenContainer.classList.remove('expanded');
+        button.innerHTML = `View All Badges →`;
+        
+        // Scroll button back into view so they don't get lost
+        button.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-    
-    // Add haptic feedback for mobile
-    if (navigator.vibrate) navigator.vibrate(10);
 };
-
 // 2. Badge HTML Generator (Helper)
 function renderBadgeHTML(badge) {
     const isWinner = badge.type === 'winner';
