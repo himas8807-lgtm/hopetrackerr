@@ -8838,3 +8838,59 @@ function ensureStreakCSS() {
         font-size: 18px;
     }
 }
+/* ==================== PASSWORD MODAL STYLES ==================== */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(5px);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100000;
+}
+
+.password-modal-content {
+    background: #12121f;
+    border: 1px solid var(--purple-main);
+    border-radius: 16px;
+    width: 90%; max-width: 380px;
+    box-shadow: 0 0 30px rgba(123, 44, 191, 0.3);
+    overflow: hidden;
+    animation: slideUp 0.3s ease-out;
+}
+
+.password-modal-header {
+    background: rgba(157, 78, 221, 0.1);
+    padding: 16px 20px;
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 1px solid var(--border);
+}
+
+.modal-title-group { display: flex; align-items: center; gap: 10px; }
+.modal-title-group h3 { font-size: 16px; color: #fff; margin: 0; }
+
+.password-modal-body { padding: 20px; }
+
+.modal-input-group { margin-bottom: 15px; }
+.modal-input-group label { display: block; font-size: 11px; color: #888; margin-bottom: 8px; }
+
+.modal-input-wrapper { position: relative; }
+.modal-input-wrapper input {
+    width: 100%; background: #0a0a0f; border: 1px solid #333;
+    padding: 12px; border-radius: 8px; color: #fff; font-size: 14px;
+}
+
+.toggle-password {
+    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; color: #555; font-size: 14px; cursor: pointer;
+}
+
+.password-modal-footer {
+    padding: 15px 20px; background: rgba(0,0,0,0.2);
+    display: flex; gap: 10px;
+}
+
+.btn-cancel { flex: 1; padding: 12px; color: #888; cursor: pointer; }
+.btn-confirm { 
+    flex: 2; padding: 12px; background: var(--purple-main); 
+    color: #fff; border-radius: 8px; font-weight: bold; 
+}
