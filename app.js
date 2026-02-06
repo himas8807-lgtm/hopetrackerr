@@ -35,16 +35,16 @@ const CONFIG = {
         'Week 16': '2026-03-22'
 },
 
-    // ====================  SYSTEM ====================
-    _REPO_URL: 'https://raw.githubusercontent.com/hbot7875-gif/btscomebackmission/main/lvl1s/',
-    TOTAL__IMAGES: 60,
-    EXCLUDE_S: [],
+    // ==================== BADGE SYSTEM ====================
+    BADGE_REPO_URL: 'https://raw.githubusercontent.com/hbot7875-gif/btscomebackmission/main/lvl1badges/',
+    TOTAL_BADGE_IMAGES: 60,
+    EXCLUDE_BADGES: [],
 
-    get _POOL() {
+    get BADGE_POOL() {
         const pool = [];
-        for (let i = 1; i <= this.TOTAL__IMAGES; i++) {
-            if (!this.EXCLUDE_S.includes(i)) {
-                pool.push(`${this._REPO_URL}BTS%20(${i}).jpg`);
+        for (let i = 1; i <= this.TOTAL_BADGE_IMAGES; i++) {
+            if (!this.EXCLUDE_BADGES.includes(i)) {
+                pool.push(`${this.BADGE_REPO_URL}BTS%20(${i}).jpg`);
             }
         }
         return pool;
@@ -54,8 +54,8 @@ const CONFIG = {
     ALBUM_CHALLENGE: {
         REQUIRED_STREAMS: 2,
         CHALLENGE_NAME: "2X",
-        _NAME: "2X Master",
-        _DESCRIPTION: "Completed Album 2X Challenge"
+        BADGE_NAME: "2X Master",
+        BADGE_DESCRIPTION: "Completed Album 2X Challenge"
     },
 
     // ==================== TEAMS ====================
@@ -170,7 +170,7 @@ const ACTIVITY_CONFIG = {
     REFRESH_INTERVAL: 15000,
     SHOW_TYPES: [
         'stream_milestone', 'xp_milestone', 'streak_update', 
-        '_earned', 'goal_completed', 'album2x_completed', 
+        'badge_earned', 'goal_completed', 'album2x_completed', 
         'team_surge', 'rank_change', 'secret_mission'
     ],
     
@@ -190,7 +190,7 @@ const ACTIVITY_CONFIG = {
             template: (data) => `<strong>${data.name}</strong> is on a <strong class="highlight">${data.streak}-day</strong> streak!`,
             color: '#ff6b35'
         },
-        '_earned': {
+        'badge_earned': {
             icon: '🎖️',
             template: (data) => `<strong>${data.name}</strong> earned the <strong class="highlight">${data.badge}</strong> badge!`,
             color: '#7b2cbf'
@@ -349,15 +349,15 @@ const STATE = {
     // ===== NOTIFICATION STATE (UPDATED) =====
     notifications: [],
     lastChecked: {
-        s: 0,
+        badges: 0,
         announcements: null,
         playlists: -1,              // -1 = not initialized yet
         missions: -1,               // -1 = not initialized yet
-        album2x: {},           // Object: { "Test Week 1": true, "Week 1": true }
+        album2xBadge: {},           // Object: { "Test Week 1": true, "Week 1": true }
         songOfDay: null,            // Date string: "Mon Dec 02 2024"
         weekResults: [],            // Array of seen weeks: ["Test Week 1", "Week 1"]
         missionIds: [],             // Array of seen mission IDs
-        _sInitialized: false   // Internal flag for first load
+        _badgesInitialized: false   // Internal flag for first load
     },
     dismissedPopups: {},            // Track dismissed popup keys
     shownPopupsThisSession: {},     // Track shown popups THIS session only
@@ -509,14 +509,14 @@ function getDaysRemaining(weekLabel) {
     return diff > 0 ? diff : 0;
 }
 
-function getPriority(priority) {
+function getPriorityBadge(priority) {
     switch ((priority || '').toLowerCase()) {
         case 'high': 
-            return '<span class="priority- high">⚠️ IMPORTANT</span>';
+            return '<span class="priority-badge high">⚠️ IMPORTANT</span>';
         case 'medium': 
-            return '<span class="priority- medium">📌 NOTICE</span>';
+            return '<span class="priority-badge medium">📌 NOTICE</span>';
         case 'low': 
-            return '<span class="priority- low">💡 TIP</span>';
+            return '<span class="priority-badge low">💡 TIP</span>';
         default: 
             return '';
     }
@@ -544,7 +544,7 @@ const PAGE_GUIDES = {
     'album2x': { 
         icon: '🎧', 
         title: `The ${CONFIG.ALBUM_CHALLENGE.CHALLENGE_NAME} Challenge`,
-        text: `Listen to every song on this album at least ${CONFIG.ALBUM_CHALLENGE.REQUIRED_STREAMS} times.\n\n⚠️ IMPORTANT: EVERYONE in your team must complete this for the team to pass!\n\n🎖️ Complete this challenge to earn a special !`,
+        text: `Listen to every song on this album at least ${CONFIG.ALBUM_CHALLENGE.REQUIRED_STREAMS} times.\n\n⚠️ IMPORTANT: EVERYONE in your team must complete this for the team to pass!\n\n🎖️ Complete this challenge to earn a special badge!`,
         isWarning: false
     },
     'secret-missions': { 
@@ -556,7 +556,7 @@ const PAGE_GUIDES = {
     'team-level': { 
         icon: '🚀', 
         title: 'Leveling Up & Winning', 
-        text: "To WIN the week, your team must:\n1️⃣ Complete ALL 3 missions (Track + Album + 2X)\n2️⃣ Have the highest XP among eligible teams\n\n🏆 Winner team members all get a Champion !",
+        text: "To WIN the week, your team must:\n1️⃣ Complete ALL 3 missions (Track + Album + 2X)\n2️⃣ Have the highest XP among eligible teams\n\n🏆 Winner team members all get a Champion Badge!",
         isWarning: false
     },
     'rankings': { 
@@ -5097,12 +5097,12 @@ async function loadDashboard() {
     
     try {
         // 2. Fetch Fresh Data (No Cache Check)
-        const dashboardData = await api('getDashboardData');
+        // ... inside loadDashboard() ...
+         const dashboardData = await api('getDashboardData');
 
         STATE.weeks = dashboardData.availableWeeks || [];
         STATE.week = dashboardData.week || "Week 9";
         
-        // ✅ FIXED: Proper object structure
         STATE.data = {
             agentNo: dashboardData.agent.agentNo,
             week: dashboardData.week,
@@ -5112,13 +5112,16 @@ async function loadDashboard() {
             teamRank: dashboardData.agent.teamRank,
             trackContributions: dashboardData.agent.trackContributions || {},
             albumContributions: dashboardData.agent.albumContributions || {},
-            album2xStatus: dashboardData.agent.album2xStatus || { passed: false, tracks: {} },
-            // ✅ teamInfo is NOW INSIDE STATE.data
+            // Maps Supabase structure to the format your frontend expects
+            album2xStatus: dashboardData.agent.album2xStatus || { passed: false, tracks: {} }
+            },
             teamInfo: {
+                // Ensure these match what your Edge Function returns
                 resultsReleased: dashboardData.resultsReleased || false
             }
         };
         
+
         // 4. Switch Screens & Render
         $('login-screen').classList.remove('active');
         $('login-screen').style.display = 'none';
@@ -5135,9 +5138,9 @@ async function loadDashboard() {
         setTimeout(() => {
             if (typeof initStreakTracker === 'function') initStreakTracker();
             if (typeof updateActivityFeedUI === 'function') {
-                updateActivityFeedUI();
-                if (window.activityInterval) clearInterval(window.activityInterval);
-                window.activityInterval = setInterval(updateActivityFeedUI, 60000);
+               updateActivityFeedUI(); // Run once immediately
+               if (window.activityInterval) clearInterval(window.activityInterval);
+               window.activityInterval = setInterval(updateActivityFeedUI, 60000);
             }
             if (typeof setupNotificationChecks === 'function') setupNotificationChecks();
             
@@ -6153,7 +6156,7 @@ function stopUnreadCheck() {
         unreadCheckInterval = null;
     }
 }
-// ==================== DRAWER (FIXED - WORKING VERSION) ====================
+// ==================== DRAWER (FIXED BADGE SECTION) ====================
 async function renderDrawer() {
     const container = $('drawer-content');
     if (!container) return;
@@ -6184,7 +6187,6 @@ async function renderDrawer() {
     const agentTeam = STATE.allWeeksData?.agentTeam || team;
     
     if (STATE.allWeeksData?.weeks?.length > 0) {
-        // ✅ KEEP ORIGINAL ORDER - Don't sort the weeks themselves
         STATE.allWeeksData.weeks.forEach(weekData => {
             const weekName = weekData.week;
             const weekXP = parseInt(weekData.stats?.totalXP) || 0;
@@ -6196,9 +6198,7 @@ async function renderDrawer() {
             overallAlbumStreams += weekAlbums;
             if (weekXP > 0) weeksParticipated++;
             
-            // Get badges for this week
-            const weekBadges = getLevelBadges(STATE.agentNo, weekXP, weekName);
-            allXpBadges = allXpBadges.concat(weekBadges);
+            allXpBadges = allXpBadges.concat(getLevelBadges(STATE.agentNo, weekXP, weekName));
             
             const album2xBadge = getAlbum2xBadgeForWeek(STATE.agentNo, weekData, weekName);
             if (album2xBadge) allSpecialBadges.push(album2xBadge);
@@ -6216,28 +6216,12 @@ async function renderDrawer() {
         if (album2xBadge) allSpecialBadges.push(album2xBadge);
     }
     
-    // ✅ SORT BADGES BY WEEK NUMBER (Newest First) - After collecting all
-    allXpBadges.sort((a, b) => {
-        const weekNumA = parseInt(a.week?.replace(/\D/g, '')) || 0;
-        const weekNumB = parseInt(b.week?.replace(/\D/g, '')) || 0;
-        return weekNumB - weekNumA; // Descending (Week 9 first)
-    });
-    
-    // Dedupe special badges
     const seenBadges = new Set();
     const uniqueSpecialBadges = allSpecialBadges.filter(b => {
-        if (!b || !b.name) return false;
         const key = `${b.name}_${b.week}`;
         if (seenBadges.has(key)) return false;
         seenBadges.add(key);
         return true;
-    });
-    
-    // ✅ SORT SPECIAL BADGES (Newest First)
-    uniqueSpecialBadges.sort((a, b) => {
-        const weekNumA = parseInt(a.week?.replace(/\D/g, '')) || 0;
-        const weekNumB = parseInt(b.week?.replace(/\D/g, '')) || 0;
-        return weekNumB - weekNumA;
     });
     
     const totalBadgeCount = uniqueSpecialBadges.length + allXpBadges.length;
@@ -6342,7 +6326,7 @@ async function renderDrawer() {
                     <!-- XP Badges -->
                     ${allXpBadges.length > 0 ? `
                         <div>
-                            <div style="color: #888; font-size: 10px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px;">⭐ XP Badges (Newest First)</div>
+                            <div style="color: #888; font-size: 10px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px;">⭐ XP Badges</div>
                             
                             <!-- Visible Badges -->
                             <div class="badge-grid">
@@ -6357,8 +6341,8 @@ async function renderDrawer() {
                                     </div>
                                 </div>
                                 
-                                <button onclick="toggleHiddenBadges(this)" class="btn-secondary" style="width: 100%; margin-top: 12px; padding: 10px; font-size: 12px; background: rgba(255,255,255,0.05);">
-                                    View ${hiddenXpBadges.length} Older Badges →
+                                <button onclick="toggleHiddenBadges(this)" class="btn-secondary" style="width: 100%; margin-top: 12px; padding: 10px; font-size: 12px; background:rgba(255,255,255,0.05);">
+                                    View All Badges →
                                 </button>
                             ` : ''}
                         </div>
@@ -6412,22 +6396,6 @@ async function renderDrawer() {
     STATE.lastChecked.badges = Math.floor(currentXPStats / 50);
     STATE.lastChecked.album2xBadge = album2xStatus.passed || false;
     saveNotificationState();
-}
-
-// ==================== TOGGLE HIDDEN BADGES ====================
-function toggleHiddenBadges(button) {
-    const hiddenContainer = document.getElementById('hidden-xp-badges');
-    if (!hiddenContainer) return;
-    
-    const isHidden = hiddenContainer.style.display === 'none';
-    
-    if (isHidden) {
-        hiddenContainer.style.display = 'block';
-        button.textContent = '← Show Less';
-    } else {
-        hiddenContainer.style.display = 'none';
-        button.textContent = 'View Older Badges →';
-    }
 }
 // ==================== PROFILE (UPDATED: APPLY LEAVE) ====================
 async function renderProfile() {
