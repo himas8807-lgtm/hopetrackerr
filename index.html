@@ -271,13 +271,19 @@
             </nav>
 
             <div class="sidebar-footer">
-                <div class="sync-status">
-                    <span class="sync-icon">🔄</span>
-                    <span id="last-update">--:--</span>
+                <!-- Hourly Update Status -->
+                <div class="update-status" id="update-status">
+                    <div class="update-icon">🕐</div>
+                    <div class="update-info">
+                        <span class="update-label">Next Update</span>
+                        <span class="update-time" id="next-update-time">--:--</span>
+                    </div>
                 </div>
+                
                 <button id="logout-btn">
                     <span class="logout-icon">⏻</span> LOGOUT
                 </button>
+                
                 <!-- Minimal HopeTracker in sidebar -->
                 <div class="sidebar-credit">HopeTracker</div>
             </div>
@@ -297,7 +303,11 @@
                     <span class="header-logo-icon">⟭⟬</span>
                     <span class="header-logo-text">BTS COMEBACK MISSION</span>
                 </div>
-                <div class="header-spacer"></div>
+                <!-- Hourly indicator in mobile header -->
+                <div class="header-update-badge" id="mobile-update-badge" title="Stats update hourly">
+                    <span class="badge-icon">🕐</span>
+                    <span class="badge-time" id="mobile-next-update">--</span>
+                </div>
             </header>
 
             <div class="pages-wrapper">
@@ -310,7 +320,12 @@
                             <p id="current-week" class="page-subtitle">Week: Loading...</p>
                         </div>
                         <div class="page-actions">
-                            <button class="refresh-btn" onclick="loadPage('home')">🔄</button>
+                            <!-- Last Updated Info -->
+                            <div class="last-updated-badge" id="last-updated-badge">
+                                <span class="updated-icon">✓</span>
+                                <span class="updated-text" id="last-updated-text">Updated: --:--</span>
+                            </div>
+                            <button class="refresh-btn" onclick="loadPage('home')" title="Refresh Data">🔄</button>
                         </div>
                     </div>
                     <div class="quick-stats-section"></div>
@@ -353,7 +368,7 @@
                                 <p id="profile-id" class="profile-agent-id">ID: ---</p>
                                 
                                 <!-- Change Password Button -->
-                                <button onclick="changeAgentPassword()" class="change-password-btn">
+                                <button onclick="openPasswordModal()" class="change-password-btn">
                                     ⚙️ CHANGE ACCESS KEY
                                 </button>
                             </div>
@@ -515,16 +530,79 @@
             </div><!-- END pages-wrapper -->
         </main>
 
-        <!-- ==================== FLOATING SYNC BUTTON (Inside Dashboard) ==================== -->
+        <!-- ==================== FLOATING SYNC BUTTON ==================== -->
         <button id="floatingSyncBtn" class="floating-sync-btn" onclick="handleManualSync()" title="Sync Stats from Last.fm">
             🔄
         </button>
 
     </div><!-- END dashboard-screen -->
 
-    <!-- ==================== TOAST & MODALS ==================== -->
+    <!-- ==================== PASSWORD CHANGE MODAL ==================== -->
+    <div id="password-modal" class="modal-overlay" style="display: none;">
+        <div class="password-modal-content">
+            <div class="password-modal-header">
+                <div class="modal-title-group">
+                    <span class="modal-icon">🔐</span>
+                    <h3>Change Access Key</h3>
+                </div>
+                <button class="modal-close-btn" onclick="closePasswordModal()">✕</button>
+            </div>
+            
+            <form id="password-form" onsubmit="return handlePasswordChange(event)">
+                <div class="password-modal-body">
+                    <div class="modal-input-group">
+                        <label for="current-password">
+                            <span class="input-label-icon">🔑</span>
+                            Current Password
+                        </label>
+                        <div class="modal-input-wrapper">
+                            <input type="password" id="current-password" required placeholder="Enter current password" autocomplete="current-password">
+                            <button type="button" class="toggle-password" onclick="togglePasswordVisibility('current-password', this)">👁️</button>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-input-group">
+                        <label for="new-password">
+                            <span class="input-label-icon">🔒</span>
+                            New Password
+                        </label>
+                        <div class="modal-input-wrapper">
+                            <input type="password" id="new-password" required placeholder="Enter new password (min 6 chars)" minlength="6" autocomplete="new-password">
+                            <button type="button" class="toggle-password" onclick="togglePasswordVisibility('new-password', this)">👁️</button>
+                        </div>
+                        <div class="password-strength" id="password-strength"></div>
+                    </div>
+                    
+                    <div class="modal-input-group">
+                        <label for="confirm-password">
+                            <span class="input-label-icon">✓</span>
+                            Confirm New Password
+                        </label>
+                        <div class="modal-input-wrapper">
+                            <input type="password" id="confirm-password" required placeholder="Confirm new password" autocomplete="new-password">
+                            <button type="button" class="toggle-password" onclick="togglePasswordVisibility('confirm-password', this)">👁️</button>
+                        </div>
+                        <div class="password-match" id="password-match"></div>
+                    </div>
+                </div>
+                
+                <div class="password-modal-footer">
+                    <button type="button" class="btn-cancel" onclick="closePasswordModal()">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn-confirm" id="submit-password-btn">
+                        <span class="btn-text">Update Password</span>
+                        <span class="btn-loader" style="display: none;">⏳</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== TOAST CONTAINER ==================== -->
     <div id="toast-container"></div>
     
+    <!-- ==================== GENERIC MODAL ==================== -->
     <div id="modal-container" class="modal-container" hidden>
         <div class="modal-overlay"></div>
         <div class="modal-content">
