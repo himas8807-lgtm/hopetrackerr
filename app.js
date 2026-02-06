@@ -1,12 +1,3 @@
-const DEBUG_MODE = false; 
-
-if (!DEBUG_MODE) {
-    console.log = function() {};
-    console.warn = function() {};
-    console.error = function() {};
-    console.info = function() {};
-    console.debug = function() {};
-}
 // ==================== MAIN CONFIG ====================
 const CONFIG = {
     API_URL: 'https://uspezooqcdrwaqxcqojn.supabase.co/functions/v1/spy-battle-api',
@@ -12087,18 +12078,6 @@ async function triggerGlobalSync() {
     }
 }
 window.triggerGlobalSync = triggerGlobalSync;
-
-
-
-// 🛡️ UI PROTECTION
-document.addEventListener('contextmenu', event => event.preventDefault()); // Block Right Click
-
-document.onkeydown = function(e) {
-    if (e.key === 'F12') return false; // Block F12
-    if (e.ctrlKey && e.shiftKey && e.key === 'I') return false; // Block Ctrl+Shift+I
-    if (e.ctrlKey && e.shiftKey && e.key === 'J') return false; // Block Ctrl+Shift+J
-    if (e.ctrlKey && e.key === 'U') return false; // Block View Source
-};
 // ==================== EXPORTS & INIT ====================
 document.addEventListener('DOMContentLoaded', initApp);
 
