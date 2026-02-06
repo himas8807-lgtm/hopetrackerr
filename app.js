@@ -11449,21 +11449,22 @@ window.addEventListener('beforeunload', () => {
 });
 // ==================== HELPER FUNCTIONS FOR DRAWER ====================
 
-// 1. Toggle Function
-window.toggleHiddenBadges = function(btn) {
-    const container = document.getElementById('hidden-xp-badges');
-    if (!container) return;
+// ==================== TOGGLE HIDDEN BADGES (GLOBAL) ====================
+window.toggleHiddenBadges = function(button) {
+    const hiddenContainer = document.getElementById('hidden-xp-badges');
+    if (!hiddenContainer) {
+        alert('No hidden badges found!');
+        return;
+    }
     
-    const isExpanded = container.classList.contains('expanded');
+    const isHidden = hiddenContainer.style.display === 'none';
     
-    if (isExpanded) {
-        container.classList.remove('expanded');
-        btn.innerHTML = `View All Badges →`;
-        // Optional: Scroll back up slightly
-        btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (isHidden) {
+        hiddenContainer.style.display = 'block';
+        button.textContent = '← Show Less';
     } else {
-        container.classList.add('expanded');
-        btn.innerHTML = `↑ Show Less`;
+        hiddenContainer.style.display = 'none';
+        button.textContent = 'View All Badges →';
     }
 };
 
