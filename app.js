@@ -6153,7 +6153,7 @@ function stopUnreadCheck() {
         unreadCheckInterval = null;
     }
 }
-// ==================== DRAWER (FIXED BADGE SECTION) ====================
+// ==================== DRAWER (FIXED - RECENT BADGES FIRST) ====================
 async function renderDrawer() {
     const container = $('drawer-content');
     if (!container) return;
@@ -6184,7 +6184,14 @@ async function renderDrawer() {
     const agentTeam = STATE.allWeeksData?.agentTeam || team;
     
     if (STATE.allWeeksData?.weeks?.length > 0) {
-        STATE.allWeeksData.weeks.forEach(weekData => {
+        // ✅ SORT WEEKS: NEWEST FIRST (Week 9 before Week 1)
+        const sortedWeeks = [...STATE.allWeeksData.weeks].sort((a, b) => {
+            const weekNumA = parseInt(a.week?.replace(/\D/g, '')) || 0;
+            const weekNumB = parseInt(b.week?.replace(/\D/g, '')) || 0;
+            return weekNumB - weekNumA;
+        });
+        
+        sortedWeeks.forEach(weekData => {
             const weekName = weekData.week;
             const weekXP = parseInt(weekData.stats?.totalXP) || 0;
             const weekTracks = parseInt(weekData.stats?.trackScrobbles) || 0;
@@ -6195,6 +6202,7 @@ async function renderDrawer() {
             overallAlbumStreams += weekAlbums;
             if (weekXP > 0) weeksParticipated++;
             
+            // ✅ Badges now added in order: Week 9, Week 8, Week 7...
             allXpBadges = allXpBadges.concat(getLevelBadges(STATE.agentNo, weekXP, weekName));
             
             const album2xBadge = getAlbum2xBadgeForWeek(STATE.agentNo, weekData, weekName);
@@ -6213,13 +6221,20 @@ async function renderDrawer() {
         if (album2xBadge) allSpecialBadges.push(album2xBadge);
     }
     
+    // ✅ DEDUPE & SORT SPECIAL BADGES (NEWEST FIRST)
     const seenBadges = new Set();
-    const uniqueSpecialBadges = allSpecialBadges.filter(b => {
-        const key = `${b.name}_${b.week}`;
-        if (seenBadges.has(key)) return false;
-        seenBadges.add(key);
-        return true;
-    });
+    const uniqueSpecialBadges = allSpecialBadges
+        .filter(b => {
+            const key = `${b.name}_${b.week}`;
+            if (seenBadges.has(key)) return false;
+            seenBadges.add(key);
+            return true;
+        })
+        .sort((a, b) => {
+            const weekNumA = parseInt(a.week?.replace(/\D/g, '')) || 0;
+            const weekNumB = parseInt(b.week?.replace(/\D/g, '')) || 0;
+            return weekNumB - weekNumA;
+        });
     
     const totalBadgeCount = uniqueSpecialBadges.length + allXpBadges.length;
     const currentWeekXP = parseInt(stats.totalXP) || 0;
@@ -6310,7 +6325,7 @@ async function renderDrawer() {
             </div>
             <div class="card-body">
                 ${totalBadgeCount > 0 ? `
-                    <!-- Special Badges -->
+                    <!-- Special Badges (Newest First) -->
                     ${uniqueSpecialBadges.length > 0 ? `
                         <div style="margin-bottom: 20px;">
                             <div style="color: #888; font-size: 10px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px;">✨ Special Badges</div>
@@ -6320,17 +6335,17 @@ async function renderDrawer() {
                         </div>
                     ` : ''}
                     
-                    <!-- XP Badges -->
+                    <!-- XP Badges (Newest First) -->
                     ${allXpBadges.length > 0 ? `
                         <div>
                             <div style="color: #888; font-size: 10px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px;">⭐ XP Badges</div>
                             
-                            <!-- Visible Badges -->
+                            <!-- Visible Badges (Recent) -->
                             <div class="badge-grid">
                                 ${visibleXpBadges.map(b => renderBadgeHTML(b)).join('')}
                             </div>
 
-                            <!-- Hidden Badges Container -->
+                            <!-- Hidden Badges Container (Older) -->
                             ${hiddenXpBadges.length > 0 ? `
                                 <div id="hidden-xp-badges" class="hidden-badges-container" style="display: none;">
                                     <div class="badge-grid" style="margin-top: 10px;">
@@ -6338,8 +6353,8 @@ async function renderDrawer() {
                                     </div>
                                 </div>
                                 
-                                <button onclick="toggleHiddenBadges(this)" class="btn-secondary" style="width: 100%; margin-top: 12px; padding: 10px; font-size: 12px; background:rgba(255,255,255,0.05);">
-                                    View All Badges →
+                                <button onclick="toggleHiddenBadges(this)" class="btn-secondary" style="width: 100%; margin-top: 12px; padding: 10px; font-size: 12px; background: rgba(255,255,255,0.05);">
+                                    View ${hiddenXpBadges.length} Older Badges →
                                 </button>
                             ` : ''}
                         </div>
@@ -6381,7 +6396,25 @@ async function renderDrawer() {
             </div>
         </div>
         
-        ${isAdmin ? `<div class="card" style="border-color: #ffd700; margin-bottom: 20px;"><div class="card-header" style="background: rgba(255,215,0,0.05);"><h3 style="margin: 0; color: #ffd700;">👑 Admin Controls</h3></div><div class="card-body"><button onclick="showAdminPanel()" class="btn-primary" style="width: 100%; padding: 14px; background: linear-gradient(135deg, #ffd700, #ff8c00); color: #000; font-weight: bold; font-size: 13px;">🎛️ Open Mission Control</button></div></div>` : ''}
+        ${isAdmin ? `
+            <div class="card" style="border-color: #ffd700; margin-bottom: 20px;">
+                <div class="card-header" style="background: rgba(255,215,0,0.05);">
+                    <h3 style="margin: 0; color: #ffd700;">👑 Admin Controls</h3>
+                </div>
+                <div class="card-body">
+                    <button onclick="showAdminPanel()" class="btn-primary" style="width: 100%; padding: 14px; background: linear-gradient(135deg, #ffd700, #ff8c00); color: #000; font-weight: bold; font-size: 13px;">🎛️ Open Mission Control</button>
+                </div>
+            </div>
+        ` : ''}
+        
+        <!-- Logout Button -->
+        <div class="card" style="margin-bottom: 20px;">
+            <div class="card-body">
+                <button onclick="logout()" class="btn-secondary" style="width: 100%; padding: 12px; font-size: 12px; color: #ff6b6b; border-color: rgba(255,107,107,0.3);">
+                    🚪 Logout
+                </button>
+            </div>
+        </div>
         
         <div style="text-align: center; padding: 15px; color: #888; font-size: 10px;">
             <p style="margin: 0;">BTS Spy Battle v5.0</p>
@@ -6394,6 +6427,8 @@ async function renderDrawer() {
     STATE.lastChecked.album2xBadge = album2xStatus.passed || false;
     saveNotificationState();
 }
+
+// ==================== TOGGLE HIDDEN BADGES ====================
 function toggleHiddenBadges(button) {
     const hiddenContainer = document.getElementById('hidden-xp-badges');
     if (!hiddenContainer) return;
@@ -6402,10 +6437,13 @@ function toggleHiddenBadges(button) {
     
     if (isHidden) {
         hiddenContainer.style.display = 'block';
-        button.textContent = '← Show Less';
+        button.innerHTML = '← Show Less';
+        
+        // Smooth scroll to show new badges
+        hiddenContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     } else {
         hiddenContainer.style.display = 'none';
-        button.textContent = 'View All Badges →';
+        button.innerHTML = `View Older Badges →`;
     }
 }
 // ==================== PROFILE (UPDATED: APPLY LEAVE) ====================
