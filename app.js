@@ -35,16 +35,16 @@ const CONFIG = {
         'Week 16': '2026-03-22'
 },
 
-    // ==================== BADGE SYSTEM ====================
-    BADGE_REPO_URL: 'https://raw.githubusercontent.com/hbot7875-gif/btscomebackmission/main/lvl1badges/',
-    TOTAL_BADGE_IMAGES: 60,
-    EXCLUDE_BADGES: [],
+    // ====================  SYSTEM ====================
+    _REPO_URL: 'https://raw.githubusercontent.com/hbot7875-gif/btscomebackmission/main/lvl1s/',
+    TOTAL__IMAGES: 60,
+    EXCLUDE_S: [],
 
-    get BADGE_POOL() {
+    get _POOL() {
         const pool = [];
-        for (let i = 1; i <= this.TOTAL_BADGE_IMAGES; i++) {
-            if (!this.EXCLUDE_BADGES.includes(i)) {
-                pool.push(`${this.BADGE_REPO_URL}BTS%20(${i}).jpg`);
+        for (let i = 1; i <= this.TOTAL__IMAGES; i++) {
+            if (!this.EXCLUDE_S.includes(i)) {
+                pool.push(`${this._REPO_URL}BTS%20(${i}).jpg`);
             }
         }
         return pool;
@@ -54,8 +54,8 @@ const CONFIG = {
     ALBUM_CHALLENGE: {
         REQUIRED_STREAMS: 2,
         CHALLENGE_NAME: "2X",
-        BADGE_NAME: "2X Master",
-        BADGE_DESCRIPTION: "Completed Album 2X Challenge"
+        _NAME: "2X Master",
+        _DESCRIPTION: "Completed Album 2X Challenge"
     },
 
     // ==================== TEAMS ====================
@@ -170,7 +170,7 @@ const ACTIVITY_CONFIG = {
     REFRESH_INTERVAL: 15000,
     SHOW_TYPES: [
         'stream_milestone', 'xp_milestone', 'streak_update', 
-        'badge_earned', 'goal_completed', 'album2x_completed', 
+        '_earned', 'goal_completed', 'album2x_completed', 
         'team_surge', 'rank_change', 'secret_mission'
     ],
     
@@ -190,9 +190,9 @@ const ACTIVITY_CONFIG = {
             template: (data) => `<strong>${data.name}</strong> is on a <strong class="highlight">${data.streak}-day</strong> streak!`,
             color: '#ff6b35'
         },
-        'badge_earned': {
+        '_earned': {
             icon: '🎖️',
-            template: (data) => `<strong>${data.name}</strong> earned the <strong class="highlight">${data.badge}</strong> badge!`,
+            template: (data) => `<strong>${data.name}</strong> earned the <strong class="highlight">${data.}</strong> !`,
             color: '#7b2cbf'
         },
         'goal_completed': {
@@ -349,15 +349,15 @@ const STATE = {
     // ===== NOTIFICATION STATE (UPDATED) =====
     notifications: [],
     lastChecked: {
-        badges: 0,
+        s: 0,
         announcements: null,
         playlists: -1,              // -1 = not initialized yet
         missions: -1,               // -1 = not initialized yet
-        album2xBadge: {},           // Object: { "Test Week 1": true, "Week 1": true }
+        album2x: {},           // Object: { "Test Week 1": true, "Week 1": true }
         songOfDay: null,            // Date string: "Mon Dec 02 2024"
         weekResults: [],            // Array of seen weeks: ["Test Week 1", "Week 1"]
         missionIds: [],             // Array of seen mission IDs
-        _badgesInitialized: false   // Internal flag for first load
+        _sInitialized: false   // Internal flag for first load
     },
     dismissedPopups: {},            // Track dismissed popup keys
     shownPopupsThisSession: {},     // Track shown popups THIS session only
@@ -509,14 +509,14 @@ function getDaysRemaining(weekLabel) {
     return diff > 0 ? diff : 0;
 }
 
-function getPriorityBadge(priority) {
+function getPriority(priority) {
     switch ((priority || '').toLowerCase()) {
         case 'high': 
-            return '<span class="priority-badge high">⚠️ IMPORTANT</span>';
+            return '<span class="priority- high">⚠️ IMPORTANT</span>';
         case 'medium': 
-            return '<span class="priority-badge medium">📌 NOTICE</span>';
+            return '<span class="priority- medium">📌 NOTICE</span>';
         case 'low': 
-            return '<span class="priority-badge low">💡 TIP</span>';
+            return '<span class="priority- low">💡 TIP</span>';
         default: 
             return '';
     }
@@ -544,7 +544,7 @@ const PAGE_GUIDES = {
     'album2x': { 
         icon: '🎧', 
         title: `The ${CONFIG.ALBUM_CHALLENGE.CHALLENGE_NAME} Challenge`,
-        text: `Listen to every song on this album at least ${CONFIG.ALBUM_CHALLENGE.REQUIRED_STREAMS} times.\n\n⚠️ IMPORTANT: EVERYONE in your team must complete this for the team to pass!\n\n🎖️ Complete this challenge to earn a special badge!`,
+        text: `Listen to every song on this album at least ${CONFIG.ALBUM_CHALLENGE.REQUIRED_STREAMS} times.\n\n⚠️ IMPORTANT: EVERYONE in your team must complete this for the team to pass!\n\n🎖️ Complete this challenge to earn a special !`,
         isWarning: false
     },
     'secret-missions': { 
@@ -556,7 +556,7 @@ const PAGE_GUIDES = {
     'team-level': { 
         icon: '🚀', 
         title: 'Leveling Up & Winning', 
-        text: "To WIN the week, your team must:\n1️⃣ Complete ALL 3 missions (Track + Album + 2X)\n2️⃣ Have the highest XP among eligible teams\n\n🏆 Winner team members all get a Champion Badge!",
+        text: "To WIN the week, your team must:\n1️⃣ Complete ALL 3 missions (Track + Album + 2X)\n2️⃣ Have the highest XP among eligible teams\n\n🏆 Winner team members all get a Champion !",
         isWarning: false
     },
     'rankings': { 
@@ -6393,6 +6393,20 @@ async function renderDrawer() {
     STATE.lastChecked.badges = Math.floor(currentXPStats / 50);
     STATE.lastChecked.album2xBadge = album2xStatus.passed || false;
     saveNotificationState();
+}
+function toggleHiddenBadges(button) {
+    const hiddenContainer = document.getElementById('hidden-xp-badges');
+    if (!hiddenContainer) return;
+    
+    const isHidden = hiddenContainer.style.display === 'none';
+    
+    if (isHidden) {
+        hiddenContainer.style.display = 'block';
+        button.textContent = '← Show Less';
+    } else {
+        hiddenContainer.style.display = 'none';
+        button.textContent = 'View All Badges →';
+    }
 }
 // ==================== PROFILE (UPDATED: APPLY LEAVE) ====================
 async function renderProfile() {
