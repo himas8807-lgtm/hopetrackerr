@@ -5052,22 +5052,73 @@ async function loadAllAgents() {
 
 async function handleLogin() {
     if (STATE.isLoading) return;
-    const agentInput = $('agent-input');
-    const agentNo = agentInput?.value.trim().toUpperCase();
-    if (!agentNo) { showResult('Enter Agent Number', true); return; }
+
+    // 1. Get inputs from DOM
+    const agentNo = $('agent-input')?.value.trim().toUpperCase();
+    const password = $('password-input')?.value.trim(); // Make sure you added this ID to your HTML
+
+    // 2. Simple validation
+    if (!agentNo || !password) {
+        showResult('Enter Agent ID and Access Key', true);
+        return;
+    }
+
     loading(true);
     try {
-        if (STATE.allAgents.length === 0) await loadAllAgents();
-        const found = STATE.allAgents.find(a => String(a.agentNo).trim().toUpperCase() === agentNo);
-        if (!found) throw new Error('Agent not found');
-        localStorage.setItem('spyAgent', found.agentNo);
-        STATE.agentNo = found.agentNo;
-        checkAdminStatus();
-        loadSeenResults();
-        await loadDashboard();
-        startUnreadCheck();
-    } catch (e) { showResult(e.message, true); } 
-    finally { loading(false); }
+        // 3. Call Supabase Edge Function to verify password
+        // This is much more secure than checking a local list
+        const res = await api('loginAgent', { agentNo, password });
+
+        if (res.success) {
+            // 4. If successful, save to storage
+            localStorage.setItem('spyAgent', res.agent.agent_no);
+            STATE.agentNo = res.agent.agent_no;
+            
+            // 5. Initialize session
+            checkAdminStatus();
+            loadSeenResults();
+            await loadDashboard();
+            startUnreadCheck();
+            
+            showToast(`Authentication Successful. Welcome, ${res.agent.name}.`, 'success');
+        } else {
+            // Handle "Invalid Password" or "Agent Not Found"
+            throw new Error(res.error || 'Access Denied');
+        }
+    } catch (e) {
+        showResult(e.message, true);
+    } finally {
+        loading(false);
+    }
+}
+async function changeAgentPassword() {
+    const oldPassword = prompt("Verify current Access Key:");
+    if (!oldPassword) return;
+    
+    const newPassword = prompt("Enter NEW Access Key (min 4 characters):");
+    if (!newPassword || newPassword.length < 4) {
+        showToast("Invalid Key: Minimum 4 characters required", "error");
+        return;
+    }
+
+    loading(true);
+    try {
+        const res = await api('updatePassword', {
+            agentNo: STATE.agentNo,
+            oldPassword: oldPassword,
+            newPassword: newPassword
+        });
+
+        if (res.success) {
+            showToast("✅ Access Key updated successfully!", "success");
+        } else {
+            showToast("❌ " + res.error, "error");
+        }
+    } catch (e) {
+        showToast("System Error: Could not update key", "error");
+    } finally {
+        loading(false);
+    }
 }
 
 async function handleFind() {
