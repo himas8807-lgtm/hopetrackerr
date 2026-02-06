@@ -2060,7 +2060,7 @@ async function quickMissionCheck() {
 // ==================== FIXED BADGE FUNCTIONS ====================
 
 function getLevelBadges(agentNo, totalXP, week = STATE.week) {
-    const pool = CONFIG.BADGE_POOL || [];
+    const pool = CONFIG._POOL || [];
     if (!pool || pool.length === 0) return [];
     
     const badges = [];
