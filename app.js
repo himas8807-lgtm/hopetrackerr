@@ -4100,6 +4100,19 @@ function ensureAppCSS() {
         .toast-success{border:1px solid #00ff88;background:rgba(0,40,20,0.95)}
         .toast-error{border:1px solid #ff4444;background:rgba(40,20,20,0.95)}
         .toast-info{border:1px solid #7b2cbf;background:rgba(30,20,40,0.95)}
+        .hidden-badges-container {
+        max-height: 0;
+        overflow: hidden;
+        opacity: 0;
+        transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        pointer-events: none;
+        }
+        .hidden-badges-container.expanded {
+        max-height: 2000px; /* Large enough to fit all badges */
+        opacity: 1;
+        pointer-events: auto;
+        margin-bottom: 15px;
+        }
     `;
     document.head.appendChild(style);
 }
@@ -6153,20 +6166,7 @@ function stopUnreadCheck() {
         unreadCheckInterval = null;
     }
 }
-function toggleHiddenBadges(button) {
-    const hiddenContainer = document.getElementById('hidden-xp-badges');
-    if (!hiddenContainer) return;
-    
-    const isHidden = hiddenContainer.style.display === 'none';
-    
-    if (isHidden) {
-        hiddenContainer.style.display = 'block';
-        button.textContent = '← Show Less';
-    } else {
-        hiddenContainer.style.display = 'none';
-        button.textContent = 'View All Badges →';
-    }
-}
+
 // ==================== DRAWER (FIXED BADGE SECTION) ====================
 async function renderDrawer() {
     const container = $('drawer-content');
@@ -11449,23 +11449,29 @@ window.addEventListener('beforeunload', () => {
 });
 // ==================== HELPER FUNCTIONS FOR DRAWER ====================
 
-// ==================== TOGGLE HIDDEN BADGES (GLOBAL) ====================
-window.toggleHiddenBadges = function(button) {
-    const hiddenContainer = document.getElementById('hidden-xp-badges');
-    if (!hiddenContainer) {
-        alert('No hidden badges found!');
+window.toggleHiddenBadges = function(btn) {
+    const container = document.getElementById('hidden-xp-badges');
+    if (!container) {
+        console.error("Badge container not found");
         return;
     }
     
-    const isHidden = hiddenContainer.style.display === 'none';
+    const isExpanded = container.classList.contains('expanded');
     
-    if (isHidden) {
-        hiddenContainer.style.display = 'block';
-        button.textContent = '← Show Less';
+    if (isExpanded) {
+        // Collapse
+        container.classList.remove('expanded');
+        btn.innerHTML = `View All Badges →`;
+        // Scroll back to the top of the badge section so the user isn't lost
+        btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
     } else {
-        hiddenContainer.style.display = 'none';
-        button.textContent = 'View All Badges →';
+        // Expand
+        container.classList.add('expanded');
+        btn.innerHTML = `↑ Show Less`;
     }
+    
+    // Add haptic feedback for mobile
+    if (navigator.vibrate) navigator.vibrate(10);
 };
 
 // 2. Badge HTML Generator (Helper)
