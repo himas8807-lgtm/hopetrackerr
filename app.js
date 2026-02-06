@@ -12108,6 +12108,72 @@ async function triggerGlobalSync() {
     }
 }
 window.triggerGlobalSync = triggerGlobalSync;
+// --- PASSWORD MODAL LOGIC ---
+
+function openPasswordModal() {
+    const modal = document.getElementById('password-modal');
+    if (modal) modal.style.display = 'flex';
+}
+
+function closePasswordModal() {
+    const modal = document.getElementById('password-modal');
+    if (modal) modal.style.display = 'none';
+    document.getElementById('password-form').reset();
+}
+
+function togglePasswordVisibility(id, btn) {
+    const input = document.getElementById(id);
+    if (input.type === 'password') {
+        input.type = 'text';
+        btn.textContent = '🙈';
+    } else {
+        input.type = 'password';
+        btn.textContent = '👁️';
+    }
+}
+
+async function handlePasswordChange(event) {
+    event.preventDefault();
+    
+    const oldPassword = document.getElementById('current-password').value;
+    const newPassword = document.getElementById('new-password').value;
+    const confirmPassword = document.getElementById('confirm-password').value;
+    
+    if (newPassword !== confirmPassword) {
+        showToast("New passwords do not match!", "error");
+        return;
+    }
+
+    const btn = document.getElementById('submit-password-btn');
+    btn.disabled = true;
+    btn.querySelector('.btn-text').textContent = 'Updating...';
+
+    try {
+        const res = await api('updatePassword', {
+            agentNo: STATE.agentNo,
+            oldPassword: oldPassword,
+            newPassword: newPassword
+        });
+
+        if (res.success) {
+            showToast("✅ Access Key Updated!", "success");
+            closePasswordModal();
+        } else {
+            showToast(res.error || "Update failed", "error");
+        }
+    } catch (e) {
+        showToast("System error. Try again later.", "error");
+    } finally {
+        btn.disabled = false;
+        btn.querySelector('.btn-text').textContent = 'Update Password';
+    }
+}
+
+// Make globally available
+window.openPasswordModal = openPasswordModal;
+window.closePasswordModal = closePasswordModal;
+window.handlePasswordChange = handlePasswordChange;
+window.togglePasswordVisibility = togglePasswordVisibility;
 
 // 🛡️ UI PROTECTION
 document.addEventListener('contextmenu', event => event.preventDefault()); // Block Right Click
