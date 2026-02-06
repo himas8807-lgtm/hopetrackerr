@@ -14,27 +14,26 @@ const CONFIG = {
     
     ADMIN_AGENT_NO: 'AGENT000',
 
-    // ==================== WEEK DATES ====================
     WEEK_DATES: {
-        'Test Week 1': '2025-11-29',
-        'Test Week 2': '2025-12-06',
-        'Week 1': '2025-12-13',
-        'Week 2': '2025-12-20',
-        'Week 3': '2025-12-27',
-        'Week 4': '2026-01-03',
-        'Week 5': '2026-01-10',
-        'Week 6': '2026-01-17',
-        'Week 7': '2026-01-24',
-        'Week 8': '2026-01-31',
-        'Week 9': '2026-02-07',
-        'Week 10': '2026-02-14',
-        'Week 11': '2026-02-21',
-        'Week 12': '2026-02-28',
-        'Week 13': '2026-03-07',
-        'Week 14': '2026-03-14',
-        'Week 15': '2026-03-21',
-        'Week 16': '2026-03-28'
-    },
+        'Test Week 1': '2025-11-23',  
+        'Test Week 2': '2025-11-30',
+        'Week 1': '2025-12-07',
+        'Week 2': '2025-12-14',
+        'Week 3': '2025-12-21',
+        'Week 4': '2025-12-28',
+        'Week 5': '2026-01-04',
+        'Week 6': '2026-01-11',
+        'Week 7': '2026-01-18',
+        'Week 8': '2026-01-25',
+        'Week 9': '2026-02-01',
+        'Week 10': '2026-02-08',
+        'Week 11': '2026-02-15',
+        'Week 12': '2026-02-22',
+        'Week 13': '2026-03-01',
+        'Week 14': '2026-03-08',
+        'Week 15': '2026-03-15',
+        'Week 16': '2026-03-22'
+},
 
     // ==================== BADGE SYSTEM ====================
     BADGE_REPO_URL: 'https://raw.githubusercontent.com/hbot7875-gif/btscomebackmission/main/lvl1badges/',
@@ -488,19 +487,26 @@ function getDaysRemaining(weekLabel) {
 }
 
 function isWeekCompleted(selectedWeek) {
-    const endDateStr = CONFIG.WEEK_DATES[selectedWeek];
-    if (!endDateStr) return false;
-    const end = new Date(endDateStr);
-    end.setHours(23, 59, 59, 999);
+    const startDateStr = CONFIG.WEEK_DATES[selectedWeek];
+    if (!startDateStr) return false;
+    
+    const start = new Date(startDateStr);
+    // Week ends 7 days after start
+    const end = new Date(start.getTime() + (7 * 24 * 60 * 60 * 1000) - 1);
+    
     return new Date() > end;
 }
-function getPriorityClass(priority) {
-    switch ((priority || '').toLowerCase()) {
-        case 'high': return 'priority-high';
-        case 'medium': return 'priority-medium';
-        case 'low': return 'priority-low';
-        default: return 'priority-normal';
-    }
+
+function getDaysRemaining(weekLabel) {
+    const startDateStr = CONFIG.WEEK_DATES[weekLabel];
+    if (!startDateStr) return 0;
+    
+    const start = new Date(startDateStr);
+    const end = new Date(start.getTime() + (7 * 24 * 60 * 60 * 1000) - 1);
+    
+    const now = new Date();
+    const diff = Math.ceil((end - now) / (1000 * 60 * 60 * 24));
+    return diff > 0 ? diff : 0;
 }
 
 function getPriorityBadge(priority) {
@@ -3075,7 +3081,7 @@ async function loadLeavesAdmin() {
                             <div style="color:#fff; font-weight:bold; font-size:13px;">${sanitize(a.name)}</div>
                             <div style="color:#888; font-size:11px;">${sanitize(a.agentNo)} • ${sanitize(a.team)}</div>
                             <div style="color:#666; font-size:10px; margin-top:2px;">
-                                Applied: ${new Date(a.timestamp).toLocaleDateString()}
+                                Applied: ${new Date(a.created_at || a.timestamp || Date.now()).toLocaleDateString()}
                             </div>
                         </div>
                         
@@ -5107,9 +5113,7 @@ async function loadDashboard() {
             trackContributions: dashboardData.agent.trackContributions || {},
             albumContributions: dashboardData.agent.albumContributions || {},
             // Maps Supabase structure to the format your frontend expects
-            album2xStatus: {
-                passed: dashboardData.agent.stats?.album2xPassed || false,
-                tracks: dashboardData.agent.stats?.album2xDetails || {}
+            album2xStatus: dashboardData.agent.album2xStatus || { passed: false, tracks: {} }
             },
             teamInfo: {
                 // Ensure these match what your Edge Function returns
@@ -5247,30 +5251,38 @@ function setupDashboard() {
         select.innerHTML = STATE.weeks.map(w => `<option value="${w}" ${w === STATE.week ? 'selected' : ''}>${w}</option>`).join('');
         select.onchange = async () => {
             loading(true);
-            try {
-                // 1. Create the 'newData' variable here
-                const newData = await api('getAgentData', { agentNo: STATE.agentNo, week: select.value });
-                
-                // 2. Assign it to the global STATE
-                STATE.data = newData;
-                
-                // 3. Set the week
-                STATE.week = select.value;
-                
-                // 4. Update the timestamps
-                if (STATE.data?.lastUpdated) { 
-                    STATE.lastUpdated = STATE.data.lastUpdated; 
-                    updateTime(); 
-                }
-                
-                // 5. Refresh the page view
-                await loadPage(STATE.page);
-            } catch (e) { 
-                console.error("Week load error:", e);
-                showToast('Failed to load week', 'error'); 
-            } 
-            finally { loading(false); }
+    try {
+        const newData = await api('getDashboardData', { 
+            agentNo: STATE.agentNo, 
+            week: select.value 
+        });
+        
+        STATE.week = select.value;
+        STATE.data = {
+            agentNo: newData.agent?.agentNo,
+            week: newData.week,
+            profile: newData.agent?.profile,
+            stats: newData.agent?.stats,
+            rank: newData.agent?.rank,
+            teamRank: newData.agent?.teamRank,
+            trackContributions: newData.agent?.trackContributions || {},
+            albumContributions: newData.agent?.albumContributions || {},
+            album2xStatus: newData.agent?.album2xStatus || { passed: false, tracks: {} },
+            team: newData.team || {},
+            trackGoals: newData.trackGoals || {},
+            albumGoals: newData.albumGoals || {},
+            onLeave: newData.agent?.onLeave || false
         };
+        
+        STATE.lastUpdated = newData.lastUpdated;
+        updateTime();
+        await loadPage(STATE.page);
+    } catch (e) { 
+        showToast('Failed to load week', 'error'); 
+    } finally { 
+        loading(false); 
+    }
+};
     
     document.querySelectorAll('.nav-link').forEach(link => {
         link.onclick = null;
@@ -5379,8 +5391,6 @@ if (btn) {
         logout();
     };
 }
-// ==================== START APP ====================
-document.addEventListener('DOMContentLoaded', initApp);
 // ==================== START APP ====================
 document.addEventListener('DOMContentLoaded', initApp);
 async function renderHome() {
@@ -6325,7 +6335,7 @@ async function renderDrawer() {
 
                             <!-- Hidden Badges Container -->
                             ${hiddenXpBadges.length > 0 ? `
-                                <div id="hidden-xp-badges" class="hidden-badges-container">
+                                <div id="hidden-xp-badges" class="hidden-badges-container" style="display: none;">
                                     <div class="badge-grid" style="margin-top: 10px;">
                                         ${hiddenXpBadges.map(b => renderBadgeHTML(b)).join('')}
                                     </div>
@@ -8159,6 +8169,39 @@ async function renderSummary() {
         `; 
     }
 }
+function copyShareText() {
+    const week = STATE.week || 'Week';
+    const text = `🎵 BTS Comeback Mission ${week} Complete!
+
+💜 We streamed together for BTS!
+
+#BTS #BTSComeback #ARMY`;
+    
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text)
+            .then(() => showToast('📋 Caption copied!', 'success'))
+            .catch(() => fallbackCopyText(text));
+    } else {
+        fallbackCopyText(text);
+    }
+}
+
+function fallbackCopyText(text) {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.cssText = 'position:fixed;opacity:0;';
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+        document.execCommand('copy');
+        showToast('📋 Caption copied!', 'success');
+    } catch (e) {
+        showToast('Copy failed', 'error');
+    }
+    document.body.removeChild(textarea);
+}
+
+window.copyShareText = copyShareText;
 // ==================== SAVE POSTER TO GALLERY (FIXED) ====================
 async function shareStats() {
     const card = document.getElementById('shareable-stats-card');
