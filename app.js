@@ -1,3 +1,12 @@
+const DEBUG_MODE = false; 
+
+if (!DEBUG_MODE) {
+    console.log = function() {};
+    console.warn = function() {};
+    console.error = function() {};
+    console.info = function() {};
+    console.debug = function() {};
+}
 // ==================== MAIN CONFIG ====================
 const CONFIG = {
     API_URL: 'https://uspezooqcdrwaqxcqojn.supabase.co/functions/v1/spy-battle-api',
@@ -183,7 +192,7 @@ const ACTIVITY_CONFIG = {
         },
         '_earned': {
             icon: '🎖️',
-            template: (data) => `<strong>${data.name}</strong> earned the <strong class="highlight">${data.badge}</strong> badge!`,
+            template: (data) => `<strong>${data.name}</strong> earned the <strong class="highlight">${data.}</strong> !`,
             color: '#7b2cbf'
         },
         'goal_completed': {
@@ -2060,7 +2069,7 @@ async function quickMissionCheck() {
 // ==================== FIXED BADGE FUNCTIONS ====================
 
 function getLevelBadges(agentNo, totalXP, week = STATE.week) {
-    const pool = CONFIG._POOL || [];
+    const pool = CONFIG.BADGE_POOL || [];
     if (!pool || pool.length === 0) return [];
     
     const badges = [];
@@ -6144,7 +6153,7 @@ function stopUnreadCheck() {
         unreadCheckInterval = null;
     }
 }
-// ==================== DRAWER (FIXED - RECENT BADGES FIRST) ====================
+// ==================== DRAWER (FIXED BADGE SECTION) ====================
 async function renderDrawer() {
     const container = $('drawer-content');
     if (!container) return;
@@ -6175,14 +6184,7 @@ async function renderDrawer() {
     const agentTeam = STATE.allWeeksData?.agentTeam || team;
     
     if (STATE.allWeeksData?.weeks?.length > 0) {
-        // ✅ SORT WEEKS: NEWEST FIRST (Week 9 before Week 1)
-        const sortedWeeks = [...STATE.allWeeksData.weeks].sort((a, b) => {
-            const weekNumA = parseInt(a.week?.replace(/\D/g, '')) || 0;
-            const weekNumB = parseInt(b.week?.replace(/\D/g, '')) || 0;
-            return weekNumB - weekNumA;
-        });
-        
-        sortedWeeks.forEach(weekData => {
+        STATE.allWeeksData.weeks.forEach(weekData => {
             const weekName = weekData.week;
             const weekXP = parseInt(weekData.stats?.totalXP) || 0;
             const weekTracks = parseInt(weekData.stats?.trackScrobbles) || 0;
@@ -6193,7 +6195,6 @@ async function renderDrawer() {
             overallAlbumStreams += weekAlbums;
             if (weekXP > 0) weeksParticipated++;
             
-            // ✅ Badges now added in order: Week 9, Week 8, Week 7...
             allXpBadges = allXpBadges.concat(getLevelBadges(STATE.agentNo, weekXP, weekName));
             
             const album2xBadge = getAlbum2xBadgeForWeek(STATE.agentNo, weekData, weekName);
@@ -6212,20 +6213,13 @@ async function renderDrawer() {
         if (album2xBadge) allSpecialBadges.push(album2xBadge);
     }
     
-    // ✅ DEDUPE & SORT SPECIAL BADGES (NEWEST FIRST)
     const seenBadges = new Set();
-    const uniqueSpecialBadges = allSpecialBadges
-        .filter(b => {
-            const key = `${b.name}_${b.week}`;
-            if (seenBadges.has(key)) return false;
-            seenBadges.add(key);
-            return true;
-        })
-        .sort((a, b) => {
-            const weekNumA = parseInt(a.week?.replace(/\D/g, '')) || 0;
-            const weekNumB = parseInt(b.week?.replace(/\D/g, '')) || 0;
-            return weekNumB - weekNumA;
-        });
+    const uniqueSpecialBadges = allSpecialBadges.filter(b => {
+        const key = `${b.name}_${b.week}`;
+        if (seenBadges.has(key)) return false;
+        seenBadges.add(key);
+        return true;
+    });
     
     const totalBadgeCount = uniqueSpecialBadges.length + allXpBadges.length;
     const currentWeekXP = parseInt(stats.totalXP) || 0;
@@ -6316,7 +6310,7 @@ async function renderDrawer() {
             </div>
             <div class="card-body">
                 ${totalBadgeCount > 0 ? `
-                    <!-- Special Badges (Newest First) -->
+                    <!-- Special Badges -->
                     ${uniqueSpecialBadges.length > 0 ? `
                         <div style="margin-bottom: 20px;">
                             <div style="color: #888; font-size: 10px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px;">✨ Special Badges</div>
@@ -6326,17 +6320,17 @@ async function renderDrawer() {
                         </div>
                     ` : ''}
                     
-                    <!-- XP Badges (Newest First) -->
+                    <!-- XP Badges -->
                     ${allXpBadges.length > 0 ? `
                         <div>
                             <div style="color: #888; font-size: 10px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px;">⭐ XP Badges</div>
                             
-                            <!-- Visible Badges (Recent) -->
+                            <!-- Visible Badges -->
                             <div class="badge-grid">
                                 ${visibleXpBadges.map(b => renderBadgeHTML(b)).join('')}
                             </div>
 
-                            <!-- Hidden Badges Container (Older) -->
+                            <!-- Hidden Badges Container -->
                             ${hiddenXpBadges.length > 0 ? `
                                 <div id="hidden-xp-badges" class="hidden-badges-container" style="display: none;">
                                     <div class="badge-grid" style="margin-top: 10px;">
@@ -6344,8 +6338,8 @@ async function renderDrawer() {
                                     </div>
                                 </div>
                                 
-                                <button onclick="toggleHiddenBadges(this)" class="btn-secondary" style="width: 100%; margin-top: 12px; padding: 10px; font-size: 12px; background: rgba(255,255,255,0.05);">
-                                    View ${hiddenXpBadges.length} Older Badges →
+                                <button onclick="toggleHiddenBadges(this)" class="btn-secondary" style="width: 100%; margin-top: 12px; padding: 10px; font-size: 12px; background:rgba(255,255,255,0.05);">
+                                    View All Badges →
                                 </button>
                             ` : ''}
                         </div>
@@ -6387,25 +6381,7 @@ async function renderDrawer() {
             </div>
         </div>
         
-        ${isAdmin ? `
-            <div class="card" style="border-color: #ffd700; margin-bottom: 20px;">
-                <div class="card-header" style="background: rgba(255,215,0,0.05);">
-                    <h3 style="margin: 0; color: #ffd700;">👑 Admin Controls</h3>
-                </div>
-                <div class="card-body">
-                    <button onclick="showAdminPanel()" class="btn-primary" style="width: 100%; padding: 14px; background: linear-gradient(135deg, #ffd700, #ff8c00); color: #000; font-weight: bold; font-size: 13px;">🎛️ Open Mission Control</button>
-                </div>
-            </div>
-        ` : ''}
-        
-        <!-- Logout Button -->
-        <div class="card" style="margin-bottom: 20px;">
-            <div class="card-body">
-                <button onclick="logout()" class="btn-secondary" style="width: 100%; padding: 12px; font-size: 12px; color: #ff6b6b; border-color: rgba(255,107,107,0.3);">
-                    🚪 Logout
-                </button>
-            </div>
-        </div>
+        ${isAdmin ? `<div class="card" style="border-color: #ffd700; margin-bottom: 20px;"><div class="card-header" style="background: rgba(255,215,0,0.05);"><h3 style="margin: 0; color: #ffd700;">👑 Admin Controls</h3></div><div class="card-body"><button onclick="showAdminPanel()" class="btn-primary" style="width: 100%; padding: 14px; background: linear-gradient(135deg, #ffd700, #ff8c00); color: #000; font-weight: bold; font-size: 13px;">🎛️ Open Mission Control</button></div></div>` : ''}
         
         <div style="text-align: center; padding: 15px; color: #888; font-size: 10px;">
             <p style="margin: 0;">BTS Spy Battle v5.0</p>
@@ -6418,8 +6394,6 @@ async function renderDrawer() {
     STATE.lastChecked.album2xBadge = album2xStatus.passed || false;
     saveNotificationState();
 }
-
-// ==================== TOGGLE HIDDEN BADGES ====================
 function toggleHiddenBadges(button) {
     const hiddenContainer = document.getElementById('hidden-xp-badges');
     if (!hiddenContainer) return;
@@ -6428,13 +6402,10 @@ function toggleHiddenBadges(button) {
     
     if (isHidden) {
         hiddenContainer.style.display = 'block';
-        button.innerHTML = '← Show Less';
-        
-        // Smooth scroll to show new badges
-        hiddenContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        button.textContent = '← Show Less';
     } else {
         hiddenContainer.style.display = 'none';
-        button.innerHTML = `View Older Badges →`;
+        button.textContent = 'View All Badges →';
     }
 }
 // ==================== PROFILE (UPDATED: APPLY LEAVE) ====================
@@ -12078,6 +12049,18 @@ async function triggerGlobalSync() {
     }
 }
 window.triggerGlobalSync = triggerGlobalSync;
+
+
+
+// 🛡️ UI PROTECTION
+document.addEventListener('contextmenu', event => event.preventDefault()); // Block Right Click
+
+document.onkeydown = function(e) {
+    if (e.key === 'F12') return false; // Block F12
+    if (e.ctrlKey && e.shiftKey && e.key === 'I') return false; // Block Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.key === 'J') return false; // Block Ctrl+Shift+J
+    if (e.ctrlKey && e.key === 'U') return false; // Block View Source
+};
 // ==================== EXPORTS & INIT ====================
 document.addEventListener('DOMContentLoaded', initApp);
 
