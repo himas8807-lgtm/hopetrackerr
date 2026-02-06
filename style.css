@@ -8673,3 +8673,135 @@ function ensureStreakCSS() {
     border-color: #00ff88;
     color: #000;
 }
+/* Change Password Button */
+.change-password-btn {
+    background: none;
+    border: 1px solid rgba(123, 44, 191, 0.4);
+    color: #aaa;
+    font-size: 10px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin-top: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.change-password-btn:hover {
+    border-color: #9d4edd;
+    color: #fff;
+    background: rgba(123, 44, 191, 0.2);
+}
+
+/* Tip Cards */
+.tip-card {
+    margin-bottom: 15px;
+}
+
+.tip-card .card-body {
+    padding: 15px;
+}
+
+.tip-card h3 {
+    font-size: 14px;
+    margin: 0 0 5px 0;
+}
+
+.tip-card p {
+    font-size: 12px;
+    color: #ccc;
+    margin: 0;
+    line-height: 1.5;
+}
+
+.tip-album { border-left: 3px solid #9d4edd; }
+.tip-album h3 { color: #fff; }
+
+.tip-warning { border-left: 3px solid #ff4444; }
+.tip-warning h3 { color: #ff6b6b; }
+
+.tip-reuse { border-left: 3px solid #00d4ff; }
+.tip-reuse h3 { color: #00d4ff; }
+
+.tip-night { border-left: 3px solid #7b2cbf; }
+.tip-night h3 { color: #e0aaff; }
+
+.tip-volume { border-left: 3px solid #00ff88; }
+.tip-volume h3 { color: #00ff88; }
+
+/* Floating Sync Button */
+.floating-sync-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #7b2cbf, #9d4edd);
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(123, 44, 191, 0.4);
+    z-index: 1000;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.floating-sync-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(123, 44, 191, 0.6);
+}
+
+.floating-sync-btn:active {
+    transform: scale(0.95);
+}
+/* ==================== HOPETRACKER BRANDING ==================== */
+
+/* Login screen - above BTS logo */
+.hopetracker-brand {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 4px;
+    color: #9d4edd;
+    text-shadow: 0 0 10px rgba(157, 78, 221, 0.5);
+    margin-bottom: 10px;
+    opacity: 0.8;
+}
+
+/* Login footer - version tag */
+.hopetracker-tag {
+    color: #9d4edd;
+    font-weight: 600;
+    margin-right: 5px;
+}
+
+/* Sidebar footer brand */
+.sidebar-brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 0;
+    margin-bottom: 10px;
+    border-top: 1px solid rgba(157, 78, 221, 0.2);
+    border-bottom: 1px solid rgba(157, 78, 221, 0.2);
+}
+
+.sidebar-brand .brand-icon {
+    font-size: 12px;
+}
+
+.sidebar-brand .brand-name {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    color: #9d4edd;
+    text-transform: uppercase;
+    opacity: 0.7;
+}
+
+/* Hover effect */
+.sidebar-brand:hover .brand-name {
+    opacity: 1;
+    text-shadow: 0 0 8px rgba(157, 78, 221, 0.6);
+}
