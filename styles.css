@@ -2,40 +2,42 @@
 
 /* ==================== CSS VARIABLES ==================== */
 :root {
-    /* Purple Cyber Colors */
-    --bg-dark: #0a0a14;
-    --bg-card: #12121f;
+    /* --- PRO BACKGROUNDS (Deep Black & Glass) --- */
+    --bg-dark: #050508;              /* Deepest black for contrast */
+    --bg-card: rgba(20, 20, 35, 0.65); /* Transparent for glass effect */
     --bg-elevated: #1a1a2e;
-    --bg-hover: #1e1e35;
-    --border: #2a2a4a;
-    --border-dim: #1a1a30;
-    --border-bright: rgba(255, 255, 255, 0.15);
+    --bg-hover: rgba(157, 78, 221, 0.12); /* Subtle purple hover */
     
-    /* Purple palette - IMPROVED CONTRAST */
+    /* --- CRISP BORDERS --- */
+    --border: rgba(255, 255, 255, 0.08);
+    --border-dim: rgba(255, 255, 255, 0.04);
+    --border-bright: rgba(157, 78, 221, 0.4); /* Refined accent border */
+
+    /* --- PURPLE PALETTE (Unchanged) --- */
     --purple-dark: #4a1a6b;
-    --purple-main: #9d4edd;      /* Brighter for better visibility */
-    --purple-light: #b366f9;     /* Even brighter */
-    --purple-glow: #d4a5ff;      /* Much brighter for text on dark */
+    --purple-main: #9d4edd;
+    --purple-light: #b366f9;
+    --purple-glow: #d4a5ff;
     
-    /* Text colors - IMPROVED CONTRAST */
-    --text: #e8e8f5;
-    --text-dim: #a0a0b8;         /* Lighter for readability */
-    --text-muted: #6a6a80;
-    --text-bright: #ffffff;
+    /* --- TEXT (Optimized for Eyes) --- */
+    --text: #e0e0e0;             /* Soft white (prevents eye strain) */
+    --text-dim: #9494a8;         /* Cool gray for secondary text */
+    --text-muted: #606075;
+    --text-bright: #ffffff;      /* Headers only */
     
-    /* Status colors */
+    /* --- STATUS COLORS (Unchanged) --- */
     --success: #4ade80;
     --warning: #fbbf24;
     --danger: #f87171;
     --info: #38bdf8;
     
-    /* Team Colors - OPTIMIZED FOR DARK MODE */
-    --team-indigo: #FFE082;      /* Warm Sand - Good ✓ */
-    --team-echo: #E0E7FF;        /* Soft Lavender - Better visibility */
-    --team-agustd: #90CAF9;      /* Steel Blue - Much better */
-    --team-jitb: #FF4081;        /* Electric Magenta - Good ✓ */
+    /* --- TEAM COLORS --- */
+    --team-indigo: #FFE082;
+    --team-echo: #E0E7FF;
+    --team-agustd: #90CAF9;
+    --team-jitb: #FF4081;
     
-    /* Spacing */
+    /* --- SPACING (Unchanged) --- */
     --spacing-xs: 4px;
     --spacing-sm: 8px;
     --spacing-md: 16px;
@@ -43,25 +45,56 @@
     --spacing-xl: 32px;
     --spacing-2xl: 48px;
     
-    /* Border Radius */
+    /* --- RADIUS (Modern Rounding) --- */
     --radius-sm: 6px;
-    --radius-md: 10px;
-    --radius-lg: 16px;
-    --radius-xl: 20px;
+    --radius-md: 12px;           /* Slightly smoother */
+    --radius-lg: 20px;
+    --radius-xl: 24px;
     --radius-full: 50%;
     
-    /* Transitions */
+    /* --- ANIMATION (Snappy) --- */
     --transition-fast: 0.15s ease;
-    --transition-normal: 0.3s ease;
+    --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* "Apple-like" feel */
     --transition-slow: 0.5s ease;
     
-    /* Shadows */
-    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
-    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
-    --shadow-glow: 0 0 20px rgba(157, 78, 221, 0.3);
+    /* --- SHADOWS (Clean, not fuzzy) --- */
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
+    --shadow-glow: 0 0 30px rgba(157, 78, 221, 0.15); /* Reduced glow opacity */
+}
+.card, .secret-mission-card, .quick-stats-card, .profile-card, .namjoon-card {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+body {
+    /* Uses Apple's San Francisco, Android's Roboto, or Windows Segoe UI automatically */
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+    letter-spacing: 0.01em;
 }
 
+/* Keep the Cyber feel on headers and numbers */
+h1, h2, h3, .stat-value, .rank-num, .total-value, .brand-name {
+    font-family: 'Orbitron', sans-serif !important;
+}
+.card, 
+.secret-mission-card, 
+.quick-stats-card,
+.profile-card,
+.namjoon-card {
+    background: var(--bg-card) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px); /* Safari support */
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); /* Cleaner shadow, no color glow */
+}
+
+/* Subtle inner glow on hover only */
+.card:hover {
+    border-color: rgba(157, 78, 221, 0.3);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+    transform: translateY(-2px);
+}
 /* ==================== RESET & BASE ==================== */
 *,
 *::before,
@@ -78,7 +111,7 @@ html {
 
 html, body {
     height: 100%;
-    font-family: 'Rajdhani', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Rajdhani', -, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: var(--bg-dark);
     color: var(--text);
     line-height: 1.5;
@@ -1903,76 +1936,28 @@ img {
 
 /* ==================== BUTTONS ==================== */
 .btn-primary {
-    background: linear-gradient(135deg, var(--purple-main), var(--purple-dark));
-    color: white;
-    border: 1px solid var(--purple-light);
-    padding: 12px 24px;
-    border-radius: var(--radius-md);
-    font-weight: 600;
-    transition: all var(--transition-normal);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    font-family: 'Rajdhani', sans-serif;
-    font-size: 14px;
-    cursor: pointer;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    background: var(--purple-main) !important;
+    border: none !important;
+    box-shadow: 0 4px 12px rgba(139, 61, 207, 0.4); /* Colored shadow only */
+    letter-spacing: 1px;
 }
 
-.btn-primary:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 30px rgba(157, 78, 221, 0.4);
-    background: linear-gradient(135deg, var(--purple-light), var(--purple-main));
+.btn-primary:active {
+    transform: scale(0.97); /* Tactile click feel */
 }
 
-.btn-primary:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
+input, select, textarea {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 8px !important;
+    color: #fff !important;
 }
 
-.btn-secondary {
-    background: transparent;
-    border: 1px solid var(--border-bright);
-    color: var(--text);
-    padding: 12px 24px;
-    border-radius: var(--radius-md);
-    font-weight: 500;
-    transition: all var(--transition-fast);
-    cursor: pointer;
+input:focus, select:focus, textarea:focus {
+    border-color: var(--purple-light) !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    box-shadow: none !important; /* Remove fuzzy glow */
 }
-
-.btn-secondary:hover:not(:disabled) {
-    background: var(--bg-hover);
-    border-color: var(--purple-main);
-    color: var(--text-bright);
-}
-
-.btn-success {
-    background: var(--success);
-    color: white;
-    border: none;
-}
-
-.btn-danger {
-    background: var(--danger);
-    color: white;
-    border: none;
-}
-
-.btn-sm {
-    padding: 8px 16px;
-    font-size: 12px;
-    border-radius: var(--radius-sm);
-}
-
-.btn-large {
-    width: 100%;
-    padding: 16px;
-    font-size: 16px;
-}
-
 /* ==================== PROGRESS BARS ==================== */
 .progress-bar {
     background: rgba(255, 255, 255, 0.1);
@@ -7565,7 +7550,7 @@ body {
 }
 
 .bts-number {
-    font-family: 'Helvetica Neue', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+    font-family: 'Helvetica Neue', -, BlinkMacSystemFont, Arial, sans-serif;
     font-weight: 500;
     font-size: 28px;
     line-height: 1;
@@ -8893,4 +8878,94 @@ function ensureStreakCSS() {
 .btn-confirm { 
     flex: 2; padding: 12px; background: var(--purple-main); 
     color: #fff; border-radius: 8px; font-weight: bold; 
+}
+@media (max-width: 768px) {
+    /* Hide the top hamburger menu if you switch to bottom nav */
+    .mobile-header {
+        background: rgba(5, 5, 8, 0.9); /* Match deep bg */
+    }
+
+    /* Create a bottom navigation bar */
+    .sidebar {
+        transform: none !important;
+        top: auto;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 65px;
+        flex-direction: row;
+        border-right: none;
+        border-top: 1px solid var(--border);
+        background: rgba(10, 10, 20, 0.95);
+        backdrop-filter: blur(10px);
+        z-index: 9999;
+        padding: 0;
+    }
+
+    /* Adjust nav links for horizontal layout */
+    .nav-links {
+        flex-direction: row;
+        justify-content: space-around;
+        width: 100%;
+        padding: 0 10px;
+        overflow: visible;
+    }
+
+    .nav-section { display: contents; }
+    .nav-section-title { display: none; }
+
+    .nav-link {
+        flex-direction: column;
+        gap: 4px;
+        padding: 8px;
+        font-size: 10px;
+        margin: 0;
+        border-radius: 0;
+        background: transparent !important;
+        box-shadow: none !important;
+        color: var(--text-dim);
+    }
+
+    .nav-link.active {
+        color: var(--purple-light);
+    }
+
+    .nav-icon {
+        font-size: 20px;
+        margin-bottom: 2px;
+    }
+
+    /* Hide less important links on mobile bottom bar to save space */
+    /* You can choose which ones to keep visible */
+    .nav-link[data-page="guide"],
+    .nav-link[data-page="gc-links"],
+    .nav-link[data-page="helper-roles"],
+    .nav-link[data-page="streaming-tips"] {
+        display: none; 
+    }
+    
+    /* Make main content sit above the bottom bar */
+    .pages-wrapper {
+        padding-bottom: 90px; 
+    }
+    
+    /* Move floating button up */
+    .floating-sync-btn {
+        bottom: 80px;
+    }
+}
+@keyframes shimmer {
+    0% { background-position: -100% 0; }
+    100% { background-position: 100% 0; }
+}
+
+.skeleton-item, .skeleton-card {
+    background: linear-gradient(90deg, 
+        rgba(255, 255, 255, 0.03) 25%, 
+        rgba(255, 255, 255, 0.07) 50%, 
+        rgba(255, 255, 255, 0.03) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite ease-in-out; /* Slower, smoother */
+    border-radius: 12px;
 }
