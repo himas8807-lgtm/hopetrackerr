@@ -400,9 +400,19 @@ function sanitize(str) {
 function formatLastUpdated(dateStr) {
     if (!dateStr) return 'Unknown';
     try {
-        const date = new Date(dateStr);
-        if (isNaN(date.getTime())) return dateStr;
-        return date.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        // If the date string doesn't have a 'Z' or offset, 
+        // JS treats it as local time. We need to ensure it's handled as is.
+        const date = new Date(dateStr.replace(' ', 'T')); 
+        
+        // Use a simpler formatter that doesn't force timezone shifts
+        const hours = date.getHours();
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        const displayHours = hours % 12 || 12;
+        const month = date.toLocaleString('en-US', { month: 'short' });
+        const day = date.getDate();
+
+        return `${month} ${day}, ${displayHours}:${minutes} ${ampm}`;
     } catch (e) { return dateStr; }
 }
 
@@ -4288,11 +4298,18 @@ function initStreakTracker() {
     if (!STATE.agentNo) return;
 
     let s = getStreakState();
+
     
     // 🇮🇳 FORCE IST TIME CALCULATION
     const istNow = getISTDate();
     const today = istNow.toDateString(); // e.g., "Mon Jan 26 2026" (IST)
     const currentMonth = istNow.getMonth();
+
+    if (!s.lastVisitDate) {
+        console.log("Streak initialized for new session.");
+        renderStreakWidget(s);
+        return;
+    }
 
     // 1. Monthly Freeze Reset (Based on IST Month)
     if (s.freezeResetMonth !== currentMonth) {
