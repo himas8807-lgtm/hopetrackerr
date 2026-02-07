@@ -5047,7 +5047,6 @@ async function loadDashboard() {
     startHeartbeat();
     
     try {
-        // 1. Fetch Core Dashboard Data
         const dashboardData = await api('getDashboardData');
 
         STATE.weeks = dashboardData.availableWeeks || [];
@@ -5068,7 +5067,6 @@ async function loadDashboard() {
             }
         };
         
-        // 2. Setup UI & Switch Screens
         $('login-screen').classList.remove('active');
         $('login-screen').style.display = 'none';
         $('dashboard-screen').classList.add('active');
@@ -5076,35 +5074,35 @@ async function loadDashboard() {
         
         setupDashboard(); 
 
-        // 3. ✅ FETCH STREAK FROM DB (Prevent overwriting 12 days with 1)
+        // 3. ✅ FETCH STREAK FROM DB & FIX FORMAT
         try {
             const streakRes = await api('getStreakData', { agentNo: STATE.agentNo });
             if (streakRes.success && streakRes.streak) {
                 const key = STREAK_KEY + STATE.agentNo;
-                // Sync DB data to LocalStorage so initStreakTracker starts at 12
+                
+                // 🔥 CRITICAL FIX: Convert DB "2026-02-06" to JS "Fri Feb 06 2026"
+                const dbDate = streakRes.streak.lastActiveDate;
+                const formattedDate = dbDate ? new Date(dbDate).toDateString() : null;
+
                 localStorage.setItem(key, JSON.stringify({
                     currentStreak: streakRes.streak.current,
                     longestStreak: streakRes.streak.longest,
-                    lastLogDate: streakRes.streak.lastActiveDate,
+                    lastLogDate: formattedDate, // Now matches tracker format
                     freezes: streakRes.streak.freezesRemaining,
                     isCompletedToday: streakRes.streak.todayCompleted,
-                    lastVisitDate: new Date().toDateString() // Keep date sync
+                    lastVisitDate: new Date().toDateString() 
                 }));
-                console.log('⚡ Streak synced from DB:', streakRes.streak.current);
+                console.log('⚡ Streak synced from DB and formatted:', streakRes.streak.current);
             }
         } catch (streakErr) {
-            console.warn('⚠️ Could not sync streak from DB, using local only.');
+            console.warn('⚠️ Streak sync failed:', streakErr);
         }
 
-        // 4. Load current page
         const currentPage = ROUTER.initialized ? STATE.page : 'home';
         await loadPage(currentPage); 
         
-        // 5. Trigger background checks
         setTimeout(() => {
-            // This now uses the data we just put into localStorage
             if (typeof initStreakTracker === 'function') initStreakTracker();
-            
             if (typeof updateActivityFeedUI === 'function') {
                 updateActivityFeedUI();
                 if (window.activityInterval) clearInterval(window.activityInterval);
@@ -5118,10 +5116,8 @@ async function loadDashboard() {
         
     } catch (e) {
         console.error('❌ Dashboard Load Error:', e);
-        showToast('Connection failed. Please check your internet.', 'error');
-        
+        showToast('Connection failed.', 'error');
         $('login-screen').classList.add('active');
-        $('login-screen').style.display = 'flex';
         $('dashboard-screen').classList.remove('active');
     } finally { 
         loading(false); 
