@@ -270,23 +270,12 @@
                 
             </nav>
 
-            <div class="sidebar-footer">
-                <!-- Hourly Update Status -->
-                <div class="update-status" id="update-status">
-                    <div class="update-icon">🕐</div>
-                    <div class="update-info">
-                        <span class="update-label">Next Update</span>
-                        <span class="update-time" id="next-update-time">--:--</span>
-                    </div>
-                </div>
-                
-                <button id="logout-btn">
-                    <span class="logout-icon">⏻</span> LOGOUT
-                </button>
-                
-                <!-- Minimal HopeTracker in sidebar -->
-                <div class="sidebar-credit">HopeTracker</div>
-            </div>
+            <button id="logout-btn">
+                <span class="logout-icon">⏻</span> LOGOUT
+            </button>
+            
+            <!-- Minimal HopeTracker in sidebar -->
+            <div class="sidebar-credit">HopeTracker</div>
         </aside>
 
         <div class="sidebar-overlay" id="sidebar-overlay"></div>
@@ -303,11 +292,6 @@
                     <span class="header-logo-icon">⟭⟬</span>
                     <span class="header-logo-text">BTS COMEBACK MISSION</span>
                 </div>
-                <!-- Hourly indicator in mobile header -->
-                <div class="header-update-badge" id="mobile-update-badge" title="Stats update hourly">
-                    <span class="badge-icon">🕐</span>
-                    <span class="badge-time" id="mobile-next-update">--</span>
-                </div>
             </header>
 
             <div class="pages-wrapper">
@@ -320,11 +304,6 @@
                             <p id="current-week" class="page-subtitle">Week: Loading...</p>
                         </div>
                         <div class="page-actions">
-                            <!-- Last Updated Info -->
-                            <div class="last-updated-badge" id="last-updated-badge">
-                                <span class="updated-icon">✓</span>
-                                <span class="updated-text" id="last-updated-text">Updated: --:--</span>
-                            </div>
                             <button class="refresh-btn" onclick="loadPage('home')" title="Refresh Data">🔄</button>
                         </div>
                     </div>
