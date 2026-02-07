@@ -400,11 +400,15 @@ function sanitize(str) {
 function formatLastUpdated(dateStr) {
     if (!dateStr) return 'Unknown';
     try {
-        // If the date string doesn't have a 'Z' or offset, 
-        // JS treats it as local time. We need to ensure it's handled as is.
-        const date = new Date(dateStr.replace(' ', 'T')); 
+        // FIX: Remove the 'Z' or timezone offset from the string so the browser 
+        // treats it as "Local Time" (which your backend already calculated as IST)
+        const cleanDateStr = dateStr.replace('Z', '').replace(/\.\d+/, '').replace(/\+.*$/, '');
         
-        // Use a simpler formatter that doesn't force timezone shifts
+        const date = new Date(cleanDateStr);
+        
+        if (isNaN(date.getTime())) return dateStr;
+
+        // Use simple formatting that reflects the string exactly
         const hours = date.getHours();
         const minutes = String(date.getMinutes()).padStart(2, '0');
         const ampm = hours >= 12 ? 'PM' : 'AM';
@@ -413,9 +417,10 @@ function formatLastUpdated(dateStr) {
         const day = date.getDate();
 
         return `${month} ${day}, ${displayHours}:${minutes} ${ampm}`;
-    } catch (e) { return dateStr; }
+    } catch (e) { 
+        return dateStr; 
+    }
 }
-
 function showToast(msg, type = 'info') {
     document.querySelectorAll('.toast-mini').forEach(t => t.remove());
     
@@ -5091,25 +5096,45 @@ async function loadDashboard() {
         
         setupDashboard(); 
 
-        // 3. ✅ FETCH STREAK FROM DB & FIX FORMAT
         try {
             const streakRes = await api('getStreakData', { agentNo: STATE.agentNo });
+            
             if (streakRes.success && streakRes.streak) {
                 const key = STREAK_KEY + STATE.agentNo;
                 
-                // 🔥 CRITICAL FIX: Convert DB "2026-02-06" to JS "Fri Feb 06 2026"
-                const dbDate = streakRes.streak.lastActiveDate;
-                const formattedDate = dbDate ? new Date(dbDate).toDateString() : null;
+                // 🔥 CRITICAL FIX: Ensure Dates match exact format required by initStreakTracker
+                // Backend sends YYYY-MM-DD. We need to convert to "Sat Feb 07 2026" format
+                const dbDateRaw = streakRes.streak.lastActiveDate; // "2026-02-07"
+                
+                // Create date object, ensuring we don't shift timezones on the date itself
+                let formattedDate = null;
+                if(dbDateRaw) {
+                    const parts = dbDateRaw.split('-'); // [2026, 02, 07]
+                    // Construct date manually to avoid timezone shifts: Year, Month (0-index), Day
+                    const d = new Date(parts[0], parts[1] - 1, parts[2]); 
+                    formattedDate = d.toDateString(); // "Sat Feb 07 2026"
+                }
 
-                localStorage.setItem(key, JSON.stringify({
+                const streakState = {
                     currentStreak: streakRes.streak.current,
                     longestStreak: streakRes.streak.longest,
-                    lastLogDate: formattedDate, // Now matches tracker format
+                    lastLogDate: formattedDate, 
                     freezes: streakRes.streak.freezesRemaining,
-                    isCompletedToday: streakRes.streak.todayCompleted,
-                    lastVisitDate: new Date().toDateString() 
-                }));
-                console.log('⚡ Streak synced from DB and formatted:', streakRes.streak.current);
+                    // If last active date is TODAY, mark as completed
+                    isCompletedToday: formattedDate === new Date().toDateString(),
+                    lastVisitDate: new Date().toDateString()
+                };
+
+                // 1. Save to Storage
+                localStorage.setItem(key, JSON.stringify(streakState));
+                
+                // 2. Force Update In-Memory State
+                Object.assign(STREAK_STATE, streakState);
+
+                console.log('⚡ Streak synced from DB:', streakState);
+                
+                // 3. Force UI Refresh Immediately
+                renderStreakWidget(streakState); 
             }
         } catch (streakErr) {
             console.warn('⚠️ Streak sync failed:', streakErr);
