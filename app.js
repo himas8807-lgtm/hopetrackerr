@@ -5043,18 +5043,16 @@ let notificationInterval = null;
 async function loadDashboard() {
     console.log('🏠 Loading dashboard (Live Data)...');
     
-    // 1. Always show loading spinner immediately
     loading(true);
     startHeartbeat();
     
     try {
-        // 2. Fetch Fresh Data (No Cache Check)
+        // 1. Fetch Core Dashboard Data
         const dashboardData = await api('getDashboardData');
 
         STATE.weeks = dashboardData.availableWeeks || [];
         STATE.week = dashboardData.week || "Week 9";
         
-        // ✅ FIXED: Proper object structure
         STATE.data = {
             agentNo: dashboardData.agent.agentNo,
             week: dashboardData.week,
@@ -5065,27 +5063,48 @@ async function loadDashboard() {
             trackContributions: dashboardData.agent.trackContributions || {},
             albumContributions: dashboardData.agent.albumContributions || {},
             album2xStatus: dashboardData.agent.album2xStatus || { passed: false, tracks: {} },
-            // ✅ teamInfo is NOW INSIDE STATE.data
             teamInfo: {
                 resultsReleased: dashboardData.resultsReleased || false
             }
         };
         
-        // 4. Switch Screens & Render
+        // 2. Setup UI & Switch Screens
         $('login-screen').classList.remove('active');
         $('login-screen').style.display = 'none';
         $('dashboard-screen').classList.add('active');
         $('dashboard-screen').style.display = 'flex';
         
         setupDashboard(); 
-        
-        // Load initial page
+
+        // 3. ✅ FETCH STREAK FROM DB (Prevent overwriting 12 days with 1)
+        try {
+            const streakRes = await api('getStreakData', { agentNo: STATE.agentNo });
+            if (streakRes.success && streakRes.streak) {
+                const key = STREAK_KEY + STATE.agentNo;
+                // Sync DB data to LocalStorage so initStreakTracker starts at 12
+                localStorage.setItem(key, JSON.stringify({
+                    currentStreak: streakRes.streak.current,
+                    longestStreak: streakRes.streak.longest,
+                    lastLogDate: streakRes.streak.lastActiveDate,
+                    freezes: streakRes.streak.freezesRemaining,
+                    isCompletedToday: streakRes.streak.todayCompleted,
+                    lastVisitDate: new Date().toDateString() // Keep date sync
+                }));
+                console.log('⚡ Streak synced from DB:', streakRes.streak.current);
+            }
+        } catch (streakErr) {
+            console.warn('⚠️ Could not sync streak from DB, using local only.');
+        }
+
+        // 4. Load current page
         const currentPage = ROUTER.initialized ? STATE.page : 'home';
         await loadPage(currentPage); 
         
         // 5. Trigger background checks
         setTimeout(() => {
+            // This now uses the data we just put into localStorage
             if (typeof initStreakTracker === 'function') initStreakTracker();
+            
             if (typeof updateActivityFeedUI === 'function') {
                 updateActivityFeedUI();
                 if (window.activityInterval) clearInterval(window.activityInterval);
@@ -5099,17 +5118,18 @@ async function loadDashboard() {
         
     } catch (e) {
         console.error('❌ Dashboard Load Error:', e);
-        
         showToast('Connection failed. Please check your internet.', 'error');
         
-        // Send back to login if live fetch fails
         $('login-screen').classList.add('active');
         $('login-screen').style.display = 'flex';
         $('dashboard-screen').classList.remove('active');
-        
     } finally { 
         loading(false); 
     }
+}
+function getISTDate() {
+    const istString = new Date().toLocaleString("en-US", {timeZone: "Asia/Kolkata"});
+    return new Date(istString);
 }
 // ==================== DATE HELPERS ====================
 
