@@ -3469,10 +3469,7 @@ async function loadMissionHistory() {
 
 async function renderWeekConfirmation() {
     const container = document.getElementById('admin-tab-confirm');
-    if (!container) {
-        console.error('❌ Confirm tab container not found');
-        return;
-    }
+    if (!container) return;
     
     container.innerHTML = '<div class="loading-text" style="padding:40px;text-align:center;">⏳ Loading week status...</div>';
     
@@ -3495,233 +3492,124 @@ async function renderWeekConfirmation() {
                     ">${isCompleted ? '✅ Week Ended' : '⏳ In Progress'}</span>
                 </div>
                 <p style="color:#888;font-size:12px;margin-top:8px;">
-                    Confirm attendance and police reports for each team.<br>
-                    <span style="color:#ffa500;">Deadline: Sunday 4:00 PM IST</span>
+                    Manually Verify Attendance and Police Reports.<br>
+                    <span style="color:#ffa500;">Teams must be "PASS" in all 5 checks to win.</span>
                 </p>
             </div>
-            
-            <!-- Deadline Warning -->
-            <div style="
-                background: rgba(255,68,68,0.1);
-                border: 1px solid rgba(255,68,68,0.3);
-                border-radius: 12px;
-                padding: 15px;
-                margin-bottom: 20px;
-                display: flex;
-                align-items: center;
-                gap: 12px;
-            ">
-                <span style="font-size:24px;">⚠️</span>
-                <div>
-                    <div style="color:#ff6b6b;font-weight:600;font-size:13px;">Important!</div>
-                    <div style="color:#ccc;font-size:11px;">
-                        Only confirm AFTER you receive reports from Attendance Checkers and Police Agents.
-                        Teams without both confirmations are NOT eligible to win.
-                    </div>
-                </div>
-            </div>
-            
+
             <!-- Team Cards -->
             ${Object.entries(teams).map(([teamName, info]) => {
                 const eligibility = getTeamEligibilityStatus(info);
                 const tColor = teamColor(teamName);
                 
                 return `
-                    <div style="
-                        background: linear-gradient(145deg, #1a1a2e, #12121a);
-                        border: 1px solid ${tColor}44;
-                        border-radius: 12px;
-                        padding: 18px;
-                        margin-bottom: 12px;
-                    ">
-                        <!-- Team Header -->
+                    <div style="background: linear-gradient(145deg, #1a1a2e, #12121a); border: 1px solid ${tColor}44; border-radius: 12px; padding: 18px; margin-bottom: 12px;">
                         <div style="display:flex;align-items:center;gap:12px;margin-bottom:15px;">
                             ${teamPfp(teamName) ? `<img src="${teamPfp(teamName)}" style="width:40px;height:40px;border-radius:50%;border:2px solid ${tColor};">` : ''}
                             <div style="flex:1;">
                                 <div style="color:${tColor};font-weight:600;font-size:15px;">${teamName}</div>
                                 <div style="color:#888;font-size:11px;">${fmt(info.teamXP || 0)} XP</div>
                             </div>
-                            <div style="
-                                padding: 4px 12px;
-                                border-radius: 12px;
-                                font-size: 11px;
-                                background: ${eligibility.allPassed ? 'rgba(0,255,136,0.1)' : 'rgba(255,165,0,0.1)'};
-                                color: ${eligibility.allPassed ? '#00ff88' : '#ffa500'};
-                            ">${eligibility.passedCount}/${eligibility.totalChecks} ✓</div>
+                            <div style="padding: 4px 12px; border-radius: 12px; font-size: 11px; background: ${eligibility.allPassed ? 'rgba(0,255,136,0.1)' : 'rgba(255,165,0,0.1)'}; color: ${eligibility.allPassed ? '#00ff88' : '#ffa500'};">
+                                ${eligibility.passedCount}/${eligibility.totalChecks} ✓
+                            </div>
                         </div>
                         
-                        <!-- Mission Status -->
-                        <div style="
-                            display: grid;
-                            grid-template-columns: repeat(5, 1fr);
-                            gap: 6px;
-                            margin-bottom: 15px;
-                            text-align: center;
-                        ">
+                        <!-- Mission Grid -->
+                        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 15px; text-align: center;">
                             <div style="padding:8px;background:rgba(0,0,0,0.2);border-radius:8px;">
                                 <div style="font-size:16px;">${info.trackGoalPassed ? '✅' : '❌'}</div>
-                                <div style="font-size:9px;color:#888;margin-top:4px;">Tracks</div>
+                                <div style="font-size:8px;color:#666;margin-top:4px;">Tracks</div>
                             </div>
                             <div style="padding:8px;background:rgba(0,0,0,0.2);border-radius:8px;">
                                 <div style="font-size:16px;">${info.albumGoalPassed ? '✅' : '❌'}</div>
-                                <div style="font-size:9px;color:#888;margin-top:4px;">Albums</div>
+                                <div style="font-size:8px;color:#666;margin-top:4px;">Albums</div>
                             </div>
                             <div style="padding:8px;background:rgba(0,0,0,0.2);border-radius:8px;">
                                 <div style="font-size:16px;">${info.album2xPassed ? '✅' : '❌'}</div>
-                                <div style="font-size:9px;color:#888;margin-top:4px;">2X</div>
+                                <div style="font-size:8px;color:#666;margin-top:4px;">2X</div>
                             </div>
-                            <div style="padding:8px;background:${info.attendanceConfirmed ? 'rgba(0,255,136,0.1)' : 'rgba(255,165,0,0.1)'};border-radius:8px;border:1px solid ${info.attendanceConfirmed ? 'rgba(0,255,136,0.3)' : 'rgba(255,165,0,0.3)'};">
-                                <div style="font-size:16px;">${info.attendanceConfirmed ? '✅' : '⏳'}</div>
-                                <div style="font-size:9px;color:#888;margin-top:4px;">Attend</div>
+                            <div style="padding:8px;background:${info.attendanceConfirmed ? 'rgba(0,255,136,0.05)' : 'rgba(255,68,68,0.05)'};border-radius:8px; border:1px solid ${info.attendanceConfirmed ? '#00ff8833' : '#ff444433'}">
+                                <div style="font-size:16px;">${info.attendanceConfirmed ? '✅' : '❌'}</div>
+                                <div style="font-size:8px;color:#666;margin-top:4px;">Attend</div>
                             </div>
-                            <div style="padding:8px;background:${info.policeConfirmed ? 'rgba(0,255,136,0.1)' : 'rgba(255,165,0,0.1)'};border-radius:8px;border:1px solid ${info.policeConfirmed ? 'rgba(0,255,136,0.3)' : 'rgba(255,165,0,0.3)'};">
-                                <div style="font-size:16px;">${info.policeConfirmed ? '✅' : '⏳'}</div>
-                                <div style="font-size:9px;color:#888;margin-top:4px;">Police</div>
+                            <div style="padding:8px;background:${info.policeConfirmed ? 'rgba(0,255,136,0.05)' : 'rgba(255,68,68,0.05)'};border-radius:8px; border:1px solid ${info.policeConfirmed ? '#00ff8833' : '#ff444433'}">
+                                <div style="font-size:16px;">${info.policeConfirmed ? '✅' : '❌'}</div>
+                                <div style="font-size:8px;color:#666;margin-top:4px;">Police</div>
                             </div>
                         </div>
                         
-                        <!-- Confirmation Buttons -->
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                            <button onclick="adminConfirmAttendance('${teamName}', ${!info.attendanceConfirmed})" style="
-                                padding: 12px;
-                                background: ${info.attendanceConfirmed ? 'rgba(0,255,136,0.15)' : 'rgba(123,44,191,0.2)'};
-                                border: 1px solid ${info.attendanceConfirmed ? 'rgba(0,255,136,0.4)' : 'rgba(123,44,191,0.4)'};
-                                border-radius: 8px;
-                                color: ${info.attendanceConfirmed ? '#00ff88' : '#c9a0ff'};
-                                font-size: 12px;
-                                cursor: pointer;
-                                display: flex;
-                                align-items: center;
-                                justify-content: center;
-                                gap: 6px;
-                            ">
-                                <span>📋</span>
-                                <span>${info.attendanceConfirmed ? 'Attendance ✓' : 'Confirm Attendance'}</span>
-                            </button>
-                            
-                            <button onclick="adminConfirmPolice('${teamName}', ${!info.policeConfirmed})" style="
-                                padding: 12px;
-                                background: ${info.policeConfirmed ? 'rgba(0,255,136,0.15)' : 'rgba(123,44,191,0.2)'};
-                                border: 1px solid ${info.policeConfirmed ? 'rgba(0,255,136,0.4)' : 'rgba(123,44,191,0.4)'};
-                                border-radius: 8px;
-                                color: ${info.policeConfirmed ? '#00ff88' : '#c9a0ff'};
-                                font-size: 12px;
-                                cursor: pointer;
-                                display: flex;
-                                align-items: center;
-                                justify-content: center;
-                                gap: 6px;
-                            ">
-                                <span>👮</span>
-                                <span>${info.policeConfirmed ? 'Police ✓' : 'Confirm Police'}</span>
-                            </button>
+                        <!-- Smart Pass/Fail Controls -->
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
+                            <!-- ATTENDANCE -->
+                            <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; border: 1px solid #333;">
+                                <div style="color: #888; font-size: 10px; margin-bottom: 8px; text-align: center; font-weight: bold;">ATTENDANCE</div>
+                                <div style="display: flex; gap: 5px;">
+                                    <button onclick="smartUpdateStatus('${teamName}', 'attendanceConfirmed', true)" 
+                                        style="flex: 1; padding: 8px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 10px;
+                                        background: ${info.attendanceConfirmed ? '#00ff88' : '#222'}; 
+                                        color: ${info.attendanceConfirmed ? '#000' : '#666'};">PASS</button>
+                                    <button onclick="smartUpdateStatus('${teamName}', 'attendanceConfirmed', false)" 
+                                        style="flex: 1; padding: 8px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 10px;
+                                        background: ${info.attendanceConfirmed === false ? '#ff4444' : '#222'}; 
+                                        color: ${info.attendanceConfirmed === false ? '#fff' : '#666'};">FAIL</button>
+                                </div>
+                            </div>
+
+                            <!-- POLICE -->
+                            <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; border: 1px solid #333;">
+                                <div style="color: #888; font-size: 10px; margin-bottom: 8px; text-align: center; font-weight: bold;">POLICE REPORT</div>
+                                <div style="display: flex; gap: 5px;">
+                                    <button onclick="smartUpdateStatus('${teamName}', 'policeConfirmed', true)" 
+                                        style="flex: 1; padding: 8px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 10px;
+                                        background: ${info.policeConfirmed ? '#00ff88' : '#222'}; 
+                                        color: ${info.policeConfirmed ? '#000' : '#666'};">PASS</button>
+                                    <button onclick="smartUpdateStatus('${teamName}', 'policeConfirmed', false)" 
+                                        style="flex: 1; padding: 8px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 10px;
+                                        background: ${info.policeConfirmed === false ? '#ff4444' : '#222'}; 
+                                        color: ${info.policeConfirmed === false ? '#fff' : '#666'};">FAIL</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 `;
             }).join('')}
-            
-            <!-- Eligible Teams Summary -->
-            <div style="
-                margin-top: 20px;
-                padding: 15px;
-                background: rgba(255,215,0,0.05);
-                border: 1px solid rgba(255,215,0,0.2);
-                border-radius: 12px;
-            ">
-                <div style="color:#ffd700;font-weight:600;font-size:13px;margin-bottom:10px;">🏆 Eligible to Win</div>
-                ${(() => {
-                    const eligible = Object.entries(teams).filter(([t, info]) => isTeamEligibleForWin(info));
-                    if (eligible.length === 0) {
-                        return '<div style="color:#888;font-size:12px;">No team is fully eligible yet. Confirm attendance and police reports.</div>';
-                    }
-                    const sorted = eligible.sort((a, b) => (b[1].teamXP || 0) - (a[1].teamXP || 0));
-                    const winner = sorted[0][0];
-                    return `
-                        <div style="display:flex;flex-wrap:wrap;gap:8px;">
-                            ${sorted.map(([t, info], i) => `
-                                <div style="
-                                    display:flex;
-                                    align-items:center;
-                                    gap:6px;
-                                    padding:6px 12px;
-                                    background:${i === 0 ? 'rgba(255,215,0,0.15)' : 'rgba(0,255,136,0.1)'};
-                                    border:1px solid ${i === 0 ? 'rgba(255,215,0,0.4)' : 'rgba(0,255,136,0.3)'};
-                                    border-radius:20px;
-                                ">
-                                    ${i === 0 ? '<span>👑</span>' : '<span>✓</span>'}
-                                    <span style="color:${teamColor(t)};font-weight:600;font-size:12px;">${t}</span>
-                                    <span style="color:#888;font-size:10px;">${fmt(info.teamXP)} XP</span>
-                                </div>
-                            `).join('')}
-                        </div>
-                        <div style="margin-top:10px;color:#00ff88;font-size:12px;">
-                            🏆 Current Winner: <strong>${winner}</strong>
-                        </div>
-                    `;
-                })()}
-            </div>
         `;
         
     } catch (e) {
         console.error('❌ Error loading week confirmation:', e);
-        container.innerHTML = `
-            <div style="text-align:center;padding:40px;">
-                <p style="color:#ff4444;">❌ Error loading data</p>
-                <button onclick="renderWeekConfirmation()" class="btn-secondary" style="margin-top:15px;">🔄 Retry</button>
-            </div>
-        `;
+        container.innerHTML = `<div style="text-align:center;padding:40px;"><p style="color:#ff4444;">❌ Error loading data</p></div>`;
     }
 }
 
-// Admin action: Confirm Attendance
-async function adminConfirmAttendance(teamName, confirm) {
-    if (!confirm && !window.confirm(`Remove attendance confirmation for ${teamName}?`)) return;
+/**
+ * Smart Helper for Pass/Fail buttons
+ */
+async function smartUpdateStatus(teamName, field, value) {
+    const actionLabel = value ? "PASS" : "FAIL";
+    const fieldLabel = field === 'attendanceConfirmed' ? "Attendance" : "Police Report";
     
-    loading(true);
-    try {
-        const result = await api('confirmTeamAttendance', {
-            week: STATE.week,
-            team: teamName,
-            confirmed: confirm,
-            agentNo: STATE.agentNo,
-            sessionToken: STATE.adminSession
-        });
-        
-        if (result.success) {
-            showToast(`✅ ${teamName} attendance ${confirm ? 'confirmed' : 'removed'}`, 'success');
-            renderWeekConfirmation();
-        } else {
-            showToast('❌ ' + (result.error || 'Failed'), 'error');
-        }
-    } catch (e) {
-        showToast('❌ Error: ' + e.message, 'error');
-    } finally {
-        loading(false);
-    }
-}
+    if (!confirm(`Set ${teamName} to ${actionLabel} for ${fieldLabel}?`)) return;
 
-// Admin action: Confirm Police
-async function adminConfirmPolice(teamName, confirm) {
-    if (!confirm && !window.confirm(`Remove police confirmation for ${teamName}?`)) return;
-    
     loading(true);
     try {
-        const result = await api('confirmTeamPolice', {
+        const result = await api('updateTeamStatus', {
             week: STATE.week,
             team: teamName,
-            confirmed: confirm,
-            agentNo: STATE.agentNo,
+            field: field,
+            value: value,
             sessionToken: STATE.adminSession
         });
-        
+
         if (result.success) {
-            showToast(`✅ ${teamName} police report ${confirm ? 'confirmed' : 'removed'}`, 'success');
-            renderWeekConfirmation();
-        } else {
-            showToast('❌ ' + (result.error || 'Failed'), 'error');
+            // Trigger Sync to recalculate winner immediately
+            await api('runHourlySync', { adminKey: 'BTSSYNC2024' }); 
+            
+            showToast(`✅ ${teamName} ${fieldLabel}: ${actionLabel}`, 'success');
+            renderWeekConfirmation(); 
         }
     } catch (e) {
-        showToast('❌ Error: ' + e.message, 'error');
+        showToast('❌ Update Failed: ' + e.message, 'error');
     } finally {
         loading(false);
     }
