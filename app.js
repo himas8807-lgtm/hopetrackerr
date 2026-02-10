@@ -6,7 +6,7 @@ const CONFIG = {
     ADMIN_AGENT_NO: 'AGENT000',
 
     WEEK_DATES: {
-        'Test Week 1': '2025-11-23',  
+        'Test Week 1': '2025-11-23',   
         'Test Week 2': '2025-11-30',
         'Week 1': '2025-12-07',
         'Week 2': '2025-12-14',
@@ -2246,18 +2246,26 @@ function isAdminAgent() {
 }
 
 function checkAdminStatus() {
-    if (!isAdminAgent()) { 
+    // 1. Check if user is the Admin Agent
+    // Ensure CONFIG.ADMIN_AGENT_NO matches your backend (usually 'AGENT000')
+    if (String(STATE.agentNo).toUpperCase() !== 'AGENT000') { 
         STATE.isAdmin = false; 
         return; 
     }
+
+    // 2. Check for saved session in browser
     const savedSession = localStorage.getItem('adminSession');
     const savedExpiry = localStorage.getItem('adminExpiry');
+
+    // 3. If session exists and hasn't expired
     if (savedSession && savedExpiry && Date.now() < parseInt(savedExpiry)) {
         STATE.isAdmin = true;
-        STATE.adminSession = savedSession;
-        localStorage.setItem('adminExpiry', String(Date.now() + 86400000));
+        STATE.adminSession = savedSession; // RESTORE THE SESSION HERE
+        addAdminIndicator(); // Show the button
+        console.log("✅ Admin session restored");
     } else {
         STATE.isAdmin = false;
+        STATE.adminSession = null;
     }
 }
 
@@ -2345,40 +2353,59 @@ function closeAdminModal() {
 }
 
 async function verifyAdminPassword() {
-    const passwordField = $('admin-password');
+    const passwordField = document.getElementById('admin-password');
     const password = passwordField?.value;
-    const errorEl = $('admin-error');
+    const errorEl = document.getElementById('admin-error');
     
+    // 1. Validation
     if (!password) {
-        if (errorEl) { errorEl.textContent = '❌ Please enter password'; errorEl.classList.add('show'); }
+        if (errorEl) { 
+            errorEl.textContent = '❌ Please enter password'; 
+            errorEl.classList.add('show'); 
+        }
         return;
     }
     
-    let verified = false;
-    
-    if (password === CONFIG.ADMIN_PASSWORD) {
-        verified = true;
-        STATE.adminSession = 'local_' + Date.now();
-    } else {
-        try {
-            const result = await api('verifyAdmin', { agentNo: STATE.agentNo, password });
-            if (result.success) { verified = true; STATE.adminSession = result.sessionToken; }
-        } catch (e) { console.log('Server verification failed:', e); }
-    }
+    // UI Feedback
+    const btn = document.querySelector('.admin-modal-footer button');
+    const originalText = btn ? btn.innerHTML : 'Unlock';
+    if(btn) { btn.innerHTML = '⏳ Verifying...'; btn.disabled = true; }
 
-    if (verified) {
-        STATE.isAdmin = true;
-        localStorage.setItem('adminSession', STATE.adminSession);
-        localStorage.setItem('adminExpiry', String(Date.now() + 86400000));
-        closeAdminModal();
-        addAdminIndicator();
-        if (!STATE.week) { 
-            try { const w = await api('getAvailableWeeks'); STATE.week = w.current || w.weeks?.[0]; } catch(e) {} 
+    try {
+        // 2. ALWAYS HIT THE SERVER. NO LOCAL BYPASS.
+        // The server must generate and save the token in the DB, 
+        // otherwise future requests (like approving reports) will fail.
+        const result = await api('verifyAdmin', { 
+            agentNo: STATE.agentNo, 
+            password: password 
+        });
+        
+        if (result.success && result.sessionToken) { 
+            // 3. Success: Save the REAL server token
+            STATE.isAdmin = true;
+            STATE.adminSession = result.sessionToken;
+            
+            localStorage.setItem('adminSession', result.sessionToken);
+            localStorage.setItem('adminExpiry', String(Date.now() + 2 * 60 * 60 * 1000)); // 2 hours
+            
+            closeAdminModal();
+            addAdminIndicator();
+            showToast('✅ Access Granted', 'success');
+            
+            // Open panel after short delay
+            setTimeout(() => showAdminPanel(), 100);
+        } else {
+            throw new Error(result.error || 'Invalid Password');
         }
-        showToast('Access Granted', 'success');
-        setTimeout(() => showAdminPanel(), 100);
-    } else {
-        if (errorEl) { errorEl.textContent = '❌ Invalid password'; errorEl.classList.add('show'); }
+
+    } catch (e) { 
+        console.error('Admin Auth Failed:', e); 
+        if (errorEl) { 
+            errorEl.textContent = '❌ ' + (e.message || 'Auth Failed'); 
+            errorEl.classList.add('show'); 
+        }
+    } finally {
+        if(btn) { btn.innerHTML = originalText; btn.disabled = false; }
     }
 }
 
@@ -2410,6 +2437,7 @@ function showAdminPanel() {
             <button type="button" class="admin-tab active" data-tab="create">Create Mission</button>
             <button type="button" class="admin-tab" data-tab="active">Active</button>
             <button type="button" class="admin-tab" data-tab="confirm">📋 Confirm</button>
+            <button type="button" class="admin-tab" data-tab="debug">🔧 Diagnostics</button>
             <button type="button" class="admin-tab" data-tab="system">⚙️ System</button>
             <button type="button" class="admin-tab" data-tab="leaves">🛑 On Leave</button> 
             <button type="button" class="admin-tab" data-tab="assets">Badge Preview</button>
@@ -2419,6 +2447,7 @@ function showAdminPanel() {
             <div id="admin-tab-create" class="admin-tab-content active"></div>
             <div id="admin-tab-active" class="admin-tab-content"></div>
             <div id="admin-tab-confirm" class="admin-tab-content"></div>
+            <div id="admin-tab-debug" class="admin-tab-content"></div>
             <div id="admin-tab-system" class="admin-tab-content"></div>
             <div id="admin-tab-leaves" class="admin-tab-content"></div>
             <div id="admin-tab-assets" class="admin-tab-content"></div>
@@ -2493,6 +2522,9 @@ function switchAdminTab(tabName) {
             break;
         case 'confirm':                    
             renderWeekConfirmation();
+            break;
+        case 'debug': 
+            renderAdminDebugTab(); 
             break;
         case 'system':
             renderAdminSystemTab();
@@ -3473,153 +3505,220 @@ async function loadMissionHistory() {
 }
 // ==================== ADMIN WEEK CONFIRMATION ====================
 
+// ==================== ADMIN: EASY APPROVAL SYSTEM ====================
+
 async function renderWeekConfirmation() {
     const container = document.getElementById('admin-tab-confirm');
     if (!container) return;
     
-    container.innerHTML = '<div class="loading-text" style="padding:40px;text-align:center;">⏳ Loading week status...</div>';
+    container.innerHTML = '<div class="loading-text" style="padding:40px;text-align:center;">⏳ Loading Team Status...</div>';
     
     try {
+        // Fetch fresh data
         const summary = await api('getWeeklySummary', { week: STATE.week });
         const teams = summary.teams || {};
-        const isCompleted = isWeekCompleted(STATE.week);
         
-        container.innerHTML = `
-            <div style="margin-bottom:20px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;">
-                    <h4 style="color:#fff;margin:0;">📋 ${STATE.week} Confirmations</h4>
-                    <span style="
-                        padding: 6px 12px;
-                        background: ${isCompleted ? 'rgba(0,255,136,0.1)' : 'rgba(255,165,0,0.1)'};
-                        border: 1px solid ${isCompleted ? 'rgba(0,255,136,0.3)' : 'rgba(255,165,0,0.3)'};
-                        border-radius: 20px;
-                        color: ${isCompleted ? '#00ff88' : '#ffa500'};
-                        font-size: 11px;
-                    ">${isCompleted ? '✅ Week Ended' : '⏳ In Progress'}</span>
+        // Define team order
+        const teamList = ['Team Indigo', 'Team Echo', 'Team Agust D', 'Team JITB'];
+        
+        let html = `
+            <div style="margin-bottom:15px; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <h4 style="color:#fff;margin:0;">📋 Verification Center</h4>
+                    <p style="color:#888;font-size:11px;margin-top:2px;">${STATE.week}</p>
                 </div>
-                <p style="color:#888;font-size:12px;margin-top:8px;">
-                    Manually Verify Attendance and Police Reports.<br>
-                    <span style="color:#ffa500;">Teams must be "PASS" in all 5 checks to win.</span>
-                </p>
+                <button onclick="renderWeekConfirmation()" class="btn-secondary" style="padding:8px 12px;font-size:12px;">🔄 Refresh</button>
             </div>
+            
+            <div style="display:flex; flex-direction:column; gap:12px;">
+        `;
 
-            <!-- Team Cards -->
-            ${Object.entries(teams).map(([teamName, info]) => {
-                const eligibility = getTeamEligibilityStatus(info);
-                const tColor = teamColor(teamName);
-                
-                return `
-                    <div style="background: linear-gradient(145deg, #1a1a2e, #12121a); border: 1px solid ${tColor}44; border-radius: 12px; padding: 18px; margin-bottom: 12px;">
-                        <div style="display:flex;align-items:center;gap:12px;margin-bottom:15px;">
-                            ${teamPfp(teamName) ? `<img src="${teamPfp(teamName)}" style="width:40px;height:40px;border-radius:50%;border:2px solid ${tColor};">` : ''}
-                            <div style="flex:1;">
-                                <div style="color:${tColor};font-weight:600;font-size:15px;">${teamName}</div>
-                                <div style="color:#888;font-size:11px;">${fmt(info.teamXP || 0)} XP</div>
-                            </div>
-                            <div style="padding: 4px 12px; border-radius: 12px; font-size: 11px; background: ${eligibility.allPassed ? 'rgba(0,255,136,0.1)' : 'rgba(255,165,0,0.1)'}; color: ${eligibility.allPassed ? '#00ff88' : '#ffa500'};">
-                                ${eligibility.passedCount}/${eligibility.totalChecks} ✓
-                            </div>
-                        </div>
-                        
-                        <!-- Mission Grid -->
-                        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 15px; text-align: center;">
-                            <div style="padding:8px;background:rgba(0,0,0,0.2);border-radius:8px;">
-                                <div style="font-size:16px;">${info.trackGoalPassed ? '✅' : '❌'}</div>
-                                <div style="font-size:8px;color:#666;margin-top:4px;">Tracks</div>
-                            </div>
-                            <div style="padding:8px;background:rgba(0,0,0,0.2);border-radius:8px;">
-                                <div style="font-size:16px;">${info.albumGoalPassed ? '✅' : '❌'}</div>
-                                <div style="font-size:8px;color:#666;margin-top:4px;">Albums</div>
-                            </div>
-                            <div style="padding:8px;background:rgba(0,0,0,0.2);border-radius:8px;">
-                                <div style="font-size:16px;">${info.album2xPassed ? '✅' : '❌'}</div>
-                                <div style="font-size:8px;color:#666;margin-top:4px;">2X</div>
-                            </div>
-                            <div style="padding:8px;background:${info.attendanceConfirmed ? 'rgba(0,255,136,0.05)' : 'rgba(255,68,68,0.05)'};border-radius:8px; border:1px solid ${info.attendanceConfirmed ? '#00ff8833' : '#ff444433'}">
-                                <div style="font-size:16px;">${info.attendanceConfirmed ? '✅' : '❌'}</div>
-                                <div style="font-size:8px;color:#666;margin-top:4px;">Attend</div>
-                            </div>
-                            <div style="padding:8px;background:${info.policeConfirmed ? 'rgba(0,255,136,0.05)' : 'rgba(255,68,68,0.05)'};border-radius:8px; border:1px solid ${info.policeConfirmed ? '#00ff8833' : '#ff444433'}">
-                                <div style="font-size:16px;">${info.policeConfirmed ? '✅' : '❌'}</div>
-                                <div style="font-size:8px;color:#666;margin-top:4px;">Police</div>
-                            </div>
-                        </div>
-                        
-                        <!-- Smart Pass/Fail Controls -->
-                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
-                            <!-- ATTENDANCE -->
-                            <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; border: 1px solid #333;">
-                                <div style="color: #888; font-size: 10px; margin-bottom: 8px; text-align: center; font-weight: bold;">ATTENDANCE</div>
-                                <div style="display: flex; gap: 5px;">
-                                    <button onclick="smartUpdateStatus('${teamName}', 'attendanceConfirmed', true)" 
-                                        style="flex: 1; padding: 8px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 10px;
-                                        background: ${info.attendanceConfirmed ? '#00ff88' : '#222'}; 
-                                        color: ${info.attendanceConfirmed ? '#000' : '#666'};">PASS</button>
-                                    <button onclick="smartUpdateStatus('${teamName}', 'attendanceConfirmed', false)" 
-                                        style="flex: 1; padding: 8px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 10px;
-                                        background: ${info.attendanceConfirmed === false ? '#ff4444' : '#222'}; 
-                                        color: ${info.attendanceConfirmed === false ? '#fff' : '#666'};">FAIL</button>
-                                </div>
-                            </div>
+        teamList.forEach(teamName => {
+            const info = teams[teamName] || {};
+            const tColor = teamColor(teamName);
+            
+            // Check status
+            const attStatus = info.attendanceConfirmed; // true, false, or null
+            const polStatus = info.policeConfirmed;     // true, false, or null
 
-                            <!-- POLICE -->
-                            <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; border: 1px solid #333;">
-                                <div style="color: #888; font-size: 10px; margin-bottom: 8px; text-align: center; font-weight: bold;">POLICE REPORT</div>
-                                <div style="display: flex; gap: 5px;">
-                                    <button onclick="smartUpdateStatus('${teamName}', 'policeConfirmed', true)" 
-                                        style="flex: 1; padding: 8px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 10px;
-                                        background: ${info.policeConfirmed ? '#00ff88' : '#222'}; 
-                                        color: ${info.policeConfirmed ? '#000' : '#666'};">PASS</button>
-                                    <button onclick="smartUpdateStatus('${teamName}', 'policeConfirmed', false)" 
-                                        style="flex: 1; padding: 8px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 10px;
-                                        background: ${info.policeConfirmed === false ? '#ff4444' : '#222'}; 
-                                        color: ${info.policeConfirmed === false ? '#fff' : '#666'};">FAIL</button>
-                                </div>
-                            </div>
+            html += `
+            <div style="
+                background: linear-gradient(145deg, #1a1a2e, #12121a); 
+                border-left: 4px solid ${tColor};
+                border-radius: 8px; 
+                padding: 15px; 
+                box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            ">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                    <span style="color:${tColor}; font-weight:bold; font-size:14px;">${teamName}</span>
+                    <span style="font-size:11px; color:#888;">XP: ${fmt(info.teamXP || 0)}</span>
+                </div>
+
+                <!-- CONTROLS GRID -->
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    
+                    <!-- ATTENDANCE CONTROL -->
+                    <div style="background:rgba(0,0,0,0.3); padding:10px; border-radius:8px; text-align:center;">
+                        <div style="font-size:10px; color:#aaa; margin-bottom:6px; font-weight:600;">ATTENDANCE</div>
+                        
+                        <div style="display:flex; gap:5px;">
+                            <!-- PASS BUTTON -->
+                            <button onclick="('${teamName}', 'attendanceConfirmed', true)" 
+                                style="
+                                    flex:1; padding:8px; border:1px solid #00ff88; border-radius:6px; 
+                                    background: ${attStatus === true ? '#00ff88' : 'transparent'}; 
+                                    color: ${attStatus === true ? '#000' : '#00ff88'}; 
+                                    font-weight:bold; font-size:10px; cursor:pointer;
+                                ">PASS</button>
+                                
+                            <!-- FAIL BUTTON -->
+                            <button onclick="('${teamName}', 'attendanceConfirmed', false)" 
+                                style="
+                                    flex:1; padding:8px; border:1px solid #ff4444; border-radius:6px; 
+                                    background: ${attStatus === false ? '#ff4444' : 'transparent'}; 
+                                    color: ${attStatus === false ? '#fff' : '#ff4444'}; 
+                                    font-weight:bold; font-size:10px; cursor:pointer;
+                                ">FAIL</button>
                         </div>
                     </div>
-                `;
-            }).join('')}
+
+                    <!-- POLICE REPORT CONTROL -->
+                    <div style="background:rgba(0,0,0,0.3); padding:10px; border-radius:8px; text-align:center;">
+                        <div style="font-size:10px; color:#aaa; margin-bottom:6px; font-weight:600;">POLICE REPORT</div>
+                        
+                        <div style="display:flex; gap:5px;">
+                            <!-- PASS BUTTON -->
+                            <button onclick="('${teamName}', 'policeConfirmed', true)" 
+                                style="
+                                    flex:1; padding:8px; border:1px solid #00ff88; border-radius:6px; 
+                                    background: ${polStatus === true ? '#00ff88' : 'transparent'}; 
+                                    color: ${polStatus === true ? '#000' : '#00ff88'}; 
+                                    font-weight:bold; font-size:10px; cursor:pointer;
+                                ">PASS</button>
+                                
+                            <!-- FAIL BUTTON -->
+                            <button onclick="('${teamName}', 'policeConfirmed', false)" 
+                                style="
+                                    flex:1; padding:8px; border:1px solid #ff4444; border-radius:6px; 
+                                    background: ${polStatus === false ? '#ff4444' : 'transparent'}; 
+                                    color: ${polStatus === false ? '#fff' : '#ff4444'}; 
+                                    font-weight:bold; font-size:10px; cursor:pointer;
+                                ">FAIL</button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>`;
+        });
+
+        html += `</div>`;
+        
+        // Add "Release Results" Button at bottom
+        html += `
+            <div style="margin-top:20px; padding-top:15px; border-top:1px dashed #444;">
+                <p style="color:#888; font-size:11px; text-align:center; margin-bottom:10px;">
+                    Once all teams are verified, release the results to the dashboard.
+                </p>
+                <button onclick="toggleResultsReleaseAdmin()" 
+                    class="btn-primary" 
+                    style="width:100%; background:linear-gradient(135deg, #7b2cbf, #9d4edd);">
+                    📢 ${summary.resultsReleased ? 'HIDE RESULTS' : 'RELEASE RESULTS'}
+                </button>
+            </div>
         `;
+
+        container.innerHTML = html;
         
     } catch (e) {
-        console.error('❌ Error loading week confirmation:', e);
-        container.innerHTML = `<div style="text-align:center;padding:40px;"><p style="color:#ff4444;">❌ Error loading data</p></div>`;
+        console.error('Confirm Tab Error:', e);
+        container.innerHTML = `<div class="error-state"><p>❌ Failed to load data</p><button class="btn-secondary" onclick="renderWeekConfirmation()">Retry</button></div>`;
     }
 }
-
-/**
- * Smart Helper for Pass/Fail buttons
- */
 async function smartUpdateStatus(teamName, field, value) {
-    const actionLabel = value ? "PASS" : "FAIL";
-    const fieldLabel = field === 'attendanceConfirmed' ? "Attendance" : "Police Report";
-    
-    if (!confirm(`Set ${teamName} to ${actionLabel} for ${fieldLabel}?`)) return;
+    // 1. Get the token from storage (Safety net if page was refreshed)
+    const token = STATE.adminSession || localStorage.getItem('adminSession');
+
+    // 2. If no token, force login
+    if (!token) {
+        showToast('⚠️ Admin session expired. Please re-login.', 'error');
+        showAdminLogin();
+        return;
+    }
 
     loading(true);
+
     try {
+        console.log(`📝 Admin Action: ${teamName} -> ${field} = ${value}`);
+
         const result = await api('updateTeamStatus', {
-            week: STATE.week,
+            // 🔥 CRITICAL FIX: Hardcode this to 'AGENT000'
+            // Do NOT use STATE.agentNo, because if you are viewing the dashboard
+            // as a normal user, STATE.agentNo will be wrong.
+            agentNo: 'AGENT000', 
+            
+            sessionToken: token, 
+            adminSession: token, // Send in both formats to be safe
+            week: STATE.week,    // This can be Week 9, that's totally fine
             team: teamName,
             field: field,
-            value: value,
-            sessionToken: STATE.adminSession
+            value: value
         });
 
         if (result.success) {
-            // Trigger Sync to recalculate winner immediately
-            await api('runHourlySync', { adminKey: 'BTSSYNC2024' }); 
-            
-            showToast(`✅ ${teamName} ${fieldLabel}: ${actionLabel}`, 'success');
-            renderWeekConfirmation(); 
+            const statusText = value ? "PASSED ✅" : "FAILED ❌";
+            showToast(`${teamName}: ${statusText}`, value ? 'success' : 'error');
+            await renderWeekConfirmation(); // Refresh the UI
+        } else {
+            // If backend says Unauthorized, the token is dead or ID is wrong
+            if (result.error === 'Unauthorized' || result.error.includes('Access denied')) {
+                console.error("⛔ Admin Token Rejected");
+                localStorage.removeItem('adminSession'); // Clear bad token
+                STATE.adminSession = null;
+                showToast('⚠️ Admin session timed out. Enter password again.', 'error');
+                showAdminLogin();
+            } else {
+                throw new Error(result.error || 'Update failed');
+            }
         }
     } catch (e) {
-        showToast('❌ Update Failed: ' + e.message, 'error');
+        console.error(e);
+        showToast('❌ Error: ' + e.message, 'error');
     } finally {
         loading(false);
     }
 }
+window.smartUpdateStatus = smartUpdateStatus;
+
+async function toggleResultsReleaseAdmin() {
+    if(!confirm("Are you sure you want to toggle visibility of results for all users?")) return;
+    
+    loading(true);
+    try {
+        // Check current status first to toggle
+        const summary = await api('getWeeklySummary', { week: STATE.week });
+        const newState = !summary.resultsReleased;
+        
+        const res = await api('toggleResultsRelease', {
+            agentNo: STATE.agentNo,
+            adminSession: STATE.adminSession,
+            week: STATE.week,
+            released: newState
+        });
+        
+        if (res.success) {
+            showToast(`Results are now ${newState ? 'VISIBLE ✅' : 'HIDDEN 🔒'}`, 'success');
+            renderWeekConfirmation();
+        }
+    } catch(e) {
+        showToast("Error: " + e.message, 'error');
+    } finally {
+        loading(false);
+    }
+}
+
+// Ensure functions are global
+window.renderWeekConfirmation = renderWeekConfirmation;
+window.toggleResultsReleaseAdmin = toggleResultsReleaseAdmin;
 async function setTodaysSong() {
     const title = prompt('Song Title:');
     if (!title) return;
@@ -4398,80 +4497,80 @@ function initStreakTracker() {
 function renderStreakWidget(s) {
     if (!s) s = getStreakState();
 
-    const container = document.getElementById('streak-widget-container');
+    // 1. Safe Container Check
+    let container = document.getElementById('streak-widget-container');
     if (!container) {
         const parent = document.querySelector('.quick-stats-section');
         if (parent) {
-            const div = document.createElement('div');
-            div.id = 'streak-widget-container';
-            parent.insertBefore(div, parent.firstChild);
+            container = document.createElement('div');
+            container.id = 'streak-widget-container';
+            parent.insertBefore(container, parent.firstChild);
         } else {
-            return;
+            return; 
         }
     }
 
     const target = STREAK_CONFIG.ACTIVITY_THRESHOLD || 10;
-    const progressPct = Math.min(100, (s.todayProgress / target) * 100);
 
-    // --- LOGIC: DETERMINE STATUS & ICON ---
+    // --- FIX STARTS HERE ---
+    // Logic: If isCompletedToday is true, force visual 100%, otherwise calculate math
+    let progressPct = 0;
+    let progressDisplay = `${s.todayProgress} / ${target}`;
+
+    if (s.isCompletedToday) {
+        progressPct = 100; // Force bar to fill
+        progressDisplay = `${target} / ${target}`; // Force text to look complete
+    } else {
+        progressPct = Math.min(100, (s.todayProgress / target) * 100);
+    }
+    // --- FIX ENDS HERE ---
+
+    // Determine Styling
     let statusClass = "status-zero";
-    let icon = "⭕"; // Default: Empty Circle / Target
+    let icon = "⭕";
     let mainColor = "#666";
     let statusText = "SYSTEM STANDBY";
 
     if (s.isCompletedToday) {
-        // Daily Goal Done
         statusClass = "status-done";
-        icon = "⚡"; // Power / Energy
+        icon = "⚡";
         mainColor = "#00ff88";
-        statusText = "POWER RESTORED";
+        statusText = "GOAL COMPLETE";
     } else if (s.currentStreak > 0) {
-        // Active Streak, Goal Pending
         statusClass = "status-active";
-        icon = "🔥"; // Fire
+        icon = "🔥";
         mainColor = "#ff6b35";
         statusText = "STREAK ACTIVE";
     } else {
-        // 0 Streak, Goal Pending
         statusClass = "status-zero";
-        icon = "📡"; // Searching signal or ⭕
+        icon = "📡";
         mainColor = "#888";
         statusText = "NO SIGNAL";
     }
 
     const html = `
         <div class="streak-widget ${statusClass}">
-            <!-- 1. ICON BOX (Minimal) -->
-            <div class="streak-icon-box">
-                ${icon}
-            </div>
-
-            <!-- 2. DATA AREA -->
+            <div class="streak-icon-box">${icon}</div>
             <div class="streak-info">
-                
-                <!-- Top Row: Streak Count -->
                 <div class="streak-title-row">
                     <div>
                         <span class="streak-value" style="color:${mainColor}">${s.currentStreak}</span>
                         <span class="streak-label">DAYS</span>
                     </div>
-                    <!-- Freeze Count (Ice Blue) -->
-                    <div class="streak-freeze" title="Streak Freezes">
-                        🧊 ${s.freezes}
-                    </div>
+                    <div class="streak-freeze" title="Streak Freezes">🧊 ${s.freezes}</div>
                 </div>
-
-                <!-- Progress Bar (Thin Line) -->
+                
+                <!-- Bar Container -->
                 <div class="streak-bar-container">
                     <div class="streak-bar-fill" style="width: ${progressPct}%;"></div>
                 </div>
 
-                <!-- Bottom Meta Data -->
+                <!-- Text Below Bar -->
                 <div class="streak-meta">
                     <span style="color:${s.isCompletedToday ? '#00ff88' : '#666'}">
-                        ${s.isCompletedToday ? 'GOAL COMPLETE' : 'DAILY TARGET'}
+                        ${statusText}
                     </span>
-                    <span>${s.todayProgress} / ${target}</span>
+                    <span>${progressDisplay}</span>
                 </div>
             </div>
         </div>
@@ -4653,6 +4752,9 @@ const ROUTES = {
     'guide': 'guide',
     'namjoon': 'namjoon', 
     'streaming-tips': 'streaming-tips',
+    'attendance': 'attendance',        // ✅ ADDED
+    'operatives': 'attendance',        // ✅ ALIAS
+    'database': 'attendance',          // ✅ ALIAS
     'login': 'login'
 };
 
@@ -4676,6 +4778,7 @@ const PAGE_TO_ROUTE = {
     'guide': 'guide',
     'namjoon': 'namjoon',
     'streaming-tips': 'streaming-tips',
+    'attendance': 'attendance',
     'login': 'login'
 };
 
@@ -4772,12 +4875,12 @@ async function renderPageByRoute(pageName) {
         p.style.display = 'none'; // Ensure hidden
     });
     
-    // ✅ FIX: Added ALL potential pages to this list so they are created dynamically if missing
+    // ✅ FIX 1: Added 'attendance' to this list so the HTML container is created
     const dynamicPages = [
         'chat', 'playlists', 'gc-links', 'helper-roles', 'song-of-day', 'sotd',
         'secret-missions', 'announcements', 'drawer', 'goals', 'rankings', 
         'team-level', 'summary', 'comparison', 'album2x', 'profile', 'namjoon', 
-        'streaming-tips', 'guide'
+        'streaming-tips', 'guide', 'attendance' 
     ];
 
     dynamicPages.forEach(pName => {
@@ -4787,7 +4890,7 @@ async function renderPageByRoute(pageName) {
                 const newPage = document.createElement('section');
                 newPage.id = `page-${pName}`;
                 newPage.className = 'page';
-                // Automatically create the content container ID (e.g., 'secret-missions-content')
+                // Automatically create the content container ID
                 newPage.innerHTML = `<div id="${pName}-content"></div>`;
                 mainContent.appendChild(newPage);
             }
@@ -4825,6 +4928,9 @@ async function renderPageByRoute(pageName) {
             case 'streaming-tips': await renderStreamingTips(); break;
             case 'namjoon': await renderNamjoonBrain(); break;
             case 'guide': await renderGuidePage(); break; 
+            
+            // ✅ FIX 2: Added the case to actually load the attendance data
+            case 'attendance': await renderAttendance(); break; 
         }
     } catch (e) {
         console.error('Page render error:', e);
@@ -5776,8 +5882,6 @@ async function showOnlineUsers() {
 // ==================== CHAT SYSTEM ====================
 
 let chatRefreshInterval = null;
-let lastMessageId = null;
-let isSending = false;
 
 async function renderChat() {
     let container = $('chat-content');
@@ -5789,10 +5893,10 @@ async function renderChat() {
         }
     }
     if (!container) return;
-
+    
     const team = STATE.data?.profile?.team;
     const myUsername = STATE.data?.profile?.name || 'Agent';
-
+    
     container.innerHTML = `
         <!-- Chat Rules -->
         <div style="
@@ -5813,7 +5917,7 @@ async function renderChat() {
                 • No spam, links, or inappropriate content 🚫
             </div>
         </div>
-
+        
         <!-- Chat Box -->
         <div class="chat-box" style="
             background: #12121a;
@@ -5848,7 +5952,7 @@ async function renderChat() {
                     </span>
                 </div>
             </div>
-
+            
             <!-- Messages -->
             <div id="chat-messages" style="
                 flex: 1;
@@ -5857,25 +5961,10 @@ async function renderChat() {
                 display: flex;
                 flex-direction: column;
                 gap: 12px;
-                position: relative;
             ">
                 <div style="text-align:center;color:#888;">Loading messages...</div>
             </div>
-
-            <!-- New message indicator (hidden by default) -->
-            <div id="new-msg-indicator" style="
-                display: none;
-                text-align: center;
-                padding: 6px;
-                background: linear-gradient(135deg, #7b2cbf, #5a1f99);
-                cursor: pointer;
-                font-size: 12px;
-                color: #fff;
-                font-weight: 600;
-            " onclick="scrollChatToBottom()">
-                ↓ New messages
-            </div>
-
+            
             <!-- Input -->
             <div style="
                 padding: 12px;
@@ -5892,10 +5981,10 @@ async function renderChat() {
                         font-size: 11px;
                         white-space: nowrap;
                     ">@${sanitize(myUsername)}</span>
-                    <input
-                        type="text"
-                        id="chat-input"
-                        placeholder="Type message..."
+                    <input 
+                        type="text" 
+                        id="chat-input" 
+                        placeholder="Type message..." 
                         maxlength="500"
                         style="
                             flex: 1;
@@ -5928,11 +6017,11 @@ async function renderChat() {
             </div>
         </div>
     `;
-
+    
     // Setup input
     const input = $('chat-input');
     const charCount = $('char-count');
-
+    
     if (input) {
         input.addEventListener('keypress', e => {
             if (e.key === 'Enter' && !e.shiftKey) {
@@ -5940,64 +6029,43 @@ async function renderChat() {
                 sendMessage();
             }
         });
-
+        
         input.addEventListener('input', () => {
             if (charCount) {
                 charCount.textContent = `${input.value.length}/500`;
                 charCount.style.color = input.value.length > 450 ? '#ff6b6b' : '#555';
             }
         });
-
+        
         input.focus();
     }
-
-    // Reset state
-    lastMessageId = null;
-    isSending = false;
-
-    // Load messages (full load first time)
-    await loadMessages(true);
-
+    
+    // Mark as read
+    markChatRead();
+    
+    // Load messages
+    await loadMessages();
+    
     // Update online count
     await updateOnlineCount();
-
-    // Auto refresh — incremental only
-    cleanupChat();
+    
+    // Auto refresh
+    if (chatRefreshInterval) clearInterval(chatRefreshInterval);
     chatRefreshInterval = setInterval(() => {
-        loadMessages(false);
+        loadMessages();
         updateOnlineCount();
     }, 5000);
 }
 
-// ==================== CHECK IF USER SCROLLED TO BOTTOM ====================
-
-function isChatAtBottom() {
-    const container = $('chat-messages');
-    if (!container) return true;
-    // Within 60px of bottom = "at bottom"
-    return (container.scrollHeight - container.scrollTop - container.clientHeight) < 60;
-}
-
-function scrollChatToBottom() {
+// 👇 THIS WAS MISSING!
+async function loadMessages() {
     const container = $('chat-messages');
     if (!container) return;
-    container.scrollTop = container.scrollHeight;
-
-    // Hide indicator
-    const indicator = $('new-msg-indicator');
-    if (indicator) indicator.style.display = 'none';
-}
-
-// ==================== LOAD MESSAGES (with incremental support) ====================
-
-async function loadMessages(fullReload = false) {
-    const container = $('chat-messages');
-    if (!container) return;
-
+    
     try {
         const data = await api('getChatMessages', { limit: 50 });
         const messages = data.messages || [];
-
+        
         if (messages.length === 0) {
             container.innerHTML = `
                 <div style="
@@ -6015,21 +6083,11 @@ async function loadMessages(fullReload = false) {
                     <p style="font-size:12px;color:#666;">Be the first to say hello!</p>
                 </div>
             `;
-            lastMessageId = null;
             return;
         }
-
-        const newestId = messages[messages.length - 1]?.id;
-
-        // Skip re-render if nothing changed
-        if (!fullReload && newestId === lastMessageId) return;
-
-        const hasNewMessages = lastMessageId !== null && newestId !== lastMessageId;
-        const wasAtBottom = isChatAtBottom();
-
-        // Render all messages
+        
         const myName = (STATE.data?.profile?.name || '').toLowerCase();
-
+        
         container.innerHTML = messages.map(msg => {
             const isMe = msg.username.toLowerCase() === myName;
             return `
@@ -6067,77 +6125,55 @@ async function loadMessages(fullReload = false) {
                 </div>
             `;
         }).join('');
-
-        lastMessageId = newestId;
-
-        // Scroll logic
-        if (fullReload || wasAtBottom) {
-            // First load or user was at bottom → auto-scroll
-            scrollChatToBottom();
-        } else if (hasNewMessages) {
-            // User scrolled up + new messages → show indicator
-            const indicator = $('new-msg-indicator');
-            if (indicator) indicator.style.display = 'block';
-        }
-
+        
+        container.scrollTop = container.scrollHeight;
+        
     } catch (e) {
         console.error('Failed to load chat:', e);
-        // Only show error on full reload, not incremental
-        if (fullReload) {
-            container.innerHTML = `
-                <div style="text-align:center;color:#ff6b6b;padding:40px;">
-                    <p>Failed to load messages</p>
-                    <button onclick="loadMessages(true)" class="btn-secondary" style="margin-top:10px;">Retry</button>
-                </div>
-            `;
-        }
+        container.innerHTML = `
+            <div style="text-align:center;color:#ff6b6b;padding:40px;">
+                <p>Failed to load messages</p>
+                <button onclick="loadMessages()" class="btn-secondary" style="margin-top:10px;">Retry</button>
+            </div>
+        `;
     }
 }
 
-// ==================== SEND MESSAGE (with double-send prevention) ====================
-
 async function sendMessage() {
-    if (isSending) return; // Prevent double send
-
     const input = $('chat-input');
     const sendBtn = $('send-btn');
-
+    
     if (!input) return;
-
+    
     const msg = input.value.trim();
     if (!msg) return;
-
-    isSending = true;
-
+    
     if (sendBtn) {
         sendBtn.disabled = true;
         sendBtn.style.opacity = '0.6';
         sendBtn.innerHTML = '...';
     }
-
-    // Clear input immediately for snappy feel
     input.value = '';
     const charCount = $('char-count');
     if (charCount) charCount.textContent = '0/500';
-
+    
     try {
         const result = await api('sendChatMessage', {
             agentNo: STATE.agentNo,
             message: msg
         });
-
+        
         if (result.success) {
-            await loadMessages(true); // Full reload + scroll to bottom
+            await loadMessages();
         } else {
             showToast(result.error || 'Failed to send', 'error');
-            input.value = msg; // Restore message on failure
+            input.value = msg;
         }
     } catch (e) {
         console.error('Send error:', e);
         showToast('Failed to send', 'error');
-        input.value = msg; // Restore message on failure
+        input.value = msg;
     } finally {
-        isSending = false;
         if (sendBtn) {
             sendBtn.disabled = false;
             sendBtn.style.opacity = '1';
@@ -6147,29 +6183,13 @@ async function sendMessage() {
     }
 }
 
-// ==================== ONLINE COUNT (was missing!) ====================
-
-async function updateOnlineCount() {
-    try {
-        const data = await api('getOnlineCount');
-        const el = $('online-count');
-        if (el && data.success) {
-            el.textContent = data.online || 0;
-        }
-    } catch (e) {
-        // Silent fail — non-critical
-    }
-}
-
-// ==================== FORMAT TIME ====================
-
 function formatTime(ts) {
     if (!ts) return '';
     try {
         const d = new Date(ts);
         const now = new Date();
         const diff = now - d;
-
+        
         if (diff < 60000) return 'Just now';
         if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago';
         if (diff < 86400000) return Math.floor(diff / 3600000) + 'h ago';
@@ -6179,75 +6199,57 @@ function formatTime(ts) {
     }
 }
 
-// ==================== CLEANUP (call on page navigation!) ====================
-
 function cleanupChat() {
     if (chatRefreshInterval) {
         clearInterval(chatRefreshInterval);
         chatRefreshInterval = null;
     }
-    lastMessageId = null;
-    isSending = false;
 }
 
 function openChat() {
     loadPage('chat');
 }
 
-// ==================== UNREAD NOTIFICATION SYSTEM (Fixed) ====================
+// ==================== CHAT NOTIFICATION SYSTEM ====================
 
 let unreadCheckInterval = null;
-let lastKnownMessageId = null;
 
 async function checkUnreadMessages() {
     if (!STATE.agentNo) return;
 
     try {
-        // Fetch latest message ID and compare client-side
-        const data = await api('getChatMessages', { limit: 1 });
-        const messages = data.messages || [];
-
-        if (messages.length === 0) return;
-
-        const latestId = messages[messages.length - 1]?.id;
+        // Use your existing api() function instead of fetch
+        const data = await api('hasUnreadMessages', { agentNo: STATE.agentNo });
+        
         const dot = document.getElementById('dot-chat');
-
-        // First check — just store the ID, don't show dot
-        if (lastKnownMessageId === null) {
-            lastKnownMessageId = latestId;
-            return;
-        }
-
-        // If we're currently on chat page, update known ID silently
-        const onChatPage = document.getElementById('page-chat')?.classList.contains('active');
-        if (onChatPage) {
-            lastKnownMessageId = latestId;
-            if (dot) dot.classList.remove('active');
-            return;
-        }
-
-        // New message arrived while on another page
-        if (latestId !== lastKnownMessageId) {
+        
+        if (data.hasUnread) {
             if (dot) dot.classList.add('active');
+        } else {
+            if (dot) dot.classList.remove('active');
         }
     } catch (e) {
-        // Silent fail
+        console.error('Error checking unread:', e);
     }
 }
 
-function markChatRead() {
-    // Update the known ID so dot disappears
-    if (lastMessageId) {
-        lastKnownMessageId = lastMessageId;
-    }
+async function markChatRead() {
+    if (!STATE.agentNo) return;
 
-    const dot = document.getElementById('dot-chat');
-    if (dot) dot.classList.remove('active');
+    try {
+        // Use your existing api() function instead of fetch
+        await api('markChatAsRead', { agentNo: STATE.agentNo });
+        
+        const dot = document.getElementById('dot-chat');
+        if (dot) dot.classList.remove('active');
+    } catch (e) {
+        console.error('Error marking as read:', e);
+    }
 }
 
 function startUnreadCheck() {
     checkUnreadMessages();
-
+    
     if (unreadCheckInterval) clearInterval(unreadCheckInterval);
     unreadCheckInterval = setInterval(checkUnreadMessages, 30000);
 }
@@ -6500,7 +6502,7 @@ async function renderDrawer() {
     STATE.lastChecked.album2xBadge = album2xStatus.passed || false;
     saveNotificationState();
 }
-// ==================== PROFILE (UPDATED: APPLY LEAVE) ====================
+// ==================== PROFILE (FIXED ORDER: LEAVE & RETIRE AT BOTTOM) ====================
 async function renderProfile() {
     const container = $('profile-stats');
     if (!container) return;
@@ -6520,7 +6522,7 @@ async function renderProfile() {
     const specialBadges = getSpecialBadges(STATE.agentNo, STATE.week);
     const currentWeekBadges = [...specialBadges, ...xpBadges];
     
-    // --- 1. STATS GRID ---
+    // --- 1. STATS GRID ONLY ---
     let html = `
         <div class="stat-box">
             <span class="stat-value">${fmt(stats.totalXP)}</span>
@@ -6548,66 +6550,11 @@ async function renderProfile() {
         </div>
     `;
 
-    // --- 2. LEAVE REQUEST CARD (Responsive Layout) ---
-    html += `
-        <div class="card" style="margin-top: 20px; border-color: ${isExempt ? '#888' : '#ffa500'}; background: linear-gradient(135deg, ${isExempt ? '#333' : '#ffa50015'}, #0a0a0f); position: relative; overflow: hidden;">
-            <!-- Added flex-wrap and gap for mobile responsiveness -->
-            <div class="card-body" style="padding: 15px; display:flex; flex-wrap: wrap; gap: 15px; align-items:center; justify-content:space-between;">
-                
-                <!-- Text Container -->
-                <div style="flex: 1; min-width: 200px;">
-                    <div style="color: ${isExempt ? '#ccc' : '#ffa500'}; font-weight:700; font-size:13px; letter-spacing:1px; display:flex; align-items:center; gap:6px;">
-                        <span>${isExempt ? '💤' : '📝'}</span> 
-                        ${isExempt ? 'STATUS: ON LEAVE' : 'APPLY FOR LEAVE'}
-                    </div>
-                    <div style="color:#aaa; font-size:11px; margin-top:4px; line-height:1.4;">
-                        ${isExempt 
-                            ? 'You are exempt from missions this week. No XP awarded.' 
-                            : 'Can\'t stream this week? Apply for leave to protect your team stats.'}
-                    </div>
-                </div>
-                
-                <!-- Button Container -->
-                <div style="flex-shrink: 0;">
-                    ${!isExempt ? `
-                    <button onclick="openLeaveModal()" style="
-                        background: rgba(255, 165, 0, 0.1);
-                        border: 1px solid #ffa500;
-                        color: #ffa500;
-                        padding: 10px 16px;
-                        border-radius: 8px;
-                        font-size: 11px;
-                        font-weight: bold;
-                        cursor: pointer;
-                        white-space: nowrap;
-                        transition: all 0.2s;
-                    ">
-                        APPLY
-                    </button>
-                    ` : `
-                    <button onclick="cancelLeaveRequest()" style="
-                        background: rgba(255, 68, 68, 0.15);
-                        border: 1px solid #ff4444;
-                        color: #ff4444;
-                        padding: 10px 16px;
-                        border-radius: 8px;
-                        font-size: 11px;
-                        font-weight: bold;
-                        cursor: pointer;
-                        white-space: nowrap;
-                        transition: all 0.2s;
-                    ">
-                        CANCEL LEAVE
-                    </button>
-                    `}
-                </div>
-            </div>
-        </div>
-    `; // <--- THIS WAS MISSING
+    // ❌ REMOVED: Leave & Delete from here - moved to bottom
 
     container.innerHTML = html;
 
-    // --- 3. CONTRIBUTIONS & BADGES (Existing Logic) ---
+    // --- 2. CONTRIBUTIONS ---
     const tracksContainer = $('profile-tracks');
     if (tracksContainer) {
         const trackEntries = Object.entries(trackContributions).sort((a, b) => b[1] - a[1]);
@@ -6630,6 +6577,7 @@ async function renderProfile() {
         `).join('') : '<p class="empty-text">No album data yet</p>';
     }
     
+    // --- 3. BADGES ---
     const badgesContainer = $('profile-badges');
     if (badgesContainer) {
         let badgesHtml = '';
@@ -6669,9 +6617,235 @@ async function renderProfile() {
                 </button>
             </div>
         `;
+        
+        // ✅ ADD LEAVE & RETIRE HERE (After badges, inside badges container)
+        badgesHtml += `
+            <!-- DIVIDER -->
+            <div style="margin-top: 30px; padding-top: 25px; border-top: 2px dashed rgba(255,255,255,0.1);"></div>
+            
+            <!-- LEAVE REQUEST CARD -->
+            <div style="
+                margin-top: 15px;
+                padding: 15px;
+                border: 1px solid ${isExempt ? '#888' : '#ffa500'};
+                border-radius: 10px;
+                background: linear-gradient(135deg, ${isExempt ? '#333' : '#ffa50015'}, #0a0a0f);
+            ">
+                <div style="display:flex; flex-wrap:wrap; gap:15px; align-items:center; justify-content:space-between;">
+                    <div style="flex:1; min-width:200px;">
+                        <div style="color:${isExempt ? '#ccc' : '#ffa500'}; font-weight:700; font-size:13px; letter-spacing:1px; display:flex; align-items:center; gap:6px;">
+                            <span>${isExempt ? '💤' : '📝'}</span> 
+                            ${isExempt ? 'STATUS: ON LEAVE' : 'APPLY FOR LEAVE'}
+                        </div>
+                        <div style="color:#aaa; font-size:11px; margin-top:4px; line-height:1.4;">
+                            ${isExempt 
+                                ? 'You are exempt from missions this week. No XP awarded.' 
+                                : 'Can\'t stream this week? Apply for leave to protect your team stats.'}
+                        </div>
+                    </div>
+                    <div style="flex-shrink:0;">
+                        ${!isExempt ? `
+                        <button onclick="openLeaveModal()" style="
+                            background: rgba(255, 165, 0, 0.1);
+                            border: 1px solid #ffa500;
+                            color: #ffa500;
+                            padding: 10px 16px;
+                            border-radius: 8px;
+                            font-size: 11px;
+                            font-weight: bold;
+                            cursor: pointer;
+                            white-space: nowrap;
+                            transition: all 0.2s;
+                        ">APPLY</button>
+                        ` : `
+                        <button onclick="cancelLeaveRequest()" style="
+                            background: rgba(255, 68, 68, 0.15);
+                            border: 1px solid #ff4444;
+                            color: #ff4444;
+                            padding: 10px 16px;
+                            border-radius: 8px;
+                            font-size: 11px;
+                            font-weight: bold;
+                            cursor: pointer;
+                            white-space: nowrap;
+                            transition: all 0.2s;
+                        ">CANCEL LEAVE</button>
+                        `}
+                    </div>
+                </div>
+            </div>
+
+            <!-- DELETE ACCOUNT BUTTON -->
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px dashed rgba(255, 68, 68, 0.3); text-align: center;">
+                <p style="color: #555; font-size: 10px; margin-bottom: 12px;">
+                    Leaving permanently? This action cannot be undone.
+                </p>
+                <button onclick="promptDeleteAccount()" style="
+                    background: transparent; 
+                    border: 1px solid #ff4444; 
+                    color: #ff4444; 
+                    padding: 10px 20px; 
+                    border-radius: 8px; 
+                    font-size: 11px; 
+                    font-weight: bold; 
+                    cursor: pointer; 
+                    opacity: 0.6; 
+                    transition: all 0.3s;
+                " onmouseover="this.style.opacity='1'; this.style.background='rgba(255,68,68,0.1)'" 
+                   onmouseout="this.style.opacity='0.6'; this.style.background='transparent'">
+                    ⚠️ RETIRE FROM MISSION (DELETE ACCOUNT)
+                </button>
+            </div>
+        `;
+        
         badgesContainer.innerHTML = badgesHtml;
     }
 }
+// ==================== DELETE ACCOUNT ====================
+function promptDeleteAccount() {
+    // Remove any existing modals
+    document.querySelectorAll('.spy-modal-overlay').forEach(e => e.remove());
+
+    const modal = document.createElement('div');
+    modal.className = 'spy-modal-overlay';
+    modal.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.95); z-index: 100000;
+        display: flex; align-items: center; justify-content: center;
+        backdrop-filter: blur(8px); animation: fadeIn 0.3s ease;
+    `;
+
+    modal.innerHTML = `
+        <div style="
+            background: linear-gradient(145deg, #2a1a1a, #0a0a0f);
+            border: 2px solid #ff4444;
+            border-radius: 12px;
+            padding: 0;
+            width: 90%;
+            max-width: 380px;
+            box-shadow: 0 0 60px rgba(255, 68, 68, 0.3);
+            overflow: hidden;
+            font-family: sans-serif;
+        ">
+            <!-- Header -->
+            <div style="
+                background: rgba(255, 68, 68, 0.2);
+                padding: 18px;
+                border-bottom: 1px solid rgba(255, 68, 68, 0.4);
+                text-align: center;
+            ">
+                <div style="font-size: 40px; margin-bottom: 8px;">⚠️</div>
+                <div style="color: #ff4444; font-weight: bold; font-size: 16px;">RETIRE FROM MISSION?</div>
+            </div>
+
+            <!-- Body -->
+            <div style="padding: 20px;">
+                <p style="color: #fff; font-size: 13px; margin: 0 0 15px 0; line-height: 1.6; text-align: center;">
+                    This action will <strong style="color:#ff4444;">permanently delete</strong> your account and all data.
+                </p>
+
+                <div style="background: rgba(255,68,68,0.1); padding: 15px; border-radius: 8px; border: 1px solid rgba(255,68,68,0.3);">
+                    <div style="color: #ff6666; font-size: 11px; margin-bottom: 8px; font-weight: bold;">⚠️ THIS WILL DELETE:</div>
+                    <ul style="margin: 0; padding-left: 18px; color: #ccc; font-size: 12px; line-height: 1.7;">
+                        <li>All your streaming stats & XP</li>
+                        <li>Your badges and achievements</li>
+                        <li>Your streak history</li>
+                        <li>Team contributions data</li>
+                        <li>Your Agent profile</li>
+                    </ul>
+                </div>
+
+                <div style="margin-top: 15px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 6px; text-align: center;">
+                    <div style="color: #888; font-size: 11px; margin-bottom: 8px;">Enter your password to confirm:</div>
+                    <input type="password" id="deleteConfirmPassword" placeholder="Your password" style="
+                        width: 100%;
+                        padding: 10px;
+                        border: 1px solid #444;
+                        border-radius: 6px;
+                        background: #1a1a1a;
+                        color: #fff;
+                        text-align: center;
+                        font-size: 14px;
+                    ">
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div style="
+                padding: 15px;
+                border-top: 1px solid rgba(255,255,255,0.1);
+                display: flex;
+                gap: 10px;
+            ">
+                <button onclick="document.querySelector('.spy-modal-overlay').remove()" style="
+                    flex: 1; padding: 14px; background: #333; 
+                    border: none; color: #fff; 
+                    border-radius: 8px; cursor: pointer; font-weight: bold;
+                ">Cancel</button>
+                
+                <button onclick="confirmDeleteAccount()" style="
+                    flex: 1; padding: 14px; background: #ff4444; 
+                    border: none; color: #fff; font-weight: bold; 
+                    border-radius: 8px; cursor: pointer;
+                ">DELETE FOREVER</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    
+    setTimeout(() => {
+        document.getElementById('deleteConfirmPassword')?.focus();
+    }, 100);
+}
+
+async function confirmDeleteAccount() {
+    const input = document.getElementById('deleteConfirmPassword');
+    const password = input?.value?.trim();
+    
+    if (!password) {
+        showToast('❌ Please enter your password', 'error');
+        input?.focus();
+        return;
+    }
+
+    // Close modal
+    document.querySelector('.spy-modal-overlay')?.remove();
+    
+    loading(true);
+    try {
+        // ✅ FIXED: Call 'deleteAccount' (matches your backend)
+        const result = await api('deleteAccount', {
+            agentNo: STATE.agentNo,
+            password: password  // ✅ Backend expects 'password'
+        });
+
+        if (result.success) {
+            showToast('👋 Account deleted. Thank you for your service, Agent.', 'success');
+            
+            // Clear local storage
+            localStorage.removeItem('agentNo');
+            localStorage.removeItem('agentTeam');
+            localStorage.removeItem('agentName');
+            
+            // Redirect to login after delay
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 2000);
+        } else {
+            showToast('❌ ' + (result.error || 'Failed to delete account'), 'error');
+        }
+    } catch (e) {
+        showToast('❌ Network Error', 'error');
+        console.error(e);
+    } finally {
+        loading(false);
+    }
+}
+
+// Export for global access
+window.promptDeleteAccount = promptDeleteAccount;
+window.confirmDeleteAccount = confirmDeleteAccount;
 // ==================== APPLY LEAVE MODAL ====================
 
 function openLeaveModal() {
@@ -9586,6 +9760,24 @@ function extractYouTubeId(url) {
     return null;
 }
 // ==================== ANNOUNCEMENTS (TABBED VERSION) ====================
+
+// Add this helper function to window so HTML can access it
+window.toggleJournalistPanel = function() {
+    const form = document.getElementById('journalist-form');
+    const arrow = document.getElementById('journalist-arrow');
+    
+    if (!form) return;
+    
+    // Toggle logic
+    if (form.style.display === 'none' || form.style.display === '') {
+        form.style.display = 'block';
+        if(arrow) arrow.style.transform = 'rotate(180deg)';
+    } else {
+        form.style.display = 'none';
+        if(arrow) arrow.style.transform = 'rotate(0deg)';
+    }
+};
+
 async function renderAnnouncements() {
     const container = $('announcements-content');
     if (!container) return;
@@ -9617,27 +9809,38 @@ async function renderAnnouncements() {
 
 // Tab 1: HQ News (Official announcements + Admin Panel)
 async function renderHQNews(displayArea) {
-    // 1. Admin/Journalist Panel UI
+    // 1. Admin/Journalist Panel UI (Fixed Toggle)
     const journalistPanelHTML = `
         <div class="card" style="border: 1px solid #00d4ff; background: rgba(0, 212, 255, 0.05); margin-bottom: 20px;">
             <div class="card-header" style="cursor: pointer; display:flex; justify-content:space-between; align-items:center;" 
-                 onclick="const f = document.getElementById('journalist-form'); f.style.display = f.style.display === 'none' ? 'block' : 'none'">
-                <h3 style="color: #00d4ff; margin:0; font-size:14px;">📰 Journalist & Voting Panel</h3>
-                <span style="color:#00d4ff;">[Click to Expand/Hide]</span>
+                 onclick="window.toggleJournalistPanel()">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:18px;">📰</span>
+                    <h3 style="color: #00d4ff; margin:0; font-size:14px;">Journalist & Voting Panel</h3>
+                </div>
+                <span id="journalist-arrow" style="color:#00d4ff; transition: transform 0.3s ease;">▼</span>
             </div>
-            <div id="journalist-form" class="card-body" style="display: none; padding-top: 15px;">
+            
+            <div id="journalist-form" class="card-body" style="display: none; padding-top: 15px; border-top: 1px solid rgba(0,212,255,0.1);">
                 <select id="news-type" class="form-input" style="width:100%; margin-bottom:10px;">
-                    <option value="News">📰 News Update</option>
-                    <option value="Voting">🗳️ Voting Alert</option>
+                    <option value="medium">📰 News Update (Normal)</option>
+                    <option value="high">🗳️ Voting Alert (High Priority)</option>
+                    <option value="low">💡 Tip / Fun (Low Priority)</option>
                 </select>
+                
                 <input type="text" id="news-title" placeholder="Headline" class="form-input" style="width:100%; margin-bottom:10px;">
                 <textarea id="news-message" placeholder="Details/Instructions..." class="form-input" style="width:100%; min-height:80px; margin-bottom:10px;"></textarea>
+                
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;">
-                    <input type="text" id="news-link" placeholder="Link URL" class="form-input">
-                    <input type="text" id="news-link-text" placeholder="Button Text" class="form-input">
+                    <input type="text" id="news-link" placeholder="Link URL (Optional)" class="form-input">
+                    <input type="text" id="news-link-text" placeholder="Button Text (e.g. Vote)" class="form-input">
                 </div>
+                
                 <input type="password" id="news-password" placeholder="🔒 Journalist Password" class="form-input" style="width:100%; margin-bottom:10px; border:1px solid #00d4ff;">
-                <button onclick="submitJournalistNews()" class="btn-primary" style="width: 100%; background: #00d4ff; color: #000; font-weight:bold;">📡 Broadcast Update</button>
+                
+                <button onclick="submitJournalistNews()" class="btn-primary" style="width: 100%; background: linear-gradient(135deg, #00d4ff, #0077ff); color: #fff; font-weight:bold; border:none;">
+                    📡 Broadcast Update
+                </button>
             </div>
         </div>
     `;
@@ -9658,11 +9861,11 @@ async function renderHQNews(displayArea) {
 
         if (list.length) {
             const listHTML = list.map(a => `
-                <div class="card announcement ${getPriorityClass(a.priority)}">
+                <div class="card announcement priority-${a.priority || 'normal'}">
                     <div class="card-body">
                         <div class="announcement-header">
-                            <span class="announcement-date">${a.created ? new Date(a.created).toLocaleDateString() : ''}</span>
                             ${getPriorityBadge(a.priority)}
+                            <span class="announcement-date">${a.created ? formatLastUpdated(a.created) : ''}</span>
                         </div>
                         <h3>${sanitize(a.title)}</h3>
                         <p style="white-space:pre-line;">${sanitize(a.message || a.content || '')}</p>
@@ -9676,10 +9879,13 @@ async function renderHQNews(displayArea) {
         }
 
         // Update notification state as read
-        STATE.lastChecked.announcements = Date.now();
-        saveNotificationState();
+        if (STATE.lastChecked) {
+            STATE.lastChecked.announcements = Date.now();
+            saveNotificationState();
+        }
 
     } catch (e) {
+        console.error(e);
         displayArea.innerHTML = journalistPanelHTML + '<p class="error-text">Failed to load news archives.</p>';
     }
 }
@@ -9708,6 +9914,7 @@ async function renderActivityLog(displayArea) {
             else if(act.type === 'xp_milestone') { text = `<strong>${data.name}</strong> reached <strong>${data.xp} XP</strong> milestone!`; icon = '⭐'; }
             else if(act.type === 'sotd_winner') { text = `<strong>${data.team}</strong> solved the Song of the Day!`; icon = '🧠'; }
             else if(act.type === 'team_surge') { text = `<strong>${data.team}</strong> is on fire! ${data.streams} streams in the last hour!`; icon = '🚀'; }
+            else if(act.type === 'priority_alert') { text = `<strong style="color:#00d4ff;">PRIORITY:</strong> ${data.title}<br>${data.message || ''}`; icon = '🚨'; } // Fixed Priority Alert
             else return;
 
             html += `
@@ -9728,7 +9935,7 @@ async function renderActivityLog(displayArea) {
 
 // ==================== JOURNALIST ACTION ====================
 async function submitJournalistNews() {
-    const type = document.getElementById('news-type').value;
+    const priority = document.getElementById('news-type').value; // Mapped to priority now
     const title = document.getElementById('news-title').value.trim();
     const message = document.getElementById('news-message').value.trim();
     const link = document.getElementById('news-link').value.trim();
@@ -9742,29 +9949,43 @@ async function submitJournalistNews() {
 
     loading(true);
     try {
+        // Updated API call to match Backend Interface
         const response = await fetch(CONFIG.API_URL, {
             method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${CONFIG.SUPABASE_KEY}`
+            },
             body: JSON.stringify({
                 action: 'addAnnouncement',
                 password: password,
-                type: type,
+                priority: priority, // Backend expects 'priority'
                 title: title,
                 message: message,
                 link: link,
                 linkText: linkText,
-                week: 'all',
+                week: STATE.week || 'all',
                 agentNo: STATE.agentNo || 'Unknown'
             })
         });
 
         const result = await response.json();
+        
         if (result.success) {
             showToast('✅ Broadcast Successful!', 'success');
+            // Clear inputs
+            document.getElementById('news-title').value = '';
+            document.getElementById('news-message').value = '';
+            document.getElementById('news-link').value = '';
+            document.getElementById('news-password').value = '';
+            
+            // Refresh list
             renderAnnouncements(); 
         } else {
             showToast('❌ ' + (result.error || 'Failed to publish'), 'error');
         }
     } catch (e) {
+        console.error(e);
         showToast('❌ Network Error', 'error');
     } finally {
         loading(false);
@@ -9776,35 +9997,55 @@ window.renderAnnouncements = renderAnnouncements;
 window.submitJournalistNews = submitJournalistNews;
 // ==================== PLAYLISTS PAGE ====================
 
+// Add helper to window for toggle
+window.toggleMakerPanel = function() {
+    const form = document.getElementById('maker-form');
+    const arrow = document.getElementById('maker-arrow');
+    
+    if (!form) return;
+    
+    if (form.style.display === 'none' || form.style.display === '') {
+        form.style.display = 'block';
+        if(arrow) arrow.style.transform = 'rotate(180deg)';
+    } else {
+        form.style.display = 'none';
+        if(arrow) arrow.style.transform = 'rotate(0deg)';
+    }
+};
+
 async function renderPlaylists() {
     const container = $('playlists-content');
     if (!container) return;
 
     // --- 1. THE PLAYLIST MAKER FORM (UI) ---
     const makerPanelHTML = `
-        <div class="card" style="border: 1px solid #ffd700; background: linear-gradient(135deg, rgba(255, 215, 0, 0.05), rgba(0,0,0,0.2)); margin-bottom: 25px;">
-            <div class="card-header" style="cursor: pointer; display:flex; justify-content:space-between; align-items:center;" onclick="document.getElementById('maker-form').style.display = document.getElementById('maker-form').style.display === 'none' ? 'block' : 'none'">
-                <div>
-                    <h3 style="color: #ffd700; margin:0;">🎵 Playlist Maker Panel</h3>
-                    <span style="font-size: 10px; color: #888;">(Click to Expand)</span>
+        <div class="card" style="border: 1px solid #ffd700; background: rgba(255, 215, 0, 0.05); margin-bottom: 25px;">
+            <div class="card-header" style="cursor: pointer; display:flex; justify-content:space-between; align-items:center;" 
+                 onclick="window.toggleMakerPanel()">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:18px;">🎵</span>
+                    <div>
+                        <h3 style="color: #ffd700; margin:0;">Playlist Maker Panel</h3>
+                        <span style="font-size: 10px; color: #888;">(Click to Expand)</span>
+                    </div>
                 </div>
-                <span style="color:#ffd700;">▼</span>
+                <span id="maker-arrow" style="color:#ffd700; transition: transform 0.3s ease;">▼</span>
             </div>
             
-            <div id="maker-form" class="card-body" style="display: none; padding-top: 15px;">
+            <div id="maker-form" class="card-body" style="display: none; padding-top: 15px; border-top: 1px solid rgba(255,215,0,0.1);">
                 <div style="display: grid; gap: 10px;">
-                    <input type="text" id="pl-name" placeholder="Playlist Name (e.g. Focus V1)" class="form-input" style="width: 100%; padding: 12px; background: #0a0a0f; border: 1px solid #333; color: white; border-radius: 8px;">
+                    <input type="text" id="pl-name" placeholder="Playlist Name (e.g. Focus V1)" class="form-input" style="width: 100%;">
                     
-                    <input type="text" id="pl-url" placeholder="Playlist Link (URL)" class="form-input" style="width: 100%; padding: 12px; background: #0a0a0f; border: 1px solid #333; color: white; border-radius: 8px;">
+                    <input type="text" id="pl-url" placeholder="Playlist Link (URL)" class="form-input" style="width: 100%;">
                     
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                        <select id="pl-platform" style="padding: 12px; background: #0a0a0f; border: 1px solid #333; color: white; border-radius: 8px;">
+                        <select id="pl-platform" class="form-input">
                             <option value="Spotify">Spotify</option>
                             <option value="Apple Music">Apple Music</option>
                             <option value="YouTube">YouTube</option>
                         </select>
                         
-                        <select id="pl-team" style="padding: 12px; background: #0a0a0f; border: 1px solid #333; color: white; border-radius: 8px;">
+                        <select id="pl-team" class="form-input">
                             <option value="All">All Teams</option>
                             <option value="Team Indigo">Team Indigo</option>
                             <option value="Team Echo">Team Echo</option>
@@ -9813,9 +10054,9 @@ async function renderPlaylists() {
                         </select>
                     </div>
 
-                    <input type="password" id="pl-password" placeholder="🔒 Enter Maker Password" class="form-input" style="width: 100%; padding: 12px; background: #1a0505; border: 1px solid #ff4444; color: white; border-radius: 8px;">
+                    <input type="password" id="pl-password" placeholder="🔒 Enter Maker Password" class="form-input" style="width: 100%; border-color: #ff4444;">
                     
-                    <button onclick="submitNewPlaylist()" class="btn-primary" style="width: 100%; background: #ffd700; color: #000; font-weight: bold; padding: 12px; border:none; border-radius:8px; cursor:pointer;">
+                    <button onclick="submitNewPlaylist()" class="btn-primary" style="width: 100%; background: linear-gradient(135deg, #ffd700, #ffaa00); color: #000; font-weight: bold; border:none;">
                         + Publish Playlist
                     </button>
                 </div>
@@ -9829,7 +10070,7 @@ async function renderPlaylists() {
         ${makerPanelHTML}
         
         <!-- Existing Request System -->
-        <div class="card" style="background: linear-gradient(135deg, rgba(0, 255, 136, 0.08), rgba(123, 44, 191, 0.05)); border: 1px solid rgba(0, 255, 136, 0.3); margin-bottom: 20px;">
+        <div class="card" style="background: rgba(0, 255, 136, 0.05); border: 1px solid rgba(0, 255, 136, 0.3); margin-bottom: 20px;">
             <div class="card-header"><h3 style="margin:0;">📝 Request a Playlist</h3></div>
             <div class="card-body" style="padding: 20px; text-align: center;">
                 <p style="font-size: 12px; color: #aaa; margin-bottom: 15px;">Not a maker? Request one here!</p>
@@ -9859,8 +10100,6 @@ async function renderPlaylists() {
             playlists.reverse(); 
             
             listEl.innerHTML = playlists.map(pl => {
-                // Ensure we use the correct property names from your backend/excel
-                // Excel: Name, Link, Platform, Type, Team
                 const link = pl.link || pl.url || '#'; 
                 const name = pl.name || 'Untitled Playlist';
                 const platform = pl.platform || 'Spotify';
@@ -9868,7 +10107,7 @@ async function renderPlaylists() {
                 const type = pl.type || 'Playlist';
 
                 return `
-                <div class="playlist-card" style="background: linear-gradient(135deg, #1a1a2e, #16213e); border: 1px solid rgba(123, 44, 191, 0.3); border-radius: 12px; padding: 15px;">
+                <div class="playlist-card" style="background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02)); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 15px; transition: transform 0.2s;">
                     <a href="${sanitize(link)}" target="_blank" style="display: flex; align-items: center; gap: 15px; text-decoration: none; color: inherit;">
                         <span style="font-size: 24px;">${getPlaylistIcon(platform)}</span>
                         <div style="flex: 1;">
@@ -9885,10 +10124,9 @@ async function renderPlaylists() {
             listEl.innerHTML = `<div style="text-align:center; padding:20px; color:#888;">No playlists found.</div>`;
         }
         
-        // Update notification state
-        if (typeof STATE !== 'undefined' && STATE.lastChecked) {
+        if (STATE.lastChecked) {
             STATE.lastChecked.playlists = playlists.length;
-            if (typeof saveNotificationState === 'function') saveNotificationState();
+            saveNotificationState();
         }
 
     } catch (e) {
@@ -9897,6 +10135,7 @@ async function renderPlaylists() {
         if (listEl) listEl.innerHTML = `<p style="color:red; text-align:center;">Failed to load playlists.</p>`;
     }
 }
+
 // ==================== SUBMIT NEW PLAYLIST LOGIC ====================
 
 async function submitNewPlaylist() {
@@ -9914,33 +10153,25 @@ async function submitNewPlaylist() {
     const team = teamInput.value;
     const password = passwordInput.value.trim();
     
-    // 1. Validation
     if (!name || !url || !password) {
-        showToast('❌ Please fill all fields (Name, Link, Password)', 'error');
+        showToast('❌ Please fill all fields', 'error');
         return;
     }
 
-    // 2. Loading State
     loading(true);
 
     try {
-        // 3. Send POST Request using fetch (API usually defaults to GET)
-        const response = await fetch(CONFIG.API_URL, {
-            method: 'POST',
-            body: JSON.stringify({
-                action: 'addPlaylist',
-                password: password, // The secret password defined in GAS Config
-                name: name,
-                url: url,
-                platform: platform,
-                type: 'Playlist',
-                team: team,
-                targetWeek: STATE.week || 'Week 1',
-                agentNo: STATE.agentNo || 'Unknown' // Tracks who added it
-            })
+        // Use consistent api() wrapper instead of raw fetch
+        const result = await api('addPlaylist', {
+            password: password,
+            name: name,
+            url: url,
+            platform: platform,
+            type: 'Playlist',
+            team: team,
+            targetWeek: STATE.week || 'Week 1',
+            agentNo: STATE.agentNo || 'Unknown'
         });
-
-        const result = await response.json();
 
         if (result.success) {
             showToast('✅ Playlist Added Successfully!', 'success');
@@ -9950,11 +10181,10 @@ async function submitNewPlaylist() {
             urlInput.value = '';
             passwordInput.value = '';
             
-            // Hide Form
-            const form = document.getElementById('maker-form');
-            if (form) form.style.display = 'none';
+            // Hide Form via helper
+            window.toggleMakerPanel();
             
-            // Refresh List immediately to show new item
+            // Refresh List
             renderPlaylists();
         } else {
             showToast('❌ ' + (result.error || 'Failed to add'), 'error');
@@ -11392,6 +11622,514 @@ window.handleGuideQuickLink = handleGuideQuickLink;
 window.renderGuidePage = renderGuidePage;
 window.toggleGuideSection = toggleGuideSection;
 window.scrollToGuideSection = scrollToGuideSection;
+
+// ==================== ATTENDANCE PAGE (OPERATIVE DATABASE) ====================
+
+async function renderAttendance() {
+    const container = document.getElementById('attendance-content');
+    if (!container) return;
+
+    // Loading State
+    container.innerHTML = `
+        <div class="loading-skeleton">
+            <div class="skeleton-card" style="height: 100px; margin-bottom: 10px;"></div>
+            <div class="skeleton-card" style="height: 100px; margin-bottom: 10px;"></div>
+            <div class="skeleton-card" style="height: 100px; margin-bottom: 10px;"></div>
+            <div class="skeleton-card" style="height: 100px;"></div>
+        </div>
+    `;
+
+    try {
+        // Fetch fresh data
+        const [allAgentsRes, leaveRes] = await Promise.all([
+            api('getAllAgents'), 
+            api('getAgentsOnLeave', { week: STATE.week })
+        ]);
+
+        const agents = allAgentsRes.agents || [];
+        const leaveData = leaveRes.agents || [];
+        const leaveAgentIds = leaveData.map(a => a.agentNo);
+        
+        // Group agents by Team
+        const teamsData = {
+            'Team Indigo': { active: [], leave: [], total: 0 },
+            'Team Echo': { active: [], leave: [], total: 0 },
+            'Team Agust D': { active: [], leave: [], total: 0 },
+            'Team JITB': { active: [], leave: [], total: 0 }
+        };
+
+        agents.forEach(agent => {
+            const team = agent.team || 'Unknown';
+            const isActuallyOnLeave = leaveAgentIds.includes(agent.agentNo);
+
+            if (teamsData[team]) {
+                teamsData[team].total++;
+                if (isActuallyOnLeave) {
+                    teamsData[team].leave.push(agent);
+                } else {
+                    teamsData[team].active.push(agent);
+                }
+            }
+        });
+
+        // Sort agents alphabetically
+        Object.values(teamsData).forEach(data => {
+            data.active.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+            data.leave.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+        });
+
+        // Calculate totals for footer
+        const grandTotalActive = Object.values(teamsData).reduce((sum, t) => sum + t.active.length, 0);
+        const grandTotalLeave = Object.values(teamsData).reduce((sum, t) => sum + t.leave.length, 0);
+        const grandTotal = grandTotalActive + grandTotalLeave;
+
+        // Build HTML
+        let html = `
+            <div class="db-header">
+                <h1>DEPLOYED AGENTS</h1>
+                <p>MISSION OPERATIVE STATUS • ${STATE.week || 'ACTIVE'}</p>
+            </div>
+
+            <div class="search-container">
+                <input type="text" id="attendance-search" placeholder="SEARCH AGENT ID OR CODENAME..." oninput="filterAttendanceList()">
+            </div>
+            
+            <div class="helper-tip">
+                <span class="tip-icon">💡</span>
+                <span class="tip-text">TEAM HELPERS OR ATTENDANCE CHECKERS: Tap checkboxes to mark present. Stats update in real-time.</span>
+            </div>
+        `;
+
+        // Render each team
+        for (const [teamName, data] of Object.entries(teamsData)) {
+            const teamColorVal = teamColor(teamName);
+            const pfp = teamPfp(teamName);
+            const teamId = teamName.replace(/\s+/g, '-').toLowerCase();
+            const teamIdClean = teamName.replace(/\s+/g, '');
+
+            html += `
+                <div class="attendance-section" id="section-${teamId}" data-team="${teamName}" data-team-id="${teamIdClean}">
+                    <!-- TEAM HEADER -->
+                    <div class="attendance-team-header" onclick="toggleAttendanceSection(this)" style="border-left: 4px solid ${teamColorVal};">
+                        <div class="team-header-pfp" style="border-color: ${teamColorVal}">
+                            ${pfp ? `<img src="${pfp}" alt="${teamName}" onerror="this.style.display='none'">` : `<span class="pfp-fallback">${teamName.charAt(5)}</span>`}
+                        </div>
+                        <div class="team-header-info">
+                            <div class="team-header-name" style="color: ${teamColorVal}">${teamName.toUpperCase()}</div>
+                            <div class="team-header-stats">
+                                <span class="stat-total">${data.total} TOTAL</span>
+                                <span class="stat-divider">•</span>
+                                <span class="stat-active">${data.active.length} ACTIVE</span>
+                                <span class="stat-divider">•</span>
+                                <span class="stat-leave">${data.leave.length} LEAVE</span>
+                            </div>
+                        </div>
+                        <div class="attendance-toggle-icon">＋</div>
+                    </div>
+
+                    <!-- TEAM CONTENT -->
+                    <div class="attendance-content-wrapper">
+                        <div class="inner-sections-wrapper">
+                            
+                            <!-- TEAM ATTENDANCE MINI-CARD -->
+                            <div class="team-attendance-card" id="stats-${teamIdClean}">
+                                <div class="team-attendance-header">
+                                    <span class="team-att-icon">📊</span>
+                                    <span class="team-att-title">TEAM ATTENDANCE</span>
+                                </div>
+                                <div class="team-attendance-body">
+                                    <div class="team-att-numbers">
+                                        <span class="team-present-count" id="present-${teamIdClean}">0</span>
+                                        <span class="team-att-slash">/</span>
+                                        <span class="team-total-count" id="active-${teamIdClean}">${data.active.length}</span>
+                                    </div>
+                                    <div class="team-att-label">ACTIVE AGENTS PRESENT</div>
+                                    <div class="team-att-progress-wrapper">
+                                        <div class="team-att-progress-bar" id="bar-${teamIdClean}" style="width: 0%;"></div>
+                                    </div>
+                                    <div class="team-att-percent" id="percent-${teamIdClean}">0%</div>
+                                </div>
+                            </div>
+
+                            <!-- ACTIVE OPERATIVES -->
+                            <div class="attendance-section inner-section active-section" data-team-ref="${teamIdClean}">
+                                <div class="attendance-team-header inner-header" onclick="toggleAttendanceSection(this)">
+                                    <div class="inner-icon">🟢</div>
+                                    <div class="team-header-info">
+                                        <div class="inner-header-name active-title">ACTIVE OPERATIVES</div>
+                                        <div class="inner-header-count">${data.active.length} AGENTS</div>
+                                    </div>
+                                    <div class="attendance-toggle-icon inner-toggle">▼</div>
+                                </div>
+                                <div class="attendance-content-wrapper">
+                                    <div class="agent-list-grid">
+                                        ${data.active.length > 0 
+                                            ? data.active.map(a => renderAgentRow(a, false, teamIdClean)).join('') 
+                                            : '<div class="empty-state">NO ACTIVE AGENTS</div>'}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- ON LEAVE -->
+                            <div class="attendance-section inner-section leave-section">
+                                <div class="attendance-team-header inner-header" onclick="toggleAttendanceSection(this)">
+                                    <div class="inner-icon">🛑</div>
+                                    <div class="team-header-info">
+                                        <div class="inner-header-name leave-title">ON LEAVE / INACTIVE</div>
+                                        <div class="inner-header-count">${data.leave.length} AGENTS</div>
+                                    </div>
+                                    <div class="attendance-toggle-icon inner-toggle">▼</div>
+                                </div>
+                                <div class="attendance-content-wrapper">
+                                    <div class="agent-list-grid">
+                                        ${data.leave.length > 0 
+                                            ? data.leave.map(a => renderAgentRow(a, true, teamIdClean)).join('') 
+                                            : '<div class="empty-state">NO AGENTS ON LEAVE</div>'}
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- OVERALL SUMMARY FOOTER ---
+        html += `
+            <div class="attendance-summary-card" id="overall-stats">
+                <div class="summary-header">
+                    <span class="summary-icon">📋</span>
+                    <span class="summary-title">OVERALL ATTENDANCE REPORT</span>
+                </div>
+                
+                <div class="summary-grid">
+                    <!-- Total Present -->
+                    <div class="summary-stat">
+                        <div class="summary-numbers">
+                            <span class="summary-present" id="overall-present">0</span>
+                            <span class="summary-slash">/</span>
+                            <span class="summary-total" id="overall-active">${grandTotalActive}</span>
+                        </div>
+                        <div class="summary-label">PRESENT TODAY</div>
+                        <div class="summary-progress-wrapper">
+                            <div class="summary-progress-bar" id="overall-bar" style="width: 0%;"></div>
+                        </div>
+                        <div class="summary-percent" id="overall-percent">0%</div>
+                    </div>
+                    
+                    <!-- Breakdown Stats -->
+                    <div class="summary-breakdown">
+                        <div class="breakdown-item">
+                            <span class="breakdown-number" style="color: var(--text-bright);">${grandTotal}</span>
+                            <span class="breakdown-label">TOTAL AGENTS</span>
+                        </div>
+                        <div class="breakdown-divider"></div>
+                        <div class="breakdown-item">
+                            <span class="breakdown-number" style="color: var(--success);">${grandTotalActive}</span>
+                            <span class="breakdown-label">ACTIVE</span>
+                        </div>
+                        <div class="breakdown-divider"></div>
+                        <div class="breakdown-item">
+                            <span class="breakdown-number" style="color: var(--danger);">${grandTotalLeave}</span>
+                            <span class="breakdown-label">ON LEAVE</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        container.innerHTML = html;
+        
+        // Calculate stats immediately after rendering
+        updateAllAttendanceStats();
+
+    } catch (e) {
+        console.error('Attendance Error:', e);
+        container.innerHTML = `
+            <div class="error-state">
+                <div class="error-icon">⚠️</div>
+                <p>DATABASE CONNECTION FAILED</p>
+                <small>${e.message || 'Unknown error'}</small>
+                <button type="button" onclick="renderAttendance()" class="btn-primary" style="margin-top: 15px;">
+                    🔄 RETRY CONNECTION
+                </button>
+            </div>
+        `;
+    }
+}
+
+// ==================== RENDER AGENT ROW ====================
+
+function renderAgentRow(agent, isLeave = false, teamId = '') {
+    const today = new Date().toISOString().split('T')[0];
+    const storageKey = `helper_check_${agent.agentNo}_${today}`;
+    const isChecked = localStorage.getItem(storageKey) === 'true';
+
+    // Display Name Logic
+    let displayName = agent.name ? sanitize(agent.name) : 'Unknown Agent';
+    if (displayName.toUpperCase().startsWith('AGENT') || !agent.name) {
+        displayName = 'Classified Agent';
+    }
+
+    const agentNo = agent.agentNo || 'N/A';
+
+    const statusBadge = isLeave 
+        ? `<span class="status-badge status-leave">LEAVE</span>`
+        : `<span class="status-badge status-active">ACTIVE</span>`;
+
+    return `
+        <div class="agent-roster-item ${isLeave ? 'on-leave' : ''} ${isChecked ? 'checked' : ''}" 
+             id="row-${agentNo}"
+             data-agent="${agentNo}"
+             data-team-ref="${teamId}"
+             data-search="${(agent.name || '').toLowerCase()} ${agentNo.toLowerCase()}">
+            
+            <div class="helper-check-wrapper" onclick="toggleHelperCheck(event, this, '${agentNo}', '${teamId}')">
+                <div class="helper-checkbox">${isChecked ? '✓' : ''}</div>
+            </div>
+
+            <div class="agent-roster-info">
+                <div class="agent-roster-name">${displayName}</div>
+                
+            </div>
+            
+            <div class="agent-status-box">
+                ${statusBadge}
+            </div>
+        </div>
+    `;
+}
+
+// ==================== STATS CALCULATION ====================
+
+function updateAllAttendanceStats() {
+    // Get all unique team IDs
+    const teamSections = document.querySelectorAll('.attendance-section[data-team-id]');
+    let overallPresent = 0;
+    let overallActive = 0;
+
+    teamSections.forEach(section => {
+        const teamId = section.getAttribute('data-team-id');
+        const stats = updateTeamStats(teamId);
+        overallPresent += stats.present;
+        overallActive += stats.total;
+    });
+
+    // Update overall stats
+    updateOverallStats(overallPresent, overallActive);
+}
+
+function updateTeamStats(teamId) {
+    // Get all active (not on leave) agents for this team
+    const activeItems = document.querySelectorAll(`.agent-roster-item[data-team-ref="${teamId}"]:not(.on-leave)`);
+    const totalActive = activeItems.length;
+    
+    let presentCount = 0;
+    activeItems.forEach(item => {
+        if (item.classList.contains('checked')) {
+            presentCount++;
+        }
+    });
+
+    const percentage = totalActive > 0 ? Math.round((presentCount / totalActive) * 100) : 0;
+
+    // Update DOM for this team
+    const presentEl = document.getElementById(`present-${teamId}`);
+    const activeEl = document.getElementById(`active-${teamId}`);
+    const barEl = document.getElementById(`bar-${teamId}`);
+    const percentEl = document.getElementById(`percent-${teamId}`);
+
+    if (presentEl) presentEl.textContent = presentCount;
+    if (activeEl) activeEl.textContent = totalActive;
+    if (barEl) barEl.style.width = `${percentage}%`;
+    if (percentEl) {
+        percentEl.textContent = `${percentage}%`;
+        // Color based on percentage
+        if (percentage >= 80) {
+            percentEl.style.color = 'var(--success)';
+        } else if (percentage >= 50) {
+            percentEl.style.color = 'var(--warning)';
+        } else {
+            percentEl.style.color = 'var(--danger)';
+        }
+    }
+
+    return { present: presentCount, total: totalActive };
+}
+
+function updateOverallStats(presentCount, totalActive) {
+    const percentage = totalActive > 0 ? Math.round((presentCount / totalActive) * 100) : 0;
+
+    const presentEl = document.getElementById('overall-present');
+    const activeEl = document.getElementById('overall-active');
+    const barEl = document.getElementById('overall-bar');
+    const percentEl = document.getElementById('overall-percent');
+
+    if (presentEl) presentEl.textContent = presentCount;
+    if (activeEl) activeEl.textContent = totalActive;
+    if (barEl) barEl.style.width = `${percentage}%`;
+    if (percentEl) {
+        percentEl.textContent = `${percentage}%`;
+        // Color based on percentage
+        if (percentage >= 80) {
+            percentEl.style.color = 'var(--success)';
+        } else if (percentage >= 50) {
+            percentEl.style.color = 'var(--warning)';
+        } else {
+            percentEl.style.color = 'var(--danger)';
+        }
+    }
+}
+
+// ==================== CHECKBOX TOGGLE ====================
+
+function toggleHelperCheck(event, wrapper, agentNo, teamId) {
+    event.stopPropagation();
+
+    const today = new Date().toISOString().split('T')[0];
+    const storageKey = `helper_check_${agentNo}_${today}`;
+    
+    const row = wrapper.closest('.agent-roster-item');
+    const checkbox = wrapper.querySelector('.helper-checkbox');
+    
+    if (!row || !checkbox) return;
+
+    const wasChecked = row.classList.contains('checked');
+    const isNowChecked = !wasChecked;
+
+    if (isNowChecked) {
+        row.classList.add('checked');
+        checkbox.textContent = '✓';
+        localStorage.setItem(storageKey, 'true');
+        
+        // Haptic feedback
+        if (navigator.vibrate) navigator.vibrate(10);
+        
+        // Visual feedback
+        row.style.transform = 'scale(1.02)';
+        setTimeout(() => { row.style.transform = ''; }, 150);
+    } else {
+        row.classList.remove('checked');
+        checkbox.textContent = '';
+        localStorage.removeItem(storageKey);
+    }
+
+    // 🔥 Update team stats + overall stats
+    updateTeamStats(teamId);
+    updateAllAttendanceStats();
+}
+
+// ==================== ACCORDION TOGGLE ====================
+
+function toggleAttendanceSection(header) {
+    const section = header.parentElement;
+    if (!section) return;
+    
+    const icon = header.querySelector('.attendance-toggle-icon');
+    const isOpen = section.classList.contains('open');
+    
+    section.classList.toggle('open');
+    
+    if (icon) {
+        if (icon.textContent === '＋' || icon.textContent === '－') {
+            icon.textContent = isOpen ? '＋' : '－';
+        } else if (icon.textContent === '▼' || icon.textContent === '▲') {
+            icon.textContent = isOpen ? '▼' : '▲';
+        }
+    }
+}
+
+// ==================== SEARCH FILTER ====================
+
+function filterAttendanceList() {
+    const input = document.getElementById('attendance-search');
+    if (!input) return;
+    
+    const filter = input.value.toLowerCase().trim();
+    const items = document.querySelectorAll('.agent-roster-item');
+    const sectionsToExpand = new Set();
+    
+    let matchCount = 0;
+
+    items.forEach(item => {
+        const searchText = item.getAttribute('data-search') || '';
+        const matches = filter === '' || searchText.includes(filter);
+        
+        if (matches) {
+            item.classList.remove('hidden');
+            matchCount++;
+            
+            let parent = item.closest('.attendance-section');
+            while (parent) {
+                sectionsToExpand.add(parent);
+                parent = parent.parentElement?.closest('.attendance-section');
+            }
+        } else {
+            item.classList.add('hidden');
+        }
+    });
+
+    // Auto-expand sections with matches
+    if (filter.length > 0) {
+        sectionsToExpand.forEach(section => {
+            if (!section.classList.contains('open')) {
+                section.classList.add('open');
+                const icon = section.querySelector('.attendance-toggle-icon');
+                if (icon) {
+                    if (icon.textContent === '＋') icon.textContent = '－';
+                    if (icon.textContent === '▼') icon.textContent = '▲';
+                }
+            }
+        });
+    }
+
+    // Search count badge
+    const searchContainer = input.closest('.search-container');
+    if (searchContainer) {
+        const existing = searchContainer.querySelector('.search-count');
+        if (existing) existing.remove();
+        
+        if (filter.length > 0) {
+            const countBadge = document.createElement('span');
+            countBadge.className = 'search-count';
+            countBadge.textContent = `${matchCount} found`;
+            searchContainer.appendChild(countBadge);
+        }
+    }
+}
+
+// ==================== CLEANUP OLD CHECKMARKS ====================
+
+function cleanupOldCheckmarks() {
+    const today = new Date().toISOString().split('T')[0];
+    const keysToRemove = [];
+    
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('helper_check_') && !key.endsWith(today)) {
+            keysToRemove.push(key);
+        }
+    }
+    
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+    
+    if (keysToRemove.length > 0) {
+        console.log(`🧹 Cleaned ${keysToRemove.length} old checkmarks`);
+    }
+}
+
+// Run cleanup on load
+cleanupOldCheckmarks();
+
+// ==================== EXPOSE GLOBALLY ====================
+
+window.renderAttendance = renderAttendance;
+window.toggleAttendanceSection = toggleAttendanceSection;
+window.filterAttendanceList = filterAttendanceList;
+window.toggleHelperCheck = toggleHelperCheck;
+window.updateAllAttendanceStats = updateAllAttendanceStats;
+window.updateTeamStats = updateTeamStats;
 // ==================== showChatRules ====================
 function showChatRules() {
     const popup = document.createElement('div');
@@ -12216,6 +12954,166 @@ window.closePasswordModal = closePasswordModal;
 window.handlePasswordChange = handlePasswordChange;
 window.togglePasswordVisibility = togglePasswordVisibility;
 
+// ==================== ADMIN DIAGNOSTICS ====================
+
+function renderAdminDebugTab() {
+    const container = document.getElementById('admin-tab-debug');
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="card" style="border-color: #00d4ff; background: rgba(0, 212, 255, 0.05);">
+            <div class="card-header"><h3>🕵️‍♂️ Agent Diagnostics</h3></div>
+            <div class="card-body">
+                <p style="color:#aaa; font-size:12px; margin-bottom:15px;">
+                    Investigate "0 Scrobble" issues. This forces a live fetch from Last.fm and shows exactly what data is being returned.
+                </p>
+                <div style="display:flex; gap:10px;">
+                    <input type="text" id="debug-agent-id" class="form-input" placeholder="Enter AGENT ID (e.g. AGENT001)" style="flex:1;">
+                    <button onclick="runAgentDiagnosis()" class="btn-primary" style="background: #00d4ff; color: #000; border:none;">
+                        🔍 Analyze
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div id="debug-results" style="margin-top:20px;"></div>
+    `;
+}
+
+async function runAgentDiagnosis() {
+    const agentInput = document.getElementById('debug-agent-id');
+    const resultsDiv = document.getElementById('debug-results');
+    const agentNo = agentInput.value.trim().toUpperCase();
+
+    if (!agentNo) {
+        showToast("Enter an Agent ID", "error");
+        return;
+    }
+
+    resultsDiv.innerHTML = '<div class="loading-text">📡 Intercepting Data Stream...</div>';
+
+    try {
+        // 1. Fetch Agent Details first to check DB existence
+        const agentCheck = await api('getAgentData', { agentNo: agentNo, week: STATE.week });
+        
+        if (!agentCheck.success) {
+            resultsDiv.innerHTML = `<div class="error-state"><p>❌ Agent ${agentNo} not found in Database.</p></div>`;
+            return;
+        }
+
+        // 2. Force Sync with Last.fm
+        const res = await api('refreshAgentStats', { 
+            agentNo: agentNo, 
+            week: STATE.week 
+        });
+
+        // 3. Build Report
+        const debug = res.debug || {};
+        const stats = res.stats || {};
+        const userProfile = agentCheck.agent?.profile || {};
+
+        let reportHTML = `
+            <div style="background:#0a0a0f; border:1px solid #333; border-radius:12px; padding:20px; font-family:monospace;">
+                
+                <!-- ID Card -->
+                <div style="border-bottom:1px solid #333; padding-bottom:15px; margin-bottom:15px; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <div style="color:#fff; font-weight:bold; font-size:16px;">${agentNo}</div>
+                        <div style="color:${teamColor(userProfile.team)}; font-size:12px;">${userProfile.team}</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="color:#888; font-size:10px;">LAST.FM USERNAME</div>
+                        <div style="color:#00ff88; font-size:14px;">${(debug.usernames || []).join(', ') || 'NONE LINKED'}</div>
+                    </div>
+                </div>
+
+                <!-- Status Grid -->
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:20px;">
+                    <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:8px;">
+                        <div style="font-size:10px; color:#888;">RAW SCROBBLES (Last.fm)</div>
+                        <div style="font-size:18px; color:#fff;">${debug.rawTrackScrobbles ?? '0'}</div>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:8px;">
+                        <div style="font-size:10px; color:#888;">MATCHED GOALS (DB)</div>
+                        <div style="font-size:18px; color:#ffd700;">${stats.trackScrobbles ?? '0'}</div>
+                    </div>
+                </div>
+
+                <!-- Analysis Log -->
+                <div style="font-size:11px; color:#ccc; line-height:1.6;">
+                    <div>📅 <strong>Week:</strong> ${debug.week}</div>
+                    <div>🕒 <strong>Time Range (Unix):</strong> ${debug.weekRange?.from || '?'} to ${debug.weekRange?.to || '?'}</div>
+                    
+                    ${debug.fetchErrors ? 
+                        `<div style="color:#ff4444; margin-top:10px;">⚠️ <strong>API ERRORS:</strong><br>${debug.fetchErrors.join('<br>')}</div>` 
+                        : `<div style="color:#00ff88; margin-top:10px;">✅ Last.fm API Connection Successful</div>`
+                    }
+
+                    <div style="margin-top:10px; padding:10px; background:rgba(0,0,0,0.3); border-radius:6px;">
+                        <div style="color:#888; margin-bottom:5px;">DIAGNOSIS:</div>
+                        ${analyzeIssue(debug, stats)}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        resultsDiv.innerHTML = reportHTML;
+
+    } catch (e) {
+        resultsDiv.innerHTML = `<div class="error-text">Diagnosis Failed: ${e.message}</div>`;
+    }
+}
+
+function analyzeIssue(debug, stats) {
+    const raw = debug.rawTrackScrobbles || 0;
+    const matched = stats.trackScrobbles || 0;
+
+    if (!debug.usernames || debug.usernames.length === 0) 
+        return `<span style="color:#ff4444">CRITICAL: No Last.fm username linked in database.</span>`;
+
+    if (debug.fetchErrors && debug.fetchErrors.length > 0)
+        return `<span style="color:#ff4444">CRITICAL: Last.fm API Error. Likely invalid username or privacy settings. Check if user is "Private".</span>`;
+
+    if (raw === 0) 
+        return `<span style="color:#ffa500">Last.fm reports 0 streams. User might be inactive or scrobbling is disconnected on their end.</span>`;
+
+    if (raw > 0 && matched === 0) 
+        return `<span style="color:#ffa500">User is streaming (${raw} tracks), but NONE matched the current Goals. Check if they are streaming the correct songs.</span>`;
+
+    if (raw > matched) 
+        return `<span style="color:#00ff88">System Healthy.</span> Filtering applied: ${raw - matched} non-goal streams ignored.`;
+
+    return `<span style="color:#00ff88">System Nominal.</span> Data is syncing correctly.`;
+}
+// Add this to app.js
+function promptDeleteAccount() {
+    const password = prompt("⚠️ WARNING: RETIREMENT PROTOCOL\n\nThis action is PERMANENT. All XP, Badges, and Stats will be wiped.\n\nTo confirm, enter your Access Key:");
+    
+    if (!password) return;
+
+    if (!confirm("🚨 FINAL WARNING 🚨\n\nAre you absolutely sure you want to delete your profile?")) return;
+
+    loading(true);
+    
+    api('deleteAccount', {
+        agentNo: STATE.agentNo,
+        password: password
+    }).then(res => {
+        if (res.success) {
+            alert("🛑 AGENT RETIRED.\n\nThank you for your service.");
+            logout(); // Reuse your logout function to clear state
+        } else {
+            showToast("❌ " + res.error, "error");
+        }
+    }).catch(e => {
+        showToast("Error: " + e.message, "error");
+    }).finally(() => {
+        loading(false);
+    });
+}
+
+// Export it so HTML can use it
+window.promptDeleteAccount = promptDeleteAccount;
+
 // ==================== EXPORTS & INIT ====================
 document.addEventListener('DOMContentLoaded', initApp);
 
@@ -12293,4 +13191,4 @@ window.renderWeekConfirmation = renderWeekConfirmation;
 window.updateTeamStatus = updateTeamStatus;
 window.toggleResultsRelease = toggleResultsRelease;
 
-console.log('🎮 BTS Spy Battle v5.0 Loaded with Voting System 🗳️💜');
+console.log('🎮 BTS Spy Battle v6.0 Loaded with Voting System 🗳️💜');
