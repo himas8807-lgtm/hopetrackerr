@@ -3503,10 +3503,6 @@ async function loadMissionHistory() {
         `; 
     }
 }
-// ==================== ADMIN WEEK CONFIRMATION ====================
-
-// ==================== ADMIN: EASY APPROVAL SYSTEM ====================
-
 async function renderWeekConfirmation() {
     const container = document.getElementById('admin-tab-confirm');
     if (!container) return;
@@ -3563,7 +3559,7 @@ async function renderWeekConfirmation() {
                         
                         <div style="display:flex; gap:5px;">
                             <!-- PASS BUTTON -->
-                            <button onclick="('${teamName}', 'attendanceConfirmed', true)" 
+                            <button onclick="smartUpdateStatus('${teamName}', 'attendanceConfirmed', true)" 
                                 style="
                                     flex:1; padding:8px; border:1px solid #00ff88; border-radius:6px; 
                                     background: ${attStatus === true ? '#00ff88' : 'transparent'}; 
@@ -3572,7 +3568,7 @@ async function renderWeekConfirmation() {
                                 ">PASS</button>
                                 
                             <!-- FAIL BUTTON -->
-                            <button onclick="('${teamName}', 'attendanceConfirmed', false)" 
+                            <button onclick="smartUpdateStatus('${teamName}', 'attendanceConfirmed', false)" 
                                 style="
                                     flex:1; padding:8px; border:1px solid #ff4444; border-radius:6px; 
                                     background: ${attStatus === false ? '#ff4444' : 'transparent'}; 
@@ -3588,7 +3584,7 @@ async function renderWeekConfirmation() {
                         
                         <div style="display:flex; gap:5px;">
                             <!-- PASS BUTTON -->
-                            <button onclick="('${teamName}', 'policeConfirmed', true)" 
+                            <button onclick="smartUpdateStatus('${teamName}', 'policeConfirmed', true)" 
                                 style="
                                     flex:1; padding:8px; border:1px solid #00ff88; border-radius:6px; 
                                     background: ${polStatus === true ? '#00ff88' : 'transparent'}; 
@@ -3597,7 +3593,7 @@ async function renderWeekConfirmation() {
                                 ">PASS</button>
                                 
                             <!-- FAIL BUTTON -->
-                            <button onclick="('${teamName}', 'policeConfirmed', false)" 
+                            <button onclick="smartUpdateStatus('${teamName}', 'policeConfirmed', false)" 
                                 style="
                                     flex:1; padding:8px; border:1px solid #ff4444; border-radius:6px; 
                                     background: ${polStatus === false ? '#ff4444' : 'transparent'}; 
