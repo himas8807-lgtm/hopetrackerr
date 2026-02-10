@@ -8167,6 +8167,7 @@ async function renderComparison() {
     }
 }
 // ==================== ULTIMATE SUMMARY (ENHANCED) ====================
+// ==================== RENDER SUMMARY ====================
 async function renderSummary() {
     const container = document.getElementById('summary-content'); 
     if (!container) return;
@@ -8198,14 +8199,14 @@ async function renderSummary() {
     `;
     
     try {
-        // ✅ FIX: Fetch the SELECTED week's data FIRST, then check release
+        // Fetch the SELECTED week's data
         const [summary, goals, rankings] = await Promise.all([
             api('getWeeklySummary', { week: selectedWeek }), 
             api('getGoalsProgress', { week: selectedWeek }),
             api('getRankings', { week: selectedWeek, limit: 10 })
         ]);
 
-        // ✅ FIX: Check release from FETCHED data, not STATE.data
+        // Check release from FETCHED data, not STATE.data
         const isReleased = summary.resultsReleased === true;
         if (!isReleased) {
             container.innerHTML = `
@@ -8221,29 +8222,35 @@ async function renderSummary() {
         const trackGoals = goals.trackGoals || {};
         const albumGoals = goals.albumGoals || {};
         const topAgents = rankings.rankings || [];
-        const myTeam = STATE.data?.profile?.team;
         
         const sortedTeams = Object.entries(teams).sort((a, b) => (b[1].teamXP || 0) - (a[1].teamXP || 0));
         const winnerEntry = sortedTeams.find(([t, info]) => info.isWinner === true);
         const winner = winnerEntry ? winnerEntry[0] : null;
 
-        // Math for Stats
-        let totalTrackStreams = 0; let totalAlbumStreams = 0;
-        const trackStats = []; const albumStats = [];
+        // Calculate stream totals
+        let totalTrackStreams = 0; 
+        let totalAlbumStreams = 0;
+        const trackStats = []; 
+        const albumStats = [];
+        
         Object.entries(trackGoals).forEach(([name, info]) => {
-            let t = 0; Object.values(info.teams || {}).forEach(s => t += (s.current || 0));
-            totalTrackStreams += t; trackStats.push({ name, total: t });
+            let t = 0; 
+            Object.values(info.teams || {}).forEach(s => t += (s.current || 0));
+            totalTrackStreams += t; 
+            trackStats.push({ name, total: t });
         });
         Object.entries(albumGoals).forEach(([name, info]) => {
-            let t = 0; Object.values(info.teams || {}).forEach(s => t += (s.current || 0));
-            totalAlbumStreams += t; albumStats.push({ name, total: t });
+            let t = 0; 
+            Object.values(info.teams || {}).forEach(s => t += (s.current || 0));
+            totalAlbumStreams += t; 
+            albumStats.push({ name, total: t });
         });
         trackStats.sort((a,b) => b.total - a.total);
         albumStats.sort((a,b) => b.total - a.total);
 
         const dateStr = CONFIG.WEEK_DATES[selectedWeek] ? new Date(CONFIG.WEEK_DATES[selectedWeek]).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '';
 
-        // --- BUILD QUALIFICATION STATUS FOR EACH TEAM ---
+        // Build qualification status for each team
         const qualificationLabels = sortedTeams.map(([t, info]) => {
             const checks = [
                 { label: 'Tracks', passed: info.trackGoalPassed },
@@ -8256,6 +8263,9 @@ async function renderSummary() {
             const failedNames = checks.filter(c => !c.passed).map(c => c.label);
             return { team: t, info, checks, passedCount, failedNames, allPassed: passedCount === 5 };
         });
+
+        // Prepare data for share buttons
+        const teamsDataForShare = JSON.stringify(sortedTeams.map(([t, info]) => ({t, xp: info.teamXP}))).replace(/"/g, '&quot;');
 
         // --- RENDER HTML ---
         container.innerHTML = `
@@ -8360,12 +8370,12 @@ async function renderSummary() {
                 </div>
             </div>
 
-            <!-- Action Buttons -->
+            <!-- Share Buttons -->
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:35px;">
-                <button onclick="shareStats()" id="share-btn" style="height:50px; border-radius:12px; font-size:12px; font-weight:700; background:linear-gradient(135deg, #7b2cbf, #5a1f99); border:none; color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
-                    📸 Save Poster
+                <button onclick="sharePoster()" style="height:52px; border-radius:12px; font-size:12px; font-weight:700; background:linear-gradient(135deg, #7b2cbf, #5a1f99); border:none; color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+                    📤 Share Poster
                 </button>
-                <button onclick="copyShareText()" style="height:50px; border-radius:12px; font-size:12px; font-weight:700; background:#1a1a2e; border:1px solid #333; color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+                <button onclick="copyShareText('${selectedWeek}', ${totalTrackStreams + totalAlbumStreams}, '${winner || ''}', '${teamsDataForShare}')" style="height:52px; border-radius:12px; font-size:12px; font-weight:700; background:#1a1a2e; border:1px solid #333; color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
                     📋 Copy Caption
                 </button>
             </div>
@@ -8474,20 +8484,148 @@ async function renderSummary() {
         `; 
     }
 }
-function copyShareText() {
-    const week = STATE.week || 'Week';
-    const text = `🎵 BTS Comeback Mission ${week} Complete!
 
-💜 We streamed together for BTS!
+// ==================== SHARE POSTER ====================
+async function sharePoster() {
+    const card = document.getElementById('shareable-stats-card');
+    if (!card) {
+        showToast('Poster not found', 'error');
+        return;
+    }
 
-#BTS #BTSComeback #ARMY`;
-    
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text)
-            .then(() => showToast('📋 Caption copied!', 'success'))
-            .catch(() => fallbackCopyText(text));
+    const btn = event?.target?.closest('button');
+    const originalText = btn?.innerHTML;
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '⏳ Creating...';
+    }
+
+    try {
+        // Load html2canvas if not already loaded
+        if (typeof html2canvas === 'undefined') {
+            await new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
+
+        // Capture the poster as image
+        const canvas = await html2canvas(card, {
+            backgroundColor: '#0a0a0f',
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            allowTaint: true
+        });
+
+        // Convert to blob
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 1.0));
+        const file = new File([blob], 'bts-comeback-mission.png', { type: 'image/png' });
+
+        // Try native share with file (works on mobile!)
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({
+                files: [file],
+                title: 'BTS Comeback Mission'
+            });
+            showToast('Shared! 💜', 'success');
+        } else {
+            // Fallback: Download image
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'bts-comeback-mission.png';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('Image saved! 📥', 'success');
+        }
+
+    } catch (e) {
+        console.error('Share error:', e);
+        if (e.name !== 'AbortError') {
+            showToast('Take a screenshot instead 📸', 'info');
+        }
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalText || '📤 Share Poster';
+        }
+    }
+}
+
+// ==================== COPY SHARE TEXT ====================
+function copyShareText(week, totalStreams, winner, teamsArr) {
+    // If called without args, build from current state
+    if (!week) {
+        week = STATE.week || 'This Week';
+        totalStreams = 0;
+        winner = '';
+        teamsArr = [];
+    }
+
+    // Parse teams if string
+    if (typeof teamsArr === 'string') {
+        try { teamsArr = JSON.parse(teamsArr); } catch(e) { teamsArr = []; }
+    }
+
+    const rankEmojis = ['🥇', '🥈', '🥉', '4.'];
+    const rankings = (teamsArr || []).map((team, i) => 
+        `${rankEmojis[i] || (i+1)+'.'} ${team.t} — ${fmt(team.xp)} XP`
+    ).join('\n');
+
+    // Only show winner line if there IS a winner
+    const winnerLine = winner ? `\n🏆 ${winner} takes the crown!\n` : '';
+
+    const caption = `⬡ BTS COMEBACK MISSION — ${week}
+
+${fmt(totalStreams)} total streams this week 🔥
+${winnerLine}
+${rankings}
+
+We're streaming for BTS every week as teams — tracking scrobbles, earning XP, competing for the trophy.
+
+Want in? DM @hopetracker to join a team 💜
+
+#BTSComebackMission #BTS #BTS_ARMY`;
+
+    // Always copy to clipboard first
+    const copyToClipboard = () => {
+        return navigator.clipboard.writeText(caption).catch(() => {
+            const ta = document.createElement('textarea');
+            ta.value = caption;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            return Promise.resolve();
+        });
+    };
+
+    // Check if Web Share API is available (mobile)
+    if (navigator.share && /Android|iPhone|iPad/i.test(navigator.userAgent)) {
+        copyToClipboard().then(() => {
+            navigator.share({
+                title: 'BTS Comeback Mission',
+                text: caption,
+                url: 'https://www.instagram.com/hopetracker?igsh=d3huaDBtY2hlZmg0'
+            }).then(() => {
+                showToast('Caption also copied — paste in your story! 💜', 'success');
+            }).catch(() => {
+                showToast('Caption copied! Paste on your story 💜', 'success');
+            });
+        });
     } else {
-        fallbackCopyText(text);
+        // Desktop or no share API — just copy
+        copyToClipboard().then(() => {
+            showToast('Caption copied! Paste on your story 💜', 'success');
+        });
     }
 }
 
@@ -13215,8 +13353,9 @@ window.toggleNamjoonTask = toggleNamjoonTask;
 
 // Make functions globally available
 window.renderSummary = renderSummary;
+window.sharePoster = sharePoster;
 window.renderWeekConfirmation = renderWeekConfirmation;
 window.updateTeamStatus = updateTeamStatus;
 window.toggleResultsRelease = toggleResultsRelease;
 
-console.log('🎮 BTS Spy Battle v6.0 Loaded with Voting System 🗳️💜');
+console.log('🎮 hopetracker v6.0 Loaded with Voting System 🗳️💜');
