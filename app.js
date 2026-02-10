@@ -8300,73 +8300,96 @@ async function renderSummary() {
                     <div style="color:#444; font-size:9px; margin-top:10px;">All 5 required for clearance</div>
                 </div>
             `}
-
-            <!-- 📸 SHAREABLE POSTER CARD -->
-            <div id="shareable-stats-card" style="background:#0a0a0f; border:1px solid #2a2a3a; border-radius:20px; overflow:hidden; box-shadow:0 10px 40px rgba(0,0,0,0.4); margin:0 auto 25px; box-sizing:border-box;">
+                        <!-- 📸 SHAREABLE POSTER CARD -->
+            <div id="shareable-stats-card" style="background:#0a0a0f; border:1px solid #2a2a3a; border-radius:20px; overflow:hidden; box-shadow:0 10px 40px rgba(0,0,0,0.4); margin:0 auto 25px; box-sizing:border-box; max-width:400px;">
                 
                 <!-- Poster Header -->
-                <div style="background:linear-gradient(135deg, #4a1a7a 0%, #7b2cbf 100%); padding:30px 20px; text-align:center;">
-                    <div style="color:rgba(255,255,255,0.6); font-size:9px; font-weight:700; letter-spacing:4px; text-transform:uppercase; margin-bottom:8px;">
+                <div style="background:linear-gradient(135deg, #4a1a7a 0%, #7b2cbf 100%); padding:24px 16px; text-align:center;">
+                    <div style="color:rgba(255,255,255,0.5); font-size:8px; font-weight:700; letter-spacing:3px; text-transform:uppercase; margin-bottom:6px;">
                         Intelligence Report
                     </div>
-                    <div style="color:#fff; font-size:20px; font-weight:900; letter-spacing:1px;">
+                    <div style="color:#fff; font-size:16px; font-weight:900; letter-spacing:1px;">
                         BTS COMEBACK MISSION
                     </div>
-                    <div style="margin-top:12px; color:rgba(255,255,255,0.5); font-size:11px; font-family:monospace;">
-                        ${dateStr}
+                    <div style="margin-top:8px; color:rgba(255,255,255,0.4); font-size:10px; font-family:monospace;">
+                        ${selectedWeek} ${dateStr ? '• ' + dateStr : ''}
                     </div>
                 </div>
 
                 <!-- Grand Total -->
-                <div style="padding:35px 20px; text-align:center; background:linear-gradient(180deg, rgba(123,44,191,0.1) 0%, transparent 100%);">
-                    <div style="color:#666; font-size:10px; font-weight:700; letter-spacing:3px; margin-bottom:10px;">WEEKLY MISSION OUTPUT</div>
-                    <div style="color:#ffd700; font-size:56px; font-weight:900; line-height:1; text-shadow:0 0 30px rgba(255,215,0,0.3); font-family:'Arial Black',sans-serif;">${fmt(totalTrackStreams + totalAlbumStreams)}</div>
-                    <div style="color:#ffd700; font-size:11px; font-weight:700; margin-top:10px; letter-spacing:2px; opacity:0.8;">STREAMS RECORDED</div>
+                <div style="padding:28px 16px 24px; text-align:center; background:linear-gradient(180deg, rgba(123,44,191,0.08) 0%, transparent 100%);">
+                    <div style="color:#666; font-size:9px; font-weight:700; letter-spacing:2px; margin-bottom:8px;">WEEKLY MISSION OUTPUT</div>
+                    <div style="color:#ffd700; font-size:42px; font-weight:900; line-height:1; text-shadow:0 0 20px rgba(255,215,0,0.2); font-family:'Arial Black',sans-serif;">${fmt(totalTrackStreams + totalAlbumStreams)}</div>
+                    <div style="color:rgba(255,215,0,0.7); font-size:9px; font-weight:700; margin-top:8px; letter-spacing:2px;">STREAMS RECORDED</div>
                 </div>
 
-                <div style="height:1px; background:linear-gradient(90deg, transparent, #333, transparent); margin:0 20px;"></div>
+                <!-- Divider -->
+                <div style="height:1px; background:linear-gradient(90deg, transparent, #333, transparent); margin:0 16px;"></div>
 
-                <!-- Two Column Grid -->
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; padding:25px 20px;">
-                    
-                    <!-- Track Column -->
-                    <div style="min-width:0;">
-                        <div style="display:flex; align-items:center; gap:8px; margin-bottom:15px; padding-bottom:10px; border-bottom:1px solid #222;">
-                            <span style="color:#00ff88; font-size:14px;">🎵</span>
-                            <div>
-                                <div style="color:#00ff88; font-size:9px; font-weight:800; letter-spacing:1px;">TRACKS</div>
-                                <div style="color:#fff; font-size:14px; font-weight:900; font-family:monospace;">${fmt(totalTrackStreams)}</div>
-                            </div>
-                        </div>
-                        ${trackStats.slice(0, 5).map(s => `
-                            <div style="margin-bottom:10px;">
-                                <div style="color:#888; font-size:10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${s.name}</div>
-                                <div style="color:#fff; font-size:13px; font-weight:bold; font-family:monospace;">${fmt(s.total)}</div>
-                            </div>
-                        `).join('')}
+                <!-- Track & Album Summary Row -->
+                <div style="display:flex; justify-content:center; gap:24px; padding:14px 16px; border-bottom:1px solid #1a1a2a;">
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <span style="font-size:12px;">🎵</span>
+                        <span style="color:#00ff88; font-size:8px; font-weight:800; letter-spacing:1px;">TRACKS</span>
+                        <span style="color:#fff; font-size:13px; font-weight:900; font-family:monospace;">${fmt(totalTrackStreams)}</span>
                     </div>
+                    <div style="width:1px; background:#222;"></div>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <span style="font-size:12px;">💿</span>
+                        <span style="color:#00d4ff; font-size:8px; font-weight:800; letter-spacing:1px;">ALBUMS</span>
+                        <span style="color:#fff; font-size:13px; font-weight:900; font-family:monospace;">${fmt(totalAlbumStreams)}</span>
+                    </div>
+                </div>
 
-                    <!-- Album Column -->
-                    <div style="min-width:0;">
-                        <div style="display:flex; align-items:center; gap:8px; margin-bottom:15px; padding-bottom:10px; border-bottom:1px solid #222;">
-                            <span style="color:#00d4ff; font-size:14px;">💿</span>
-                            <div>
-                                <div style="color:#00d4ff; font-size:9px; font-weight:800; letter-spacing:1px;">ALBUMS</div>
-                                <div style="color:#fff; font-size:14px; font-weight:900; font-family:monospace;">${fmt(totalAlbumStreams)}</div>
+                <!-- Track List -->
+                <div style="padding:14px 16px 6px;">
+                    <div style="color:#00ff88; font-size:8px; font-weight:800; letter-spacing:2px; margin-bottom:10px;">TOP TRACKS</div>
+                    ${trackStats.slice(0, 5).map((s, i) => `
+                        <div style="display:flex; align-items:center; justify-content:space-between; padding:6px 0; ${i < 4 ? 'border-bottom:1px solid rgba(255,255,255,0.03);' : ''}">
+                            <div style="display:flex; align-items:center; gap:8px; min-width:0; flex:1;">
+                                <span style="color:#333; font-size:10px; font-weight:700; width:16px; flex-shrink:0;">${i+1}</span>
+                                <span style="color:#aaa; font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${s.name}</span>
                             </div>
+                            <span style="color:#fff; font-size:12px; font-weight:800; font-family:monospace; flex-shrink:0; margin-left:8px;">${fmt(s.total)}</span>
                         </div>
-                        ${albumStats.slice(0, 5).map(s => `
-                            <div style="margin-bottom:10px;">
-                                <div style="color:#888; font-size:10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${s.name}</div>
-                                <div style="color:#fff; font-size:13px; font-weight:bold; font-family:monospace;">${fmt(s.total)}</div>
+                    `).join('')}
+                </div>
+
+                <!-- Album List -->
+                <div style="padding:14px 16px 6px;">
+                    <div style="color:#00d4ff; font-size:8px; font-weight:800; letter-spacing:2px; margin-bottom:10px;">TOP ALBUMS</div>
+                    ${albumStats.slice(0, 5).map((s, i) => `
+                        <div style="display:flex; align-items:center; justify-content:space-between; padding:6px 0; ${i < 4 ? 'border-bottom:1px solid rgba(255,255,255,0.03);' : ''}">
+                            <div style="display:flex; align-items:center; gap:8px; min-width:0; flex:1;">
+                                <span style="color:#333; font-size:10px; font-weight:700; width:16px; flex-shrink:0;">${i+1}</span>
+                                <span style="color:#aaa; font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${s.name}</span>
                             </div>
-                        `).join('')}
-                    </div>
+                            <span style="color:#fff; font-size:12px; font-weight:800; font-family:monospace; flex-shrink:0; margin-left:8px;">${fmt(s.total)}</span>
+                        </div>
+                    `).join('')}
+                </div>
+
+                <!-- Team Rankings in Poster -->
+                <div style="padding:14px 16px 6px;">
+                    <div style="color:#7b2cbf; font-size:8px; font-weight:800; letter-spacing:2px; margin-bottom:10px;">TEAM STANDINGS</div>
+                    ${sortedTeams.map(([t, info], i) => `
+                        <div style="display:flex; align-items:center; gap:8px; padding:5px 0; ${i < 3 ? 'border-bottom:1px solid rgba(255,255,255,0.03);' : ''}">
+                            <span style="font-size:12px; width:20px; text-align:center;">${i===0?'🥇':i===1?'🥈':i===2?'🥉':'4.'}</span>
+                            <span style="color:${teamColor(t)}; font-size:11px; font-weight:700; flex:1;">${t}</span>
+                            <span style="color:#fff; font-size:11px; font-weight:800; font-family:monospace;">${fmt(info.teamXP)} XP</span>
+                        </div>
+                    `).join('')}
+                </div>
+
+                <!-- CTA -->
+                <div style="padding:14px 16px; text-align:center;">
+                    <div style="color:#7b2cbf; font-size:10px; font-weight:700; margin-bottom:2px;">Join the BTS Comeback mission 💜</div>
+                    <div style="color:#555; font-size:9px;">hopetracker</div>
                 </div>
 
                 <!-- Footer -->
-                <div style="background:#0d0d12; padding:15px; text-align:center; border-top:1px solid #1a1a2a;">
-                    <div style="color:#444; font-size:9px; font-weight:700; letter-spacing:3px;">HOPETRACKER</div>
+                <div style="background:#0d0d12; padding:10px; text-align:center; border-top:1px solid #1a1a2a;">
+                    <div style="color:#333; font-size:8px; font-weight:700; letter-spacing:3px;">HOPETRACKER</div>
                 </div>
             </div>
 
