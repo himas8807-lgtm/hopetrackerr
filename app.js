@@ -8368,6 +8368,9 @@ async function renderSummary() {
                 <!-- CTA -->
                 <div style="padding:12px 14px; text-align:center; border-top:1px solid #1a1a2a; margin-top:6px;">
                     <div style="color:#7b2cbf; font-size:9px; font-weight:700;">Join the BTS comeback mission 💜</div>
+                    <div style="color:#7b2cbf; font-size:9px; font-weight:700;">Want to join? 💜</div>
+                    <div style="color:#444; font-size:8px; margin-top:2px;">@hopetracker • link in bio</div>
+                </div>
                 </div>
             </div>
             <!-- Footer -->
