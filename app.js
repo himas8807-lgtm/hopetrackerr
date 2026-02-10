@@ -8367,8 +8367,12 @@ async function renderSummary() {
 
                 <!-- CTA -->
                 <div style="padding:12px 14px; text-align:center; border-top:1px solid #1a1a2a; margin-top:6px;">
-                    <div style="color:#7b2cbf; font-size:9px; font-weight:700;">Join the mission 💜</div>
-                    <div style="color:#444; font-size:8px; margin-top:2px;">hopetracker.vercel.app</div>
+                    <div style="color:#7b2cbf; font-size:9px; font-weight:700;">Join the BTS comeback mission 💜</div>
+                </div>
+            </div>
+            <!-- Footer -->
+                <div style="background:#0d0d12; padding:10px; text-align:center; border-top:1px solid #1a1a2a;">
+                    <div style="color:#333; font-size:8px; font-weight:700; letter-spacing:3px;">HOPETRACKER</div>
                 </div>
             </div>
 
