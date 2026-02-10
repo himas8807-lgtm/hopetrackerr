@@ -8289,7 +8289,7 @@ async function renderSummary() {
                     <div style="font-size:36px; margin-bottom:10px;">⬡</div>
                     <div style="color:#ff4444; font-weight:800; font-size:11px; letter-spacing:3px; margin-bottom:8px;">EXTRACTION FAILED</div>
                     <div style="color:#555; font-size:11px; line-height:1.8;">
-                        No unit cleared all 5 checkpoints.<br>
+                        No team cleared all 5 checkpoints.<br>
                         <span style="color:#777;">The trophy remains secured at HQ.</span>
                     </div>
                     <div style="margin-top:15px; display:flex; justify-content:center; gap:6px; flex-wrap:wrap;">
