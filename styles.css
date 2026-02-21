@@ -11164,3 +11164,153 @@ input, textarea, select {
     0% { background-position: 0% 50%; }
     100% { background-position: 200% 50%; }
 }
+/* ==================== TYPOGRAPHY CLEANUP ==================== */
+/* Use Rajdhani for everything except headers/numbers to reduce 'heaviness' */
+body {
+    font-family: 'Rajdhani', sans-serif !important;
+}
+
+/* Restrict Orbitron to only the most important titles */
+.rta-title, .rta-stat-val, .quick-stat-value, .brand-name {
+    font-family: 'Orbitron', sans-serif !important;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+/* ==================== ARIRANG HERO BANNER ==================== */
+.rta-hero {
+    background: linear-gradient(135deg, #ed1c24 0%, #900a0e 100%);
+    border-radius: 14px;
+    margin-bottom: 25px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 10px 40px rgba(237, 28, 36, 0.25);
+    overflow: hidden;
+}
+
+.rta-hero-inner {
+    padding: 20px;
+}
+
+.rta-hero-main {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin-bottom: 20px;
+}
+
+.rta-logo-box {
+    width: 65px;
+    height: 65px;
+    background: #fff; /* White background for the red logo to pop */
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    flex-shrink: 0;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.rta-logo-box img {
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+}
+
+.rta-details {
+    flex: 1;
+}
+
+.rta-meta {
+    font-size: 10px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.7);
+    letter-spacing: 2px;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.rta-title {
+    font-size: 22px;
+    color: #fff;
+    margin: 0 0 8px 0;
+    line-height: 1.1;
+}
+
+.rta-target-pill {
+    display: inline-block;
+    background: rgba(0, 0, 0, 0.25);
+    color: #00ff88; /* High contrast green for goals */
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: 'Share Tech Mono', monospace;
+}
+
+/* --- Progress Bar --- */
+.rta-progress-area {
+    width: 100%;
+}
+
+.rta-bar-bg {
+    height: 8px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.rta-bar-fill {
+    height: 100%;
+    background: #fff; /* Clean white progress over red */
+    border-radius: 4px;
+    position: relative;
+    transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.rta-bar-shimmer {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(237, 28, 36, 0.3), transparent);
+    animation: rtaShimmer 2s infinite;
+}
+
+.rta-bar-stats {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.8);
+    letter-spacing: 1px;
+}
+
+.rta-footer {
+    background: rgba(0, 0, 0, 0.15);
+    padding: 8px 20px;
+    font-size: 10px;
+    font-weight: 600;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.rta-dot {
+    width: 6px; height: 6px; background: #00ff88; border-radius: 50%;
+    animation: blink 1s infinite;
+}
+
+@keyframes rtaShimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+/* Reduce padding on the quick stats card to de-clutter more */
+.quick-stats-card .card-body { padding: 15px 20px !important; }
