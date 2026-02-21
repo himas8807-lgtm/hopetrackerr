@@ -28,9 +28,11 @@ const CONFIG = {
     // ==================== ROAD TO ARIRANG (UNIFIED MISSION) ====================
     ROAD_TO_ARIRANG: {
         enabled: true,
-        startDate: '2026-03-01',
+        startDate: ''2026-02-20',
         endDate: '2026-03-19',
         schedule: {
+            
+            '2026-02-21': { name: 'Testing Discography', icon: '🧪' },
             '2026-03-01': { name: '2 Cool 4 Skool', icon: '🎒' },
             '2026-03-02': { name: 'O!RUL8,2?', icon: '📢' },
             '2026-03-03': { name: 'Skool Luv Affair', icon: '📚' },
