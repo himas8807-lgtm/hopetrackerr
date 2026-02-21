@@ -140,6 +140,33 @@ ROYAL_BADGES: {
         ALBUM_COVER: "https://raw.githubusercontent.com/hbot7875-gif/btscomebackmission/4f6fef44395ff9ca1609131af105a19db01e4e19/team%20pfps/cover.png"
     }
 };
+// ==================== ROAD TO ARIRANG (UNIFIED MISSION) ====================
+    ROAD_TO_ARIRANG: {
+        enabled: true,
+        startDate: '2026-03-01',
+        endDate: '2026-03-19',
+        schedule: {
+            '2026-03-01': { name: '2 Cool 4 Skool', icon: '🎒' },
+            '2026-03-02': { name: 'O!RUL8,2?', icon: '📢' },
+            '2026-03-03': { name: 'Skool Luv Affair', icon: '📚' },
+            '2026-03-04': { name: 'Dark & Wild', icon: '🎸' },
+            '2026-03-05': { name: 'Wake Up', icon: '⏰' },
+            '2026-03-06': { name: 'HYYH pt.1', icon: '🌸' },
+            '2026-03-07': { name: 'HYYH pt.2', icon: '🦋' },
+            '2026-03-08': { name: 'HYYH: Young Forever', icon: '🎈' },
+            '2026-03-09': { name: 'Youth', icon: '🏃' },
+            '2026-03-10': { name: 'Wings', icon: '🕊️' },
+            '2026-03-11': { name: 'You Never Walk Alone', icon: '☂️' },
+            '2026-03-12': { name: 'Love Yourself: Her', icon: '🌹' },
+            '2026-03-13': { name: 'Face Yourself', icon: '🎭' },
+            '2026-03-14': { name: 'Love Yourself: Tear', icon: '💧' },
+            '2026-03-15': { name: 'Love Yourself: Answer', icon: '💖' },
+            '2026-03-16': { name: 'Map of the Soul: Persona', icon: '💗' },
+            '2026-03-17': { name: 'Map of the Soul: 7', icon: '📐' },
+            '2026-03-18': { name: 'MOTS: 7 ~The Journey~', icon: '🗺️' },
+            '2026-03-19': { name: 'Be + Proof', icon: '💎' }
+        }
+    },
 
 const STREAK_CONFIG = {
     // Activity requirement
@@ -6233,7 +6260,7 @@ async function renderHome() {
         const agentName = STATE.data?.profile?.name || 'Agent';
         
         const quickStatsEl = document.querySelector('.quick-stats-section');
-        
+        const rtaHtml = renderRoadToArirang();
         if (quickStatsEl) {
             quickStatsEl.innerHTML = `
                 ${btsCountdownHtml}
@@ -15189,7 +15216,74 @@ async function renderArirangVault() {
 }
 
 window.renderArirangVault = renderArirangVault;
+function renderRoadToArirang() {
+    const cfg = CONFIG.ROAD_TO_ARIRANG;
+    if (!cfg.enabled) return '';
 
+    const todayKST = getKSTDateString();
+    const schedule = cfg.schedule;
+    const currentAlbum = schedule[todayKST];
+    
+    const now = new Date(todayKST);
+    const start = new Date(cfg.startDate);
+    const end = new Date(cfg.endDate);
+
+    if (now < start) {
+        return `
+            <div class="rta-card locked">
+                <div class="rta-header"><span class="rta-tag blue">UPCOMING</span> ROAD TO ARIRANG</div>
+                <div class="rta-body">Journey through the discography starts March 1st.</div>
+            </div>
+        `;
+    }
+
+    if (now > end) return ''; 
+
+    const dates = Object.keys(schedule).sort();
+    const dayNumber = dates.indexOf(todayKST) + 1;
+    const journeyPct = (dayNumber / 19) * 100;
+
+    // TARGET SETTING
+    const DAILY_GOAL = "5,000"; // You can change this to 10,000 or any number
+
+    return `
+        <div class="rta-card active">
+            <div class="rta-header">
+                <span class="rta-tag gold">GLOBAL OPERATION</span>
+                ROAD TO ARIRANG: DAY ${dayNumber} / 19
+            </div>
+            
+            <div class="rta-body">
+                <div class="rta-main">
+                    <div class="rta-album-frame">
+                        <div class="rta-album-icon">${currentAlbum.icon}</div>
+                        <div class="rta-pulse"></div>
+                    </div>
+                    <div class="rta-info">
+                        <div class="rta-label">ALL TEAMS UNIFIED FOCUS:</div>
+                        <div class="rta-album-name">${currentAlbum.name}</div>
+                        <div class="rta-target-badge">🎯 UNIFIED TARGET: ${DAILY_GOAL} STREAMS</div>
+                    </div>
+                </div>
+
+                <!-- Journey Progress (Day 1 to 19) -->
+                <div class="rta-progress-container">
+                    <div class="rta-progress-label">
+                        <span>Discography Journey Progress</span>
+                        <span>${dayNumber}/19 Days</span>
+                    </div>
+                    <div class="rta-bar-bg">
+                        <div class="rta-bar-fill" style="width: ${journeyPct}%"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="rta-status-strip">
+                <span class="status-dot"></span> OPERATION IS LIVE • SYNCING ALL 4 TEAMS
+            </div>
+        </div>
+    `;
+}
 // ==================== EXPORTS & INIT ====================
 document.addEventListener('DOMContentLoaded', initApp);
 
