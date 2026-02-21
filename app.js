@@ -15219,70 +15219,52 @@ async function renderArirangVault() {
 }
 
 window.renderArirangVault = renderArirangVault;
-function renderRoadToArirang() {
+function renderRoadToArirang(communityTotal = 0) {
     const cfg = CONFIG.ROAD_TO_ARIRANG;
     if (!cfg.enabled) return '';
 
     const todayKST = getKSTDateString();
-    const schedule = cfg.schedule;
-    const currentAlbum = schedule[todayKST];
+    const currentAlbum = cfg.schedule[todayKST];
     
     const now = new Date(todayKST);
     const start = new Date(cfg.startDate);
-    const end = new Date(cfg.endDate);
+    if (now < start || !currentAlbum) return ''; 
 
-    if (now < start) {
-        return `
-            <div class="rta-card locked">
-                <div class="rta-header"><span class="rta-tag blue">UPCOMING</span> ROAD TO ARIRANG</div>
-                <div class="rta-body">Journey through the discography starts March 1st.</div>
-            </div>
-        `;
-    }
-
-    if (now > end) return ''; 
-
-    const dates = Object.keys(schedule).sort();
-    const dayNumber = dates.indexOf(todayKST) + 1;
-    const journeyPct = (dayNumber / 19) * 100;
-
-    // TARGET SETTING
-    const DAILY_GOAL = "5,000"; // You can change this to 10,000 or any number
+    // --- DAILY PROGRESS CALCULATION ---
+    // This takes the total and shows progress toward the NEXT 5,000
+    const dailyProgress = communityTotal % cfg.dailyTarget; 
+    const dailyPct = Math.min(100, (dailyProgress / cfg.dailyTarget) * 100);
 
     return `
-        <div class="rta-card active">
-            <div class="rta-header">
-                <span class="rta-tag gold">GLOBAL OPERATION</span>
-                ROAD TO ARIRANG: DAY ${dayNumber} / 19
-            </div>
-            
-            <div class="rta-body">
-                <div class="rta-main">
-                    <div class="rta-album-frame">
-                        <div class="rta-album-icon">${currentAlbum.icon}</div>
-                        <div class="rta-pulse"></div>
+        <div class="rta-hero">
+            <div class="rta-hero-inner">
+                <div class="rta-hero-main">
+                    <div class="rta-logo-box">
+                        <img src="${CONFIG.COMEBACK.BTS_LOGO}" alt="Arirang Logo">
                     </div>
-                    <div class="rta-info">
-                        <div class="rta-label">ALL TEAMS UNIFIED FOCUS:</div>
-                        <div class="rta-album-name">${currentAlbum.name}</div>
-                        <div class="rta-target-badge">🎯 UNIFIED TARGET: ${DAILY_GOAL} STREAMS</div>
+                    <div class="rta-details">
+                        <span class="rta-meta">ROAD TO ARIRANG • DAILY FOCUS</span>
+                        <h2 class="rta-title">${currentAlbum.name}</h2>
+                        <div class="rta-target-pill">
+                            🎯 TARGET: ${fmt(dailyProgress)} / ${fmt(cfg.dailyTarget)}
+                        </div>
                     </div>
                 </div>
 
-                <!-- Journey Progress (Day 1 to 19) -->
-                <div class="rta-progress-container">
-                    <div class="rta-progress-label">
-                        <span>Discography Journey Progress</span>
-                        <span>${dayNumber}/19 Days</span>
-                    </div>
+                <div class="rta-progress-area">
                     <div class="rta-bar-bg">
-                        <div class="rta-bar-fill" style="width: ${journeyPct}%"></div>
+                        <div class="rta-bar-fill" style="width: ${dailyPct}%">
+                            <div class="rta-bar-shimmer"></div>
+                        </div>
+                    </div>
+                    <div class="rta-bar-stats">
+                        <span>UNIFIED COMMUNITY STREAMS</span>
+                        <span>${Math.round(dailyPct)}%</span>
                     </div>
                 </div>
             </div>
-            
-            <div class="rta-status-strip">
-                <span class="status-dot"></span> OPERATION IS LIVE • SYNCING ALL 4 TEAMS
+            <div class="rta-footer">
+                <span class="rta-dot"></span> OPERATION IS LIVE • ALL TEAMS SYNCED
             </div>
         </div>
     `;
