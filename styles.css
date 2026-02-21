@@ -10993,308 +10993,355 @@ html, body {
 input, textarea, select {
     font-size: 16px !important;
 }
-/* ==================== ROAD TO ARIRANG (COMMON GOAL) ==================== */
-.rta-card {
-    background: linear-gradient(165deg, #1a1a2e, #0a0a0f);
-    border: 1px solid rgba(255, 215, 0, 0.2);
-    border-radius: 16px;
-    margin-bottom: 20px;
-    overflow: hidden;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-}
+/* ==================== ROAD TO ARIRANG: PREMIUM EDITION ==================== */
 
-.rta-header {
-    background: rgba(0, 0, 0, 0.4);
-    padding: 12px 15px;
-    font-family: 'Orbitron', sans-serif;
-    font-size: 11px;
-    font-weight: 700;
-    color: #fff;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    border-bottom: 1px solid rgba(255, 215, 0, 0.1);
-}
-
-.rta-tag {
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 9px;
-    font-weight: 900;
-}
-
-.rta-tag.gold { background: #ffd700; color: #000; }
-.rta-tag.blue { background: #00d4ff; color: #000; }
-
-.rta-body { padding: 20px; }
-
-.rta-main {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    margin-bottom: 20px;
-}
-
-.rta-album-frame {
+/* --- Main Card Container --- */
+.rta-premium-card {
     position: relative;
-    width: 65px;
-    height: 65px;
-    background: #000;
-    border: 1px solid #ffd700;
-    border-radius: 12px;
+    background: linear-gradient(145deg, #0f0f13 0%, #1a1a24 100%);
+    border-radius: 20px;
+    padding: 0;
+    margin-bottom: 25px;
+    box-shadow: 
+        0 15px 35px rgba(0, 0, 0, 0.5),
+        0 0 0 1px rgba(255, 215, 0, 0.1) inset; /* Subtle Gold Rim */
+    overflow: hidden;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.rta-premium-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 
+        0 20px 40px rgba(0, 0, 0, 0.6),
+        0 0 0 1px rgba(255, 215, 0, 0.3) inset,
+        0 0 20px rgba(157, 78, 221, 0.1);
+}
+
+/* Background Grid Pattern */
+.rta-premium-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: 
+        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 30px 30px;
+    opacity: 0.3;
+    pointer-events: none;
+}
+
+/* Top Accent Line */
+.rta-premium-card::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #ffd700, #ff4444, transparent);
+    opacity: 0.8;
+}
+
+/* --- Content Layout --- */
+.rta-content {
+    display: flex;
+    align-items: stretch;
+    position: relative;
+    z-index: 2;
+}
+
+/* --- Left: Album Art Section --- */
+.rta-visual {
+    width: 110px;
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 32px;
+    background: rgba(0,0,0,0.2);
+    border-right: 1px solid rgba(255,255,255,0.05);
 }
 
-.rta-pulse {
+.rta-album-art {
+    width: 70px;
+    height: 70px;
+    border-radius: 12px;
+    position: relative;
+    z-index: 2;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+    transition: transform 0.4s ease;
+}
+
+.rta-album-art img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.rta-premium-card:hover .rta-album-art {
+    transform: scale(1.05) rotate(2deg);
+}
+
+/* Glowing Ring behind album */
+.rta-visual::before {
+    content: '';
     position: absolute;
-    inset: -5px;
-    border: 1px solid #ffd700;
-    border-radius: 15px;
-    animation: rtaGlow 2s infinite;
-    opacity: 0;
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(157,78,221,0.2) 0%, transparent 70%);
+    animation: rtaPulse 3s infinite;
 }
 
-@keyframes rtaGlow {
-    0% { transform: scale(1); opacity: 0.5; }
-    100% { transform: scale(1.2); opacity: 0; }
+/* --- Right: Data Section --- */
+.rta-data {
+    flex: 1;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
-.rta-info { flex: 1; }
-
-.rta-label { font-size: 9px; color: #ffd700; letter-spacing: 1.5px; margin-bottom: 2px; }
-
-.rta-album-name {
-    font-family: 'Orbitron', sans-serif;
-    font-size: 16px;
-    font-weight: 800;
-    color: #fff;
-    margin-bottom: 4px;
-}
-
-.rta-mission-text { font-size: 11px; color: #888; }
-
-.rta-progress-container { margin-top: 15px; }
-
-.rta-progress-label {
+/* Header */
+.rta-header-row {
     display: flex;
     justify-content: space-between;
-    font-size: 10px;
-    color: #666;
-    margin-bottom: 6px;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.rta-badge {
+    font-family: 'Orbitron', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    color: #ffd700;
+    background: rgba(255, 215, 0, 0.1);
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    letter-spacing: 1px;
     text-transform: uppercase;
 }
 
-.rta-bar-bg {
-    height: 6px;
-    background: #111;
-    border-radius: 3px;
+.rta-live-indicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 9px;
+    color: #ff4444;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.rta-dot {
+    width: 6px; height: 6px;
+    background: #ff4444;
+    border-radius: 50%;
+    box-shadow: 0 0 8px #ff4444;
+    animation: blinkLive 1.5s infinite;
+}
+
+/* Title */
+.rta-title-group h3 {
+    font-family: 'Orbitron', monospace;
+    font-size: 18px;
+    color: #fff;
+    margin: 0;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-shadow: 0 0 20px rgba(157, 78, 221, 0.5);
+}
+
+.rta-title-group p {
+    font-size: 11px;
+    color: #888;
+    margin: 4px 0 0 0;
+    font-family: 'Rajdhani', sans-serif;
+    letter-spacing: 0.5px;
+}
+
+/* Progress Section */
+.rta-progress-wrapper {
+    margin-top: 15px;
+}
+
+.rta-track-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 6px;
+}
+
+.rta-stat-val {
+    font-family: 'Orbitron', monospace;
+    font-size: 14px;
+    color: #fff;
+    font-weight: 700;
+}
+
+.rta-stat-label {
+    font-size: 10px;
+    color: #666;
+    text-transform: uppercase;
+}
+
+.rta-percent {
+    font-family: 'Orbitron', monospace;
+    font-size: 18px;
+    font-weight: 700;
+    color: #ffd700; /* Gold */
+}
+
+/* Premium Progress Bar */
+.rta-bar-track {
+    height: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
     overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    position: relative;
 }
 
 .rta-bar-fill {
     height: 100%;
-    background: linear-gradient(90deg, #7b2cbf, #ffd700);
-    box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
-    transition: width 1s ease-out;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #7b2cbf, #ff4444, #ffd700);
+    background-size: 200% 100%;
+    width: 0%; /* JS sets this */
+    transition: width 1.5s cubic-bezier(0.22, 1, 0.36, 1);
+    position: relative;
+    animation: gradientFlow 3s linear infinite;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
 }
 
-.rta-status-strip {
-    background: rgba(255, 215, 0, 0.05);
-    padding: 8px;
-    font-size: 9px;
-    font-weight: 700;
-    color: #ffd700;
+/* Shimmer effect on bar */
+.rta-bar-fill::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; bottom: 0; right: 0;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.4),
+        transparent
+    );
+    transform: translateX(-100%);
+    animation: shimmerSlide 2s infinite;
+}
+
+/* --- Footer Stats Row --- */
+.rta-footer {
+    display: flex;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.rta-footer-item {
+    flex: 1;
     text-align: center;
-    letter-spacing: 2px;
+    padding: 12px 5px;
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+    transition: background 0.2s;
 }
 
-.status-dot {
-    display: inline-block;
-    width: 6px;
-    height: 6px;
-    background: #00ff88;
-    border-radius: 50%;
-    margin-right: 5px;
-    animation: blinkLive 1s infinite;
+.rta-footer-item:last-child {
+    border-right: none;
 }
 
-.rta-lock {
-    margin-top: 15px;
-    font-family: 'Orbitron', sans-serif;
-    color: #444;
-    font-size: 12px;
-    letter-spacing: 2px;
+.rta-footer-item:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.rta-f-label {
+    display: block;
+    font-size: 9px;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 3px;
+}
+
+.rta-f-value {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: #e0e0e0;
+}
+
+.text-gold { color: #ffd700; }
+.text-red { color: #ff4444; }
+
+/* ==================== ANIMATIONS ==================== */
+@keyframes rtaPulse {
+    0% { transform: scale(0.8); opacity: 0.3; }
+    50% { transform: scale(1.2); opacity: 0; }
+    100% { transform: scale(0.8); opacity: 0; }
 }
 
 @keyframes blinkLive {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.3; }
 }
-.rta-target-badge {
-    display: inline-block;
-    margin-top: 8px;
-    padding: 4px 10px;
-    background: rgba(0, 255, 136, 0.1);
-    border: 1px solid #00ff88;
-    color: #00ff88;
-    font-family: 'Orbitron', sans-serif;
-    font-size: 10px;
-    font-weight: 700;
-    border-radius: 4px;
-    letter-spacing: 1px;
+
+@keyframes gradientFlow {
+    0% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
 }
 
-.rta-info {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
+@keyframes shimmerSlide {
+    100% { transform: translateX(100%); }
 }
 
-.rta-bar-fill {
-    /* Made it look like a glowing power bar */
-    background: linear-gradient(90deg, #7b2cbf, #ffd700, #00ff88);
-    background-size: 200% 100%;
-    animation: flowGlow 3s linear infinite;
+/* ==================== RESPONSIVE ADJUSTMENTS ==================== */
+
+/* Laptop / Desktop */
+@media (min-width: 768px) {
+    .rta-content {
+        min-height: 140px;
+    }
+    .rta-visual {
+        width: 140px;
+    }
+    .rta-album-art {
+        width: 90px;
+        height: 90px;
+    }
+    .rta-title-group h3 {
+        font-size: 22px;
+    }
 }
 
-@keyframes flowGlow {
-    0% { background-position: 0% 50%; }
-    100% { background-position: 200% 50%; }
-}
-/* ==================== TYPOGRAPHY CLEANUP ==================== */
-/* Use Rajdhani for everything except headers/numbers to reduce 'heaviness' */
-body {
-    font-family: 'Rajdhani', sans-serif !important;
-}
-
-/* Restrict Orbitron to only the most important titles */
-.rta-title, .rta-stat-val, .quick-stat-value, .brand-name {
-    font-family: 'Orbitron', sans-serif !important;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-}
-
-/* ==================== ROAD TO ARIRANG: SLEEK STEALTH ==================== */
-
-.rta-stealth-card {
-    background: #0f0f16;
-    border: 1px solid rgba(237, 28, 36, 0.3);
-    border-left: 4px solid #ed1c24; /* Arirang Red Accent */
-    border-radius: 12px;
-    margin-bottom: 20px;
-    overflow: hidden;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-}
-
-.rta-stealth-body {
-    display: flex;
-    align-items: center;
-    padding: 16px 20px;
-    gap: 20px;
-}
-
-/* FIXED LOGO SIZE */
-.rta-logo-section {
-    width: 60px;
-    height: 60px;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(255, 255, 255, 0.03);
-    border-radius: 10px;
-    padding: 8px;
-}
-
-.rta-logo-section img {
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-}
-
-.rta-main-section {
-    flex: 1;
-    min-width: 0;
-}
-
-.rta-label-row {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 4px;
-}
-
-.rta-tag {
-    font-size: 10px;
-    font-weight: 800;
-    color: #ed1c24; /* Arirang Red */
-    letter-spacing: 1.5px;
-}
-
-.rta-live {
-    font-size: 9px;
-    font-weight: 800;
-    color: #00ff88;
-    animation: blinkRta 1.5s infinite;
-}
-
-.rta-album-display-name {
-    font-family: 'Orbitron', sans-serif !important;
-    font-size: 18px;
-    font-weight: 800;
-    color: #fff;
-    margin: 0 0 10px 0;
-    letter-spacing: 0.5px;
-}
-
-/* CLEAN PROGRESS BAR */
-.rta-bar-bg {
-    height: 6px;
-    background: rgba(255,255,255,0.05);
-    border-radius: 10px;
-    margin-bottom: 8px;
-    overflow: hidden;
-}
-
-.rta-bar-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #ed1c24, #ff4d4d);
-    box-shadow: 0 0 10px rgba(237, 28, 36, 0.4);
-    border-radius: 10px;
-    transition: width 1s ease-in-out;
-}
-
-.rta-stats {
-    display: flex;
-    justify-content: space-between;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 11px;
-    color: #888;
-}
-
-.rta-pct { color: #fff; font-weight: bold; }
-
-.rta-stealth-footer {
-    background: rgba(237, 28, 36, 0.05);
-    padding: 6px 20px;
-    font-size: 9px;
-    font-weight: 700;
-    color: rgba(255,255,255,0.3);
-    letter-spacing: 1px;
-    text-align: center;
-    border-top: 1px solid rgba(237, 28, 36, 0.1);
-}
-
-@keyframes blinkRta {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
-}
-
-/* Desktop/Mobile handling */
+/* Mobile */
 @media (max-width: 480px) {
-    .rta-stealth-body { padding: 12px; gap: 15px; }
-    .rta-logo-section { width: 50px; height: 50px; }
-    .rta-album-display-name { font-size: 15px; }
+    .rta-content {
+        flex-direction: row; /* Keep side-by-side on mobile for pro feel */
+        align-items: center;
+    }
+    .rta-visual {
+        width: 90px;
+        background: transparent;
+        border-right: none;
+        padding-left: 15px;
+    }
+    .rta-album-art {
+        width: 60px;
+        height: 60px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.6);
+    }
+    .rta-data {
+        padding: 15px 15px 15px 0; /* Remove left padding */
+    }
+    .rta-title-group h3 {
+        font-size: 16px;
+    }
+    .rta-badge {
+        font-size: 8px;
+        padding: 2px 6px;
+    }
+    .rta-stat-val { font-size: 12px; }
+    .rta-percent { font-size: 15px; }
+    
+    /* Hide one footer item on very small screens if needed */
+    .rta-footer-item.hide-mobile {
+        display: none;
+    }
 }
