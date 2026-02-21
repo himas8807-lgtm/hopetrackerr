@@ -11177,14 +11177,14 @@ body {
     text-transform: uppercase;
 }
 
-/* ==================== ROAD TO ARIRANG: SLEEK STEALTH VERSION ==================== */
+/* ==================== ROAD TO ARIRANG: SLEEK STEALTH ==================== */
 
 .rta-stealth-card {
-    background: #0f0f16; /* Matches your dashboard depth */
-    border: 1px solid rgba(237, 28, 36, 0.4); /* Subtle red border */
-    border-left: 4px solid #ed1c24; /* Bold Arirang Red accent */
+    background: #0f0f16;
+    border: 1px solid rgba(237, 28, 36, 0.3);
+    border-left: 4px solid #ed1c24; /* Arirang Red Accent */
     border-radius: 12px;
-    margin-bottom: 25px;
+    margin-bottom: 20px;
     overflow: hidden;
     box-shadow: 0 10px 30px rgba(0,0,0,0.5);
 }
@@ -11196,7 +11196,7 @@ body {
     gap: 20px;
 }
 
-/* --- FIXED LOGO SCALING --- */
+/* FIXED LOGO SIZE */
 .rta-logo-section {
     width: 60px;
     height: 60px;
@@ -11213,7 +11213,6 @@ body {
     max-width: 100%;
     max-height: 100%;
     object-fit: contain;
-    filter: drop-shadow(0 0 5px rgba(237, 28, 36, 0.4));
 }
 
 .rta-main-section {
@@ -11230,30 +11229,27 @@ body {
 .rta-tag {
     font-size: 10px;
     font-weight: 800;
-    color: #ed1c24;
+    color: #ed1c24; /* Arirang Red */
     letter-spacing: 1.5px;
-    font-family: 'Rajdhani', sans-serif;
 }
 
 .rta-live {
     font-size: 9px;
     font-weight: 800;
     color: #00ff88;
-    animation: blink 1.5s infinite;
+    animation: blinkRta 1.5s infinite;
 }
 
-.rta-album-name {
+.rta-album-display-name {
     font-family: 'Orbitron', sans-serif !important;
     font-size: 18px;
     font-weight: 800;
     color: #fff;
-    margin-bottom: 12px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    margin: 0 0 10px 0;
+    letter-spacing: 0.5px;
 }
 
-/* --- CLEAN PROGRESS BAR --- */
+/* CLEAN PROGRESS BAR */
 .rta-bar-bg {
     height: 6px;
     background: rgba(255,255,255,0.05);
@@ -11278,30 +11274,27 @@ body {
     color: #888;
 }
 
-.rta-pct {
-    color: #fff;
-    font-weight: bold;
-}
+.rta-pct { color: #fff; font-weight: bold; }
 
 .rta-stealth-footer {
     background: rgba(237, 28, 36, 0.05);
     padding: 6px 20px;
     font-size: 9px;
     font-weight: 700;
-    color: rgba(255,255,255,0.4);
+    color: rgba(255,255,255,0.3);
     letter-spacing: 1px;
     text-align: center;
     border-top: 1px solid rgba(237, 28, 36, 0.1);
 }
 
-@keyframes blink {
+@keyframes blinkRta {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.4; }
 }
 
-/* De-cluttering adjustment for mobile */
+/* Desktop/Mobile handling */
 @media (max-width: 480px) {
     .rta-stealth-body { padding: 12px; gap: 15px; }
     .rta-logo-section { width: 50px; height: 50px; }
-    .rta-album-name { font-size: 15px; }
+    .rta-album-display-name { font-size: 15px; }
 }
