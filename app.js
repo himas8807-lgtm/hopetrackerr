@@ -28,7 +28,7 @@ const CONFIG = {
 
     // ==================== BADGE SYSTEM ====================
     BADGE_REPO_URL: 'https://raw.githubusercontent.com/hbot7875-gif/btscomebackmission/main/lvl1badges/',
-    TOTAL_BADGE_IMAGES: 60,
+    TOTAL_BADGE_IMAGES: 64,
     EXCLUDE_BADGES: [],
 
     get BADGE_POOL() {
@@ -40,7 +40,25 @@ const CONFIG = {
         }
         return pool;
     },
+// ==================== ROYAL/SPECIAL BADGES ===================
+ROYAL_BADGE_REPO_URL: 'https://raw.githubusercontent.com/hbot7875-gif/btscomebackmission/2dbbd3fd9f3ef65a80236784f7db5b7a1e3c20c4/Spl%20badges/',
 
+TOTAL_ROYAL_BADGES: 49, 
+get ROYAL_BADGE_POOL() {
+    const pool = [];
+    for (let i = 1; i <= this.TOTAL_ROYAL_BADGES; i++) {
+        // Filenames in that folder are "splbadge(1).jpg", "splbadge(2).jpg", etc.
+        pool.push(`${this.ROYAL_BADGE_REPO_URL}splbadge(${i}).jpg`);
+    }
+    return pool;
+},
+
+ROYAL_BADGES: {
+    TOP_N: 50,
+    STYLE: 'spotlight',
+    BADGE_NAME: 'Royal Collection',
+    DESCRIPTION: 'Awarded to Top 50 Elite Agents'
+},
     // ==================== ALBUM CHALLENGE ====================
     ALBUM_CHALLENGE: {
         REQUIRED_STREAMS: 2,
@@ -323,6 +341,7 @@ function startBTSCountdown() {
     }, 1000);
 }
 // ==================== STATE ====================
+
 const STATE = {
     agentNo: null,
     week: null,
@@ -336,6 +355,8 @@ const STATE = {
     adminSession: null,
     lastUpdated: null,
     hasSeenResults: {},
+    chatMode: 'global',
+    
 
     // ===== NOTIFICATION STATE (UPDATED) =====
     notifications: [],
@@ -360,6 +381,7 @@ const $ = id => document.getElementById(id);
 const teamColor = team => CONFIG.TEAMS[team]?.color || '#7b2cbf';
 const teamPfp = team => CONFIG.TEAM_PFPS[team] || '';
 const getTeamMemberCount = team => STATE.allAgents?.filter(a => a.team === team).length || 0;
+
 
 // ==================== PLAYLIST ICON HELPER ====================
 function getPlaylistIcon(platform) {
@@ -387,27 +409,38 @@ function sanitize(str) {
     if (!str) return '';
     return String(str).replace(/[<>\"'&]/g, char => ({ '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '&': '&amp;' })[char] || char);
 }
+function getKSTDateString() {
+    const kstDate = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Seoul"}));
+    const y = kstDate.getFullYear();
+    const m = String(kstDate.getMonth() + 1).padStart(2, '0');
+    const d = String(kstDate.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
+
+function getKSTToDateString() {
+    return new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Seoul"})).toDateString();
+}
 
 function formatLastUpdated(dateStr) {
     if (!dateStr) return 'Unknown';
     try {
-        // FIX: Remove the 'Z' or timezone offset from the string so the browser 
-        // treats it as "Local Time" (which your backend already calculated as IST)
-        const cleanDateStr = dateStr.replace('Z', '').replace(/\.\d+/, '').replace(/\+.*$/, '');
+        // 1. Remove Z so browser doesn't convert timezone
+        let cleanStr = dateStr.replace('Z', '').replace(/\+.*$/, '');
         
-        const date = new Date(cleanDateStr);
-        
+        const date = new Date(cleanStr);
         if (isNaN(date.getTime())) return dateStr;
 
-        // Use simple formatting that reflects the string exactly
-        const hours = date.getHours();
+        let hours = date.getHours();
         const minutes = String(date.getMinutes()).padStart(2, '0');
         const ampm = hours >= 12 ? 'PM' : 'AM';
-        const displayHours = hours % 12 || 12;
+        hours = hours % 12;
+        hours = hours ? hours : 12;
+        
         const month = date.toLocaleString('en-US', { month: 'short' });
         const day = date.getDate();
 
-        return `${month} ${day}, ${displayHours}:${minutes} ${ampm}`;
+        // Added "IST" at the end for clarity
+        return `${month} ${day}, ${hours}:${minutes} ${ampm} IST`; 
     } catch (e) { 
         return dateStr; 
     }
@@ -496,23 +529,32 @@ function isWeekCompleted(selectedWeek) {
     const startDateStr = CONFIG.WEEK_DATES[selectedWeek];
     if (!startDateStr) return false;
     
-    const start = new Date(startDateStr);
-    // Week ends 7 days after start
-    const end = new Date(start.getTime() + (7 * 24 * 60 * 60 * 1000) - 1);
+    // Split string to avoid UTC shift (Year, Month-1, Day)
+    const parts = startDateStr.split('-');
+    const start = new Date(parts[0], parts[1] - 1, parts[2]);
     
-    return new Date() > end;
+    // Set end to exactly 7 days later at 00:00:00 local time
+    const end = new Date(start.getTime() + (7 * 24 * 60 * 60 * 1000));
+    
+    return new Date() >= end;
 }
 
 function getDaysRemaining(weekLabel) {
     const startDateStr = CONFIG.WEEK_DATES[weekLabel];
     if (!startDateStr) return 0;
     
-    const start = new Date(startDateStr);
-    const end = new Date(start.getTime() + (7 * 24 * 60 * 60 * 1000) - 1);
+    const parts = startDateStr.split('-');
+    const start = new Date(parts[0], parts[1] - 1, parts[2]);
+    const end = new Date(start.getTime() + (7 * 24 * 60 * 60 * 1000));
     
     const now = new Date();
-    const diff = Math.ceil((end - now) / (1000 * 60 * 60 * 24));
-    return diff > 0 ? diff : 0;
+    // Calculate difference in milliseconds
+    const diffMs = end - now;
+    
+    // Convert to days and use Math.ceil to show "1" until the very last second
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    
+    return diffDays > 0 ? diffDays : 0;
 }
 
 function getPriorityBadge(priority) {
@@ -996,7 +1038,8 @@ async function checkNotifications() {
             checkNewMissions(),
             checkNewSongOfDay(),
             checkNewSOTDResults(),
-            checkNewResultsRelease()
+            checkNewResultsRelease(),
+            checkRoyalAward()
         ]);
         
         const notifications = [];
@@ -1055,7 +1098,45 @@ async function checkNotifications() {
         STATE.isCheckingNotifications = false;
     }
 }
+async function checkRoyalAward() {
+    if (!STATE.weeks || STATE.weeks.length === 0) return null;
 
+    const currentIdx = STATE.weeks.indexOf(STATE.week);
+    const previousWeek = STATE.weeks[currentIdx - 1] || (STATE.week === 'Week 11' ? 'Week 10' : null);
+
+    if (!previousWeek || !isWeekCompleted(previousWeek)) return null;
+
+    const storageKey = `royal_awarded_${previousWeek}_${STATE.agentNo}`;
+    if (localStorage.getItem(storageKey)) return null;
+
+    try {
+        const res = await api('getDashboardData', { week: previousWeek });
+        const rank = parseInt(res.agent?.rank);
+
+        if (rank > 0 && rank <= (CONFIG.ROYAL_BADGES?.TOP_N || 50)) {
+            
+            // 🔥 DIRECT TRIGGER: Show the big modal immediately
+            // This happens as soon as the background check finishes
+            showRoyalAwardModal(rank, previousWeek);
+            
+            // Also mark as seen so it doesn't repeat
+            localStorage.setItem(storageKey, 'true');
+
+            // Return the notification just as a backup/log
+            return {
+                type: 'royal_badge',
+                icon: '👑',
+                title: 'ELITE STATUS!',
+                message: `Rank #${rank} in ${previousWeek}`,
+                priority: 'high',
+                id: `royal_${previousWeek}`
+            };
+        }
+    } catch (e) {
+        console.warn("Royal check background fetch failed", e);
+    }
+    return null;
+}
 // ==================== INDIVIDUAL CHECK FUNCTIONS ====================
 
 async function checkNewBadges() {
@@ -1082,7 +1163,7 @@ async function checkNewBadges() {
                 icon: '🎖️',
                 title: `${newBadges} New Badge${newBadges > 1 ? 's' : ''} Earned!`,
                 message: `You reached ${currentBadgeCount * 50} XP!`,
-                action: () => loadPage('drawer'),
+                action: () => ('drawer'),
                 actionText: 'View Badges',
                 week: STATE.week,
                 id: `badge_${currentBadgeCount}`
@@ -1101,7 +1182,7 @@ async function checkNewBadges() {
                 icon: '✨',
                 title: `${CONFIG.ALBUM_CHALLENGE?.CHALLENGE_NAME || '2X'} Master!`,
                 message: `You completed the Album Challenge!`,
-                action: () => loadPage('drawer'),
+                action: () => ('drawer'),
                 actionText: 'View Badge',
                 priority: 'high',
                 week: STATE.week,
@@ -1151,7 +1232,7 @@ async function checkNewAnnouncements() {
             icon: '📢',
             title: 'New Announcement!',
             message: latest.title || 'New message from HQ',
-            action: () => loadPage('announcements'),
+            action: () => ('announcements'),
             actionText: 'Read Now',
             priority: latest.priority === 'high' ? 'high' : 'normal',
             week: STATE.week,
@@ -1197,7 +1278,7 @@ async function checkNewPlaylists() {
             icon: '🎵',
             title: 'New Playlist Added!',
             message: `${unseen.length} new playlist${unseen.length > 1 ? 's' : ''} available!`,
-            action: () => loadPage('playlists'),
+            action: () => ('playlists'),
             actionText: 'View Playlists',
             week: STATE.week,
             id: `playlist_${Date.now()}`
@@ -1265,7 +1346,7 @@ async function checkNewMissions() {
                     icon: '💀',
                     title: 'Mission Failed',
                     message: `Team ${team} failed: ${mission.title || 'Secret Mission'}. 0 XP awarded.`,
-                    action: () => loadPage('secret-missions'),
+                    action: () => ('secret-missions'),
                     actionText: 'View Details',
                     priority: 'high', // Force popup
                     week: STATE.week,
@@ -1279,7 +1360,7 @@ async function checkNewMissions() {
                     icon: '🎉',
                     title: `+${xpAwarded} XP Earned!`,
                     message: `${team} completed: ${mission.title || 'Secret Mission'}`,
-                    action: () => loadPage('secret-missions'),
+                    action: () => ('secret-missions'),
                     actionText: 'View Missions',
                     priority: 'high', // Force popup
                     week: STATE.week,
@@ -1308,7 +1389,7 @@ async function checkNewMissions() {
                     icon: '🎯',
                     title: 'Mission Assigned to YOU!',
                     message: mission.title || 'New classified mission',
-                    action: () => loadPage('secret-missions'),
+                    action: () => ('secret-missions'),
                     actionText: 'View Mission',
                     priority: 'high',
                     week: STATE.week,
@@ -1322,7 +1403,7 @@ async function checkNewMissions() {
                 icon: '🕵️',
                 title: 'New Team Mission!',
                 message: newMission?.title || 'Your team has a secret mission!',
-                action: () => loadPage('secret-missions'),
+                action: () => ('secret-missions'),
                 actionText: 'View Missions',
                 week: STATE.week,
                 id: newMission?.id
@@ -1373,7 +1454,7 @@ async function checkNewResultsRelease() {
                 priority: 'high', // ⚠️ Forces the Popup
                 action: () => {
                     STATE.week = targetWeek;
-                    loadPage('summary');
+                    ('summary');
                 },
                 actionText: 'View Winner',
                 id: `release_${targetWeek}`
@@ -1388,40 +1469,36 @@ async function checkNewResultsRelease() {
 }
 async function checkNewSongOfDay() {
     try {
-        const data = await api('getSongOfDay', {});
+        const data = await api('getSongOfDay', {}).catch(() => ({ success: false }));
+        if (!data || !data.success || !data.song) return null;
         
-        if (!data.success || !data.song) return null;
-        
-        const today = new Date().toDateString();
+        // Use KST instead of local date
+        const todayKST = getKSTDateString(); 
         const lastCheckedDate = STATE.lastChecked.songOfDay;
         
-        const storageKey = 'song_answered_' + STATE.agentNo + '_' + today;
+        const storageKey = 'song_answered_' + STATE.agentNo + '_' + todayKST;
         const alreadyAnswered = localStorage.getItem(storageKey);
         
         if (alreadyAnswered) {
-            STATE.lastChecked.songOfDay = today;
+            STATE.lastChecked.songOfDay = todayKST;
             return null;
         }
         
-        // ✅ NEW CHECK: Explicitly check if we already dismissed this specific ID today
-        const notifId = `sotd_${today}`;
-        if (lastCheckedDate !== today) {
+        if (lastCheckedDate !== todayKST) {
             return {
                 type: 'sotd',
                 icon: '🎬',
                 title: 'Song of the Day!',
                 message: 'New song puzzle - guess it for XP!',
                 action: () => {
-                    STATE.lastChecked.songOfDay = today;
+                    STATE.lastChecked.songOfDay = todayKST;
                     saveNotificationState();
                     loadPage('song-of-day');
                 },
                 actionText: 'Play Now',
-                week: STATE.week,
-                id: notifId
+                id: `sotd_${todayKST}`
             };
         }
-        
         return null;
     } catch (e) {
         return null;
@@ -1638,7 +1715,7 @@ function checkWeekResults() {
             const weekSelect = document.getElementById('week-select');
             if (weekSelect) weekSelect.value = previousWeek;
             if (typeof markResultsSeen === 'function') markResultsSeen(previousWeek);
-            loadPage('summary');
+            ('summary');
         },
         actionText: 'View Results',
         priority: 'high',
@@ -2007,7 +2084,7 @@ function setupNotificationChecks() {
     setInterval(() => {
         console.log('⏰ Periodic notification check...');
         checkNotifications();
-    }, 3 * 60 * 1000); // 3 minutes
+    }, 60 * 1000); 
     
     // ✅ Check when user returns to tab
     document.addEventListener('visibilitychange', () => {
@@ -2437,6 +2514,7 @@ function showAdminPanel() {
             <button type="button" class="admin-tab active" data-tab="create">Create Mission</button>
             <button type="button" class="admin-tab" data-tab="active">Active</button>
             <button type="button" class="admin-tab" data-tab="confirm">📋 Confirm</button>
+            <button type="button" class="admin-tab" data-tab="sotd">🎵 SOTD</button>
             <button type="button" class="admin-tab" data-tab="debug">🔧 Diagnostics</button>
             <button type="button" class="admin-tab" data-tab="system">⚙️ System</button>
             <button type="button" class="admin-tab" data-tab="leaves">🛑 On Leave</button> 
@@ -2447,6 +2525,7 @@ function showAdminPanel() {
             <div id="admin-tab-create" class="admin-tab-content active"></div>
             <div id="admin-tab-active" class="admin-tab-content"></div>
             <div id="admin-tab-confirm" class="admin-tab-content"></div>
+            <div id="admin-tab-sotd" class="admin-tab-content"></div>
             <div id="admin-tab-debug" class="admin-tab-content"></div>
             <div id="admin-tab-system" class="admin-tab-content"></div>
             <div id="admin-tab-leaves" class="admin-tab-content"></div>
@@ -2523,6 +2602,9 @@ function switchAdminTab(tabName) {
         case 'confirm':                    
             renderWeekConfirmation();
             break;
+        case 'sotd': 
+            renderAdminSOTD(); 
+            break; 
         case 'debug': 
             renderAdminDebugTab(); 
             break;
@@ -2741,6 +2823,10 @@ async function createTeamMission() {
             document.getElementById('xp-reward').value = '5';
             document.querySelectorAll('input[name="target-teams"]').forEach(cb => cb.checked = false);
             document.getElementById('select-all-teams').checked = false;
+        if (STATE.lastChecked) {
+            STATE.lastChecked._missionBaselineSet = true; 
+            STATE.lastChecked.seenMissionIds = []; 
+         }
             
             // Switch to active tab
             setTimeout(() => {
@@ -2831,10 +2917,14 @@ async function loadActiveTeamMissions() {
     }
 }
 function renderAdminMissionCard(mission) {
-    const targetTeams = mission.targetTeams || [];
-    const completedTeams = mission.completedTeams || [];
+    // 🔧 FIX: Check for both camelCase AND snake_case property names
+    const targetTeams = mission.targetTeams || mission.target_teams || [];
+    const completedTeams = mission.completedTeams || mission.completed_teams || [];
+    const goalTarget = mission.goalTarget || mission.goal_target || 100;
+    const xpReward = mission.xpReward || mission.xp_reward || 5;
+    
     const progress = mission.progress || {};
-    const missionType = CONFIG.MISSION_TYPES?.[mission.type] || { icon: '🎯', name: 'Mission' };
+    const missionType = CONFIG.MISSION_TYPES?.[mission.type] || CONFIG.MISSION_TYPES?.[mission.mission_type] || { icon: '🎯', name: 'Mission' };
     
     const allCompleted = targetTeams.length > 0 && targetTeams.every(t => completedTeams.includes(t));
     
@@ -2862,7 +2952,7 @@ function renderAdminMissionCard(mission) {
                 <div style="flex:1;">
                     <div style="font-weight:600;color:#fff;font-size:14px;">${sanitize(mission.title)}</div>
                     <div style="color:#888;font-size:11px;margin-top:3px;">
-                        ${missionType.name} • Goal: ${mission.goalTarget || 100} • +${mission.xpReward || 5} XP
+                        ${missionType.name} • Goal: ${goalTarget} • +${xpReward} XP
                     </div>
                     ${mission.briefing ? `
                         <div style="color:#aaa;font-size:11px;margin-top:6px;line-height:1.4;">
@@ -2880,26 +2970,22 @@ function renderAdminMissionCard(mission) {
                 ">${completedTeams.length}/${targetTeams.length} Done</div>
             </div>
             
-            <!-- Per-Team Status -->
-            <div style="
-                background: rgba(0,0,0,0.2);
-                border-radius: 10px;
-                padding: 12px;
-                margin-bottom: 12px;
-            ">
+            <!-- Per-Team Status (CLICK HERE TRIGGERS MODAL) -->
+            <div style="background: rgba(0,0,0,0.2); border-radius: 10px; padding: 12px; margin-bottom: 12px;">
                 <div style="color:#888;font-size:10px;text-transform:uppercase;margin-bottom:10px;letter-spacing:1px;">
-                    Team Status (Click to Approve)
+                    Tap Team to Manage
                 </div>
                 
                 <div style="display:flex;flex-wrap:wrap;gap:8px;">
                     ${targetTeams.map(team => {
                         const isCompleted = completedTeams.includes(team);
                         const teamProgress = progress[team] || 0;
-                        const progressPct = mission.goalTarget ? Math.min(100, (teamProgress / mission.goalTarget) * 100) : 0;
+                        const progressPct = goalTarget ? Math.min(100, (teamProgress / goalTarget) * 100) : 0;
                         const tColor = teamColor(team);
                         
                         return `
-                            <div onclick="${isCompleted ? '' : `adminApproveMissionForTeam('${mission.id}', '${team}')`}" 
+                            <div onclick="adminApproveMissionForTeam('${mission.mission_id || mission.id}', '${team}')"
+ 
                                  style="
                                     flex: 1;
                                     min-width: 140px;
@@ -2907,41 +2993,26 @@ function renderAdminMissionCard(mission) {
                                     background: ${isCompleted ? 'rgba(0,255,136,0.1)' : 'rgba(255,255,255,0.03)'};
                                     border: 1px solid ${isCompleted ? 'rgba(0,255,136,0.3)' : tColor + '44'};
                                     border-radius: 8px;
-                                    cursor: ${isCompleted ? 'default' : 'pointer'};
+                                    cursor: pointer;
                                     transition: all 0.2s;
-                                    ${!isCompleted ? 'hover: { background: rgba(123,44,191,0.1); }' : ''}
                                  "
-                                 ${!isCompleted ? `onmouseenter="this.style.background='rgba(123,44,191,0.15)';this.style.borderColor='${tColor}';" onmouseleave="this.style.background='rgba(255,255,255,0.03)';this.style.borderColor='${tColor}44';"` : ''}>
+                                 onmouseenter="this.style.background='rgba(123,44,191,0.15)'" 
+                                 onmouseleave="this.style.background='${isCompleted ? 'rgba(0,255,136,0.1)' : 'rgba(255,255,255,0.03)'}'">
                                 
-                                <!-- Team Name & Status -->
                                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
                                     <div style="display:flex;align-items:center;gap:6px;">
                                         ${teamPfp(team) ? `<img src="${teamPfp(team)}" style="width:18px;height:18px;border-radius:50%;">` : ''}
                                         <span style="color:${tColor};font-weight:600;font-size:11px;">${team}</span>
                                     </div>
-                                    <span style="font-size:14px;">${isCompleted ? '✅' : '⏳'}</span>
+                                    <span style="font-size:14px;">${isCompleted ? '✅' : '⚙️'}</span>
                                 </div>
                                 
-                                <!-- Progress Bar -->
-                                <div style="
-                                    height: 4px;
-                                    background: rgba(255,255,255,0.1);
-                                    border-radius: 2px;
-                                    overflow: hidden;
-                                    margin-bottom: 4px;
-                                ">
-                                    <div style="
-                                        height: 100%;
-                                        width: ${progressPct}%;
-                                        background: ${isCompleted ? '#00ff88' : tColor};
-                                        border-radius: 2px;
-                                    "></div>
+                                <div style="height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; margin-bottom: 4px;">
+                                    <div style="height: 100%; width: ${progressPct}%; background: ${isCompleted ? '#00ff88' : tColor};"></div>
                                 </div>
                                 
-                                <!-- Progress Text -->
                                 <div style="font-size:10px;color:#888;">
-                                    ${teamProgress} / ${mission.goalTarget || 100}
-                                    ${isCompleted ? '<span style="color:#00ff88;margin-left:5px;">Approved</span>' : ''}
+                                    ${isCompleted ? 'Status: Approved' : 'Click to Approve/Fail'}
                                 </div>
                             </div>
                         `;
@@ -2949,64 +3020,11 @@ function renderAdminMissionCard(mission) {
                 </div>
             </div>
             
-            <!-- Action Buttons -->
+            <!-- Bottom Buttons -->
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                <button type="button" onclick="adminRefreshMissionProgress('${mission.id}')" 
-                        style="
-                            flex: 1;
-                            min-width: 100px;
-                            background: rgba(0,150,255,0.15);
-                            border: 1px solid rgba(0,150,255,0.3);
-                            color: #00aaff;
-                            padding: 8px 12px;
-                            border-radius: 6px;
-                            cursor: pointer;
-                            font-size: 11px;
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            gap: 5px;
-                        ">
-                    🔄 Refresh Progress
-                </button>
-                
-                <button type="button" onclick="adminApproveAllTeams('${mission.id}')" 
-                        style="
-                            flex: 1;
-                            min-width: 100px;
-                            background: rgba(0,170,85,0.15);
-                            border: 1px solid rgba(0,170,85,0.3);
-                            color: #00ff88;
-                            padding: 8px 12px;
-                            border-radius: 6px;
-                            cursor: pointer;
-                            font-size: 11px;
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            gap: 5px;
-                        ">
-                    ✓ Approve All
-                </button>
-                
-                <button type="button" onclick="adminCancelMission('${mission.id}')" 
-                        style="
-                            flex: 1;
-                            min-width: 100px;
-                            background: rgba(170,51,51,0.15);
-                            border: 1px solid rgba(170,51,51,0.3);
-                            color: #ff6b6b;
-                            padding: 8px 12px;
-                            border-radius: 6px;
-                            cursor: pointer;
-                            font-size: 11px;
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            gap: 5px;
-                        ">
-                    ✕ Cancel Mission
-                </button>
+                <button onclick="adminRefreshMissionProgress('${mission.id || mission.mission_id}')" class="btn-secondary" style="flex:1;font-size:11px;">🔄 Refresh</button>
+                <button onclick="adminApproveAllTeams('${mission.id || mission.mission_id}')" class="btn-secondary" style="flex:1;font-size:11px;color:#00ff88;">✅ Approve All</button>
+                <button onclick="adminCancelMission('${mission.id || mission.mission_id}')" class="btn-secondary" style="flex:1;font-size:11px;color:#ff6b6b;">✕ Cancel</button>
             </div>
         </div>
     `;
@@ -3630,6 +3648,173 @@ async function renderWeekConfirmation() {
         container.innerHTML = `<div class="error-state"><p>❌ Failed to load data</p><button class="btn-secondary" onclick="renderWeekConfirmation()">Retry</button></div>`;
     }
 }
+// ==================== ADMIN SOTD FUNCTIONS ====================
+
+async function renderAdminSOTD() {
+    const container = document.getElementById('admin-tab-sotd');
+    if (!container) return;
+    const todayKST = getKSTDateString(); 
+    container.innerHTML = '<div class="loading-text">📡 Accessing KST Database...</div>';
+
+    let current = null;
+
+    try {
+        const res = await api('getSongOfDay', { date: todayKST });
+        if (res.success && res.song) {
+            current = res.song;
+        }
+    } catch (e) {
+        // ✅ FIX: If the error is just "No song set", ignore it and let the form render empty.
+        // Only show actual network/system errors.
+        if (e.message && (e.message.includes('No song set') || e.message.includes('Admin needs'))) {
+            console.log("No song set yet - rendering empty form.");
+        } else {
+            container.innerHTML = `<div class="error-text">System Error: ${e.message}</div>`;
+            return;
+        }
+    }
+
+    // Render the form (current will be null if no song exists, which is fine)
+    let html = `
+        <div class="card" style="border-color: #7b2cbf; background: rgba(123, 44, 191, 0.05); margin-bottom: 20px;">
+            <div class="card-header"><h3>🎵 Set Song of the Day</h3></div>
+            <div class="card-body">
+                
+                <!-- ✅ FIXED: Now clearly shows the Korea Mission Date -->
+                <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px dashed #555;">
+                    <div style="font-size: 11px; color: #888; margin-bottom: 5px; letter-spacing: 1px;">
+                        MISSION STATUS (KOREA DATE: ${todayKST})
+                    </div>
+                    ${current ? `
+                        <div style="color: #fff; font-weight: bold;">${current.title}</div>
+                        <div style="color: #aaa; font-size: 12px;">${current.artist} • ${current.xpReward} XP</div>
+                        <div style="color: #7b2cbf; font-size: 11px; margin-top: 4px;">ID: ${current.youtubeId}</div>
+                    ` : `
+                        <div style="color: #ff6b6b; font-weight:bold;">⚠️ No song set for this KST date!</div>
+                        <div style="color: #888; font-size:11px;">Fill the form below to start the game.</div>
+                    `}
+                </div>
+                <!-- Input Form -->
+                <div style="display: grid; gap: 12px;">
+                    <div>
+                        <label style="color:#aaa; font-size:11px;">Song Title</label>
+                        <input type="text" id="admin-sotd-title" class="form-input" placeholder="e.g. Run BTS" value="${current ? current.title : ''}">
+                    </div>
+
+                    <div>
+                        <label style="color:#aaa; font-size:11px;">Artist</label>
+                        <input type="text" id="admin-sotd-artist" class="form-input" placeholder="e.g. BTS" value="${current ? current.artist : 'BTS'}">
+                    </div>
+
+                    <div>
+                        <label style="color:#aaa; font-size:11px;">YouTube Link or ID</label>
+                        <input type="text" id="admin-sotd-link" class="form-input" placeholder="Paste full YouTube URL here..." value="${current ? current.youtubeId : ''}">
+                        <div style="font-size:10px; color:#666; margin-top:4px;">System will auto-extract the 11-char ID.</div>
+                    </div>
+
+                    <div>
+                        <label style="color:#aaa; font-size:11px;">Hint for Agents</label>
+                        <textarea id="admin-sotd-hint" class="form-input" style="min-height: 60px;" placeholder="e.g. Released in 2022...">${current ? current.hint : ''}</textarea>
+                    </div>
+
+                    <div>
+                        <label style="color:#aaa; font-size:11px;">XP Reward</label>
+                        <input type="number" id="admin-sotd-xp" class="form-input" value="${current ? current.xpReward : '1'}">
+                    </div>
+
+                    <button onclick="submitAdminSOTD()" class="btn-primary" style="margin-top: 10px; background: linear-gradient(135deg, #7b2cbf, #5a1f99);">
+                        ${current ? '💾 Update Song' : '🚀 Publish New Song'}
+                    </button>
+                    
+                    <!-- Finalize Button -->
+                    <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); text-align: center;">
+                        <p style="color: #888; font-size: 11px; margin-bottom: 10px;">End of day? Broadcast winner results.</p>
+                        <button onclick="finalizeSOTDResults()" class="btn-secondary" style="width: 100%; border-color: #ffd700; color: #ffd700;">
+                            🏆 Finalize & Broadcast Results
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    container.innerHTML = html;
+}
+async function submitAdminSOTD() {
+    const title = document.getElementById('admin-sotd-title').value.trim();
+    const artist = document.getElementById('admin-sotd-artist').value.trim();
+    const rawLink = document.getElementById('admin-sotd-link').value.trim();
+    const hint = document.getElementById('admin-sotd-hint').value.trim();
+    const xp = document.getElementById('admin-sotd-xp').value;
+
+    if (!title || !rawLink || !hint) {
+        showToast('❌ Please fill all required fields', 'error');
+        return;
+    }
+
+    // Extract ID using your existing helper function
+    const youtubeId = extractYouTubeId(rawLink);
+    if (!youtubeId) {
+        showToast('❌ Invalid YouTube URL', 'error');
+        return;
+    }
+
+    loading(true);
+
+    try {
+        const targetDate = getKSTDateString();
+        
+        const res = await api('setSongOfDay', {
+            agentNo: STATE.agentNo,
+            sessionToken: STATE.adminSession,
+            date: targetDate,// Ensure admin session is passed
+            title: title,
+            artist: artist || 'BTS',
+            youtubeId: youtubeId,
+            hint: hint,
+            xpReward: parseInt(xp) || 1
+        });
+
+        if (res.success) {
+            showToast('✅ Song of the Day updated!', 'success');
+            setTimeout(() => renderAdminSOTD(), 500);
+        } else {
+            showToast('❌ ' + res.error, 'error');
+        }
+    } catch (e) {
+        showToast('System Error: ' + e.message, 'error');
+    } finally {
+        loading(false);
+    }
+}
+
+async function finalizeSOTDResults() {
+    if (!confirm("⚠️ Are you sure you want to finalize today's results?\n\nThis will calculate the winning team and add an activity feed item.")) return;
+
+    loading(true);
+    try {
+        const res = await api('finalizeSOTD', {
+            agentNo: STATE.agentNo,
+            sessionToken: STATE.adminSession
+        });
+
+        if (res.success) {
+            showToast('🏆 Results finalized and broadcasted!', 'success');
+        } else {
+            showToast('❌ ' + res.error, 'error');
+        }
+    } catch (e) {
+        showToast('Error: ' + e.message, 'error');
+    } finally {
+        loading(false);
+    }
+}
+
+// Make globally available
+window.renderAdminSOTD = renderAdminSOTD;
+window.submitAdminSOTD = submitAdminSOTD;
+window.finalizeSOTDResults = finalizeSOTDResults;
+
 async function smartUpdateStatus(teamName, field, value) {
     // 1. Get the token from storage (Safety net if page was refreshed)
     const token = STATE.adminSession || localStorage.getItem('adminSession');
@@ -3729,6 +3914,7 @@ async function setTodaysSong() {
         const result = await api('setSongOfDay', {
             agentNo: STATE.agentNo,
             sessionToken: STATE.adminSession,
+            date: getKSTDateString(), 
             title,
             youtubeId,
             hint,
@@ -3745,6 +3931,16 @@ async function setTodaysSong() {
     }
 }
 
+// ==================== ADMIN ASSETS WITH ROYAL BADGE PREVIEW ====================
+
+// Preview state (add this BEFORE the function)
+if (typeof window._royalPreviewState === 'undefined') {
+    window._royalPreviewState = {
+        currentImageIndex: 0,
+        selectedStyle: CONFIG.ROYAL_BADGES?.STYLE || 'spotlight'
+    };
+}
+
 function renderAdminAssets() {
     const container = document.getElementById('admin-tab-assets');
     if (!container) {
@@ -3752,55 +3948,331 @@ function renderAdminAssets() {
         return;
     }
     
+    // Load royal badge CSS
+    ensureRoyalBadgeCSS();
+    
     const badges = CONFIG.BADGE_POOL || [];
+    const royalBadges = CONFIG.ROYAL_BADGE_POOL || [];
+    const allStyles = ['spotlight', 'aura', 'crown-banner', 'gilded', 'throne'];
+    const state = window._royalPreviewState;
     
-    console.log('🎖️ Rendering badge pool:', badges.length, 'badges');
+    console.log('🎖️ Rendering badge pools:', badges.length, 'standard,', royalBadges.length, 'royal');
     
-    if (badges.length === 0) {
-        container.innerHTML = `
-            <div style="text-align:center;padding:60px 20px;">
-                <div style="font-size:64px;margin-bottom:20px;">🎖️</div>
-                <h3 style="color:#fff;margin-bottom:10px;">No Badges Configured</h3>
-                <p style="color:#888;">Add badge URLs to CONFIG.BADGE_POOL in config.js</p>
-            </div>
-        `;
-        return;
-    }
+    const currentImage = royalBadges[state.currentImageIndex] || '';
+    const totalImages = royalBadges.length;
     
     container.innerHTML = `
-        <div style="margin-bottom:20px;">
-            <h4 style="color:#ffd700;margin-bottom:5px;">🎖️ Badge Pool Preview (${badges.length} badges)</h4>
-            <p style="color:#888;font-size:12px;">This is exactly how agents will see their badges. Click any badge to preview full size.</p>
+        <!-- ==================== ROYAL BADGES SECTION ==================== -->
+        <div class="royal-section-header">
+            <div class="crown-icon">👑</div>
+            <div style="flex:1;">
+                <h3 style="margin:0; color:#ffd700; font-size:16px;">Royal Badge Preview</h3>
+                <p style="margin:4px 0 0; color:#b8860b; font-size:11px;">
+                    Preview all styles • ${totalImages} images loaded • Top ${CONFIG.ROYAL_BADGES?.TOP_N || 50} rankers
+                </p>
+            </div>
+            <div style="
+                padding: 6px 12px;
+                background: ${state.selectedStyle ? 'rgba(0,255,136,0.15)' : 'rgba(255,68,68,0.15)'};
+                border: 1px solid ${state.selectedStyle ? 'rgba(0,255,136,0.3)' : 'rgba(255,68,68,0.3)'};
+                border-radius: 8px;
+                font-size: 10px;
+                color: ${state.selectedStyle ? '#00ff88' : '#ff6b6b'};
+                font-weight: 600;
+            ">
+                LIVE: ${state.selectedStyle?.toUpperCase().replace('-', ' ') || 'SPOTLIGHT'}
+            </div>
         </div>
         
-        <div class="badges-showcase" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:20px;padding:10px;">
-            ${badges.map((url, index) => `
-                <div class="badge-showcase-item" onclick="previewAsset('${url}', ${index + 1})" 
-                     style="display:flex;flex-direction:column;align-items:center;text-align:center;padding:15px 10px;
-                            background:linear-gradient(145deg,rgba(26,26,46,0.8),rgba(18,18,26,0.9));
-                            border-radius:12px;border:1px solid rgba(123,44,191,0.2);cursor:pointer;transition:all 0.3s;">
-                    <div class="badge-circle holographic" style="width:70px;height:70px;">
-                        <img src="${url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" 
-                             onerror="this.style.display='none';this.parentElement.innerHTML='❓';">
+        ${royalBadges.length > 0 ? `
+            <!-- Image Selector -->
+            <div style="
+                display: flex;
+                align-items: center;
+                gap: 15px;
+                padding: 15px;
+                background: rgba(0,0,0,0.3);
+                border-radius: 12px;
+                margin-bottom: 20px;
+            ">
+                <button onclick="prevRoyalImage()" style="
+                    width: 44px; height: 44px;
+                    border-radius: 50%;
+                    border: 1px solid #ffd700;
+                    background: rgba(255,215,0,0.1);
+                    color: #ffd700;
+                    font-size: 18px;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                " onmouseover="this.style.background='rgba(255,215,0,0.25)'" 
+                   onmouseout="this.style.background='rgba(255,215,0,0.1)'">◀</button>
+                
+                <div style="flex:1; text-align:center;">
+                    <div style="
+                        width: 90px;
+                        height: 115px;
+                        margin: 0 auto 10px;
+                        border-radius: 10px;
+                        overflow: hidden;
+                        border: 2px solid #ffd700;
+                        box-shadow: 0 4px 25px rgba(255,215,0,0.25);
+                    ">
+                        <img src="${currentImage}" style="width:100%;height:100%;object-fit:cover;" 
+                             onerror="this.parentElement.innerHTML='<div style=\\'display:flex;align-items:center;justify-content:center;width:100%;height:100%;background:#1a1508;color:#ffd700;font-size:32px;\\'>👑</div>'">
                     </div>
-                    <div style="margin-top:10px;font-weight:600;color:#ffd700;font-size:12px;">Level ${index + 1}</div>
-                    <div style="font-size:10px;color:#888;margin-top:2px;">Badge #${index + 1}</div>
+                    <div style="color:#fff; font-size:15px; font-weight:700;">Image ${state.currentImageIndex + 1} / ${totalImages}</div>
+                    <div style="color:#666; font-size:10px; margin-top:3px; word-break:break-all; max-width:200px; margin:3px auto 0;">
+                        ${currentImage.split('/').pop()?.substring(0, 25) || 'royal.jpg'}${currentImage.split('/').pop()?.length > 25 ? '...' : ''}
+                    </div>
                 </div>
-            `).join('')}
+                
+                <button onclick="nextRoyalImage()" style="
+                    width: 44px; height: 44px;
+                    border-radius: 50%;
+                    border: 1px solid #ffd700;
+                    background: rgba(255,215,0,0.1);
+                    color: #ffd700;
+                    font-size: 18px;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                " onmouseover="this.style.background='rgba(255,215,0,0.25)'" 
+                   onmouseout="this.style.background='rgba(255,215,0,0.1)'">▶</button>
+            </div>
+            
+            <!-- All 5 Styles Side by Side -->
+            <div style="
+                color: #888;
+                font-size: 10px;
+                text-transform: uppercase;
+                letter-spacing: 2px;
+                margin-bottom: 15px;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            ">
+                <span>🎨 Compare All Styles</span>
+                <div style="flex:1; height:1px; background:linear-gradient(90deg, #333, transparent);"></div>
+            </div>
+            
+            <div style="
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+                gap: 20px;
+                padding: 20px;
+                background: rgba(0,0,0,0.25);
+                border-radius: 16px;
+                margin-bottom: 25px;
+            ">
+                ${allStyles.map(styleName => `
+                    <div style="
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        gap: 12px;
+                        padding: 18px 12px;
+                        background: ${state.selectedStyle === styleName ? 'rgba(255,215,0,0.1)' : 'rgba(255,255,255,0.02)'};
+                        border: 2px solid ${state.selectedStyle === styleName ? '#ffd700' : 'rgba(255,255,255,0.08)'};
+                        border-radius: 14px;
+                        transition: all 0.3s;
+                        cursor: pointer;
+                    " onclick="selectRoyalStyle('${styleName}')"
+                       onmouseenter="if('${state.selectedStyle}' !== '${styleName}') this.style.borderColor='rgba(255,215,0,0.4)'"
+                       onmouseleave="if('${state.selectedStyle}' !== '${styleName}') this.style.borderColor='rgba(255,255,255,0.08)'">
+                        
+                        <!-- Style Name -->
+                        <div style="
+                            display: flex;
+                            align-items: center;
+                            gap: 6px;
+                            font-size: 11px;
+                            font-weight: 700;
+                            color: ${state.selectedStyle === styleName ? '#ffd700' : '#888'};
+                            text-transform: uppercase;
+                            letter-spacing: 1px;
+                        ">
+                            ${state.selectedStyle === styleName ? '✓' : '○'}
+                            ${styleName.replace('-', ' ')}
+                        </div>
+                        
+                        <!-- Badge Preview -->
+                        <div style="transform: scale(0.82); transform-origin: center; margin: 5px 0;">
+                            ${renderRoyalBadgeHTML({ imageUrl: currentImage, rank: 7 }, styleName)}
+                        </div>
+                        
+                        <!-- Actions -->
+                        <div style="display: flex; gap: 6px;">
+                            <button onclick="event.stopPropagation(); previewRoyalFullscreen('${currentImage}', '${styleName}')" style="
+                                padding: 7px 12px;
+                                background: rgba(123,44,191,0.2);
+                                border: 1px solid rgba(123,44,191,0.4);
+                                border-radius: 6px;
+                                color: #7b2cbf;
+                                font-size: 10px;
+                                font-weight: 600;
+                                cursor: pointer;
+                                transition: all 0.2s;
+                            " onmouseover="this.style.background='rgba(123,44,191,0.35)'" 
+                               onmouseout="this.style.background='rgba(123,44,191,0.2)'">🔍 Preview</button>
+                            
+                            ${state.selectedStyle !== styleName ? `
+                                <button onclick="event.stopPropagation(); setLiveRoyalStyle('${styleName}')" style="
+                                    padding: 7px 12px;
+                                    background: rgba(0,255,136,0.15);
+                                    border: 1px solid rgba(0,255,136,0.4);
+                                    border-radius: 6px;
+                                    color: #00ff88;
+                                    font-size: 10px;
+                                    font-weight: 600;
+                                    cursor: pointer;
+                                    transition: all 0.2s;
+                                " onmouseover="this.style.background='rgba(0,255,136,0.3)'" 
+                                   onmouseout="this.style.background='rgba(0,255,136,0.15)'">✓ Use</button>
+                            ` : `
+                                <span style="
+                                    padding: 7px 12px;
+                                    background: rgba(255,215,0,0.2);
+                                    border: 1px solid rgba(255,215,0,0.4);
+                                    border-radius: 6px;
+                                    color: #ffd700;
+                                    font-size: 10px;
+                                    font-weight: 700;
+                                ">🏆 LIVE</span>
+                            `}
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+            
+            <!-- Thumbnail Grid -->
+            <div style="
+                color: #888;
+                font-size: 10px;
+                text-transform: uppercase;
+                letter-spacing: 2px;
+                margin-bottom: 12px;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            ">
+                <span>📁 All Royal Images (${totalImages})</span>
+                <div style="flex:1; height:1px; background:linear-gradient(90deg, #333, transparent);"></div>
+            </div>
+            
+            <div style="
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));
+                gap: 8px;
+                padding: 12px;
+                background: rgba(0,0,0,0.2);
+                border-radius: 12px;
+                max-height: 280px;
+                overflow-y: auto;
+            ">
+                ${royalBadges.map((url, i) => `
+                    <div onclick="jumpToRoyalImage(${i})" style="
+                        aspect-ratio: 3/4;
+                        border-radius: 6px;
+                        overflow: hidden;
+                        border: 2px solid ${i === state.currentImageIndex ? '#ffd700' : 'transparent'};
+                        cursor: pointer;
+                        transition: all 0.2s;
+                        box-shadow: ${i === state.currentImageIndex ? '0 0 12px rgba(255,215,0,0.35)' : 'none'};
+                    " onmouseenter="if(${i} !== ${state.currentImageIndex}) this.style.borderColor='rgba(255,215,0,0.5)'"
+                       onmouseleave="if(${i} !== ${state.currentImageIndex}) this.style.borderColor='transparent'">
+                        <img src="${url}" style="width:100%;height:100%;object-fit:cover;" loading="lazy"
+                             onerror="this.parentElement.innerHTML='<div style=\\'display:flex;align-items:center;justify-content:center;width:100%;height:100%;background:#1a1508;color:#b8860b;font-size:18px;\\'>❓</div>'">
+                    </div>
+                `).join('')}
+            </div>
+            
+            <!-- How It Works -->
+            <div style="margin-top:20px; padding:15px; background:rgba(184,134,11,0.08); border:1px solid rgba(184,134,11,0.2); border-radius:10px;">
+                <h5 style="color:#ffd700; margin:0 0 10px; font-size:13px;">👑 How Royal Badges Work</h5>
+                <ul style="color:#888; font-size:12px; margin:0; padding-left:18px; line-height:1.8;">
+                    <li>Top <strong style="color:#ffd700;">${CONFIG.ROYAL_BADGES?.TOP_N || 50}</strong> agents by overall XP get a Royal Badge</li>
+                    <li>Each agent gets a unique badge based on their rank</li>
+                    <li>Style can be changed anytime from this panel</li>
+                </ul>
+            </div>
+        ` : `
+            <!-- No Royal Badges Configured -->
+            <div style="
+                text-align: center;
+                padding: 50px 20px;
+                background: rgba(184,134,11,0.05);
+                border: 2px dashed rgba(184,134,11,0.3);
+                border-radius: 16px;
+            ">
+                <div style="font-size: 56px; margin-bottom: 18px;">👑</div>
+                <h3 style="color: #ffd700; margin: 0 0 10px;">No Royal Badges Configured</h3>
+                <p style="color: #888; font-size: 12px; margin: 0 0 15px; line-height:1.6;">
+                    Upload images to GitHub and add them to CONFIG.
+                </p>
+                <div style="
+                    background: #0a0a0f;
+                    padding: 12px 16px;
+                    border-radius: 8px;
+                    text-align: left;
+                    font-family: monospace;
+                    font-size: 11px;
+                    color: #00ff88;
+                    max-width: 350px;
+                    margin: 0 auto;
+                    border: 1px solid #222;
+                ">
+                    <div style="color:#666;">// Add to CONFIG:</div>
+                    <div>ROYAL_BADGE_REPO_URL: '...',</div>
+                    <div>TOTAL_ROYAL_BADGES: 20,</div>
+                </div>
+            </div>
+        `}
+        
+        <!-- ==================== DIVIDER ==================== -->
+        <div class="royal-divider" style="margin-top: 35px;">
+            <span>STANDARD XP BADGES</span>
         </div>
         
-        <div style="margin-top:25px;padding:15px;background:#1a1a2e;border-radius:8px;border:1px solid #333;">
-            <h5 style="color:#fff;margin-bottom:10px;">ℹ️ How Badge Assignment Works</h5>
-            <ul style="color:#888;font-size:12px;margin:0;padding-left:20px;line-height:1.8;">
-                <li>Agents earn 1 badge for every <strong style="color:#ffd700;">100 XP</strong></li>
-                <li>Badges have the <strong style="color:#7b2cbf;">holographic spinning effect</strong></li>
-                <li>Each agent gets unique badges based on their Agent ID + Level</li>
-                <li>Add more badge URLs in <code style="background:#0a0a0f;padding:2px 6px;border-radius:4px;color:#00ff88;">CONFIG.BADGE_POOL</code></li>
-            </ul>
-        </div>
+        <!-- ==================== STANDARD BADGES (Your Original Code) ==================== -->
+        ${badges.length === 0 ? `
+            <div style="text-align:center;padding:50px 20px;">
+                <div style="font-size:56px;margin-bottom:18px;">🎖️</div>
+                <h3 style="color:#fff;margin-bottom:10px;">No Standard Badges Configured</h3>
+                <p style="color:#888;font-size:12px;">Add badge URLs to CONFIG.BADGE_POOL</p>
+            </div>
+        ` : `
+            <div style="margin-bottom:18px;">
+                <h4 style="color:#7b2cbf;margin-bottom:5px;">🎖️ Standard Badge Pool (${badges.length} badges)</h4>
+                <p style="color:#888;font-size:12px;">Holographic style • Earned every 50 XP • Click to preview</p>
+            </div>
+            
+            <div class="badges-showcase" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(95px,1fr));gap:18px;padding:10px;">
+                ${badges.map((url, index) => `
+                    <div class="badge-showcase-item" onclick="previewAsset('${url}', ${index + 1})" 
+                         style="display:flex;flex-direction:column;align-items:center;text-align:center;padding:14px 8px;
+                                background:linear-gradient(145deg,rgba(26,26,46,0.8),rgba(18,18,26,0.9));
+                                border-radius:12px;border:1px solid rgba(123,44,191,0.2);cursor:pointer;transition:all 0.3s;">
+                        <div class="badge-circle holographic" style="width:65px;height:65px;">
+                            <img src="${url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" 
+                                 onerror="this.style.display='none';this.parentElement.innerHTML='❓';">
+                        </div>
+                        <div style="margin-top:10px;font-weight:600;color:#ffd700;font-size:12px;">Level ${index + 1}</div>
+                        <div style="font-size:9px;color:#666;margin-top:2px;">50 XP Badge</div>
+                    </div>
+                `).join('')}
+            </div>
+            
+            <div style="margin-top:22px;padding:15px;background:#1a1a2e;border-radius:10px;border:1px solid #333;">
+                <h5 style="color:#fff;margin-bottom:10px;font-size:13px;">ℹ️ How Standard Badges Work</h5>
+                <ul style="color:#888;font-size:12px;margin:0;padding-left:18px;line-height:1.8;">
+                    <li>Agents earn 1 badge for every <strong style="color:#ffd700;">50 XP</strong></li>
+                    <li>Badges have the <strong style="color:#7b2cbf;">holographic spinning effect</strong></li>
+                    <li>Each agent gets unique badges based on Agent ID + Level</li>
+                </ul>
+            </div>
+        `}
     `;
     
-    // Add hover effect
+    // Add hover effects for standard badges
     container.querySelectorAll('.badge-showcase-item').forEach(item => {
         item.onmouseenter = function() {
             this.style.transform = 'translateY(-5px)';
@@ -3814,6 +4286,194 @@ function renderAdminAssets() {
         };
     });
 }
+
+// ==================== ROYAL BADGE PREVIEW CONTROLS ====================
+
+function prevRoyalImage() {
+    const royalBadges = CONFIG.ROYAL_BADGE_POOL || [];
+    if (royalBadges.length === 0) return;
+    
+    window._royalPreviewState.currentImageIndex--;
+    if (window._royalPreviewState.currentImageIndex < 0) {
+        window._royalPreviewState.currentImageIndex = royalBadges.length - 1;
+    }
+    renderAdminAssets();
+}
+
+function nextRoyalImage() {
+    const royalBadges = CONFIG.ROYAL_BADGE_POOL || [];
+    if (royalBadges.length === 0) return;
+    
+    window._royalPreviewState.currentImageIndex++;
+    if (window._royalPreviewState.currentImageIndex >= royalBadges.length) {
+        window._royalPreviewState.currentImageIndex = 0;
+    }
+    renderAdminAssets();
+}
+
+function jumpToRoyalImage(index) {
+    window._royalPreviewState.currentImageIndex = index;
+    renderAdminAssets();
+}
+
+function selectRoyalStyle(styleName) {
+    window._royalPreviewState.selectedStyle = styleName;
+    renderAdminAssets();
+}
+
+function setLiveRoyalStyle(styleName) {
+    window._royalPreviewState.selectedStyle = styleName;
+    if (CONFIG.ROYAL_BADGES) {
+        CONFIG.ROYAL_BADGES.STYLE = styleName;
+    }
+    showToast(`✅ Royal badge style set to "${styleName.replace('-', ' ').toUpperCase()}"`, 'success');
+    renderAdminAssets();
+}
+
+function previewRoyalFullscreen(imageUrl, styleName) {
+    document.querySelectorAll('.royal-fullscreen-preview').forEach(m => m.remove());
+    
+    const modal = document.createElement('div');
+    modal.className = 'royal-fullscreen-preview';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(0,0,0,0.97);
+        z-index: 99999999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(20px);
+        animation: fadeIn 0.3s ease;
+    `;
+    
+    modal.innerHTML = `
+        <style>
+            @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        </style>
+        
+        <!-- Close -->
+        <button onclick="this.closest('.royal-fullscreen-preview').remove()" style="
+            position: absolute;
+            top: 20px; right: 20px;
+            width: 46px; height: 46px;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(0,0,0,0.6);
+            color: #fff;
+            font-size: 26px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        ">×</button>
+        
+        <!-- Style Label -->
+        <div style="
+            position: absolute;
+            top: 25px; left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, rgba(255,215,0,0.25), rgba(184,134,11,0.15));
+            border: 1px solid rgba(255,215,0,0.4);
+            padding: 10px 24px;
+            border-radius: 25px;
+            color: #ffd700;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        ">
+            ${styleName.replace('-', ' ')} Style
+        </div>
+        
+        <!-- Ambient Glow -->
+        <div style="
+            position: absolute;
+            width: 400px; height: 500px;
+            background: radial-gradient(ellipse, rgba(255,215,0,0.12) 0%, transparent 65%);
+            filter: blur(40px);
+            pointer-events: none;
+        "></div>
+        
+        <!-- Scaled Badge -->
+        <div style="transform: scale(1.9); transform-origin: center;">
+            ${renderRoyalBadgeHTML({ imageUrl: imageUrl, rank: 7 }, styleName)}
+        </div>
+        
+        <!-- Bottom Actions -->
+        <div style="
+            position: absolute;
+            bottom: 35px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        ">
+            <div style="display: flex; gap: 12px;">
+                <button onclick="setLiveRoyalStyle('${styleName}'); this.closest('.royal-fullscreen-preview').remove();" style="
+                    padding: 14px 35px;
+                    background: linear-gradient(135deg, #00ff88, #00cc6a);
+                    border: none;
+                    border-radius: 28px;
+                    color: #000;
+                    font-weight: 800;
+                    font-size: 14px;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    box-shadow: 0 4px 20px rgba(0,255,136,0.3);
+                ">
+                    ✓ Use This Style
+                </button>
+                
+                <button onclick="this.closest('.royal-fullscreen-preview').remove()" style="
+                    padding: 14px 35px;
+                    background: rgba(255,255,255,0.1);
+                    border: 1px solid rgba(255,255,255,0.25);
+                    border-radius: 28px;
+                    color: #fff;
+                    font-weight: 600;
+                    font-size: 14px;
+                    cursor: pointer;
+                ">
+                    Close
+                </button>
+            </div>
+            
+            <div style="color: #555; font-size: 11px;">
+                Press ESC or tap outside to close
+            </div>
+        </div>
+    `;
+    
+    // Close on background click
+    modal.onclick = (e) => {
+        if (e.target === modal) modal.remove();
+    };
+    
+    // Close on ESC
+    const escHandler = (e) => {
+        if (e.key === 'Escape') {
+            modal.remove();
+            document.removeEventListener('keydown', escHandler);
+        }
+    };
+    document.addEventListener('keydown', escHandler);
+    
+    document.body.appendChild(modal);
+}
+
+// Export to window for onclick handlers
+window.prevRoyalImage = prevRoyalImage;
+window.nextRoyalImage = nextRoyalImage;
+window.jumpToRoyalImage = jumpToRoyalImage;
+window.selectRoyalStyle = selectRoyalStyle;
+window.setLiveRoyalStyle = setLiveRoyalStyle;
+window.previewRoyalFullscreen = previewRoyalFullscreen;
 
 function previewAsset(url, index) {
     // Remove existing preview
@@ -4682,6 +5342,12 @@ async function updateActivityFeedUI() {
                     text = `<strong style="color:${tColor}">${sanitize(data.team)}</strong> is surging! <span class="activity-highlight">${fmt(data.streams)} streams/hr</span>`;
                     break;
 
+               case 'mission_success':
+                    icon = '📡';
+                    text = `<span style="color:#ff4444; font-weight:800; animation: blinkLive 0.8s infinite;">[HQ OVERRIDE]</span> HQ to Agents: The target took the bait. I repeat, the target took the bait. <span style="color:#00ff88; font-weight:bold;">Operation Rage Bait is successful.</span>`;
+                    break;
+                    
+
                 default: return '';
             }
 
@@ -4751,7 +5417,11 @@ const ROUTES = {
     'attendance': 'attendance',        // ✅ ADDED
     'operatives': 'attendance',        // ✅ ALIAS
     'database': 'attendance',          // ✅ ALIAS
-    'login': 'login'
+    'login': 'login',
+    'arirang-hype': 'arirang-hype',
+    'hype': 'arirang-hype',         // Alias
+    'arirang-vault': 'arirang-vault',
+    'vault': 'arirang-vault'  
 };
 
 const PAGE_TO_ROUTE = {
@@ -4775,7 +5445,9 @@ const PAGE_TO_ROUTE = {
     'namjoon': 'namjoon',
     'streaming-tips': 'streaming-tips',
     'attendance': 'attendance',
-    'login': 'login'
+    'login': 'login',
+    'arirang-hype': 'arirang-hype',
+    'arirang-vault': 'arirang-vault'
 };
 
 const ROUTER = {
@@ -4876,7 +5548,8 @@ async function renderPageByRoute(pageName) {
         'chat', 'playlists', 'gc-links', 'helper-roles', 'song-of-day', 'sotd',
         'secret-missions', 'announcements', 'drawer', 'goals', 'rankings', 
         'team-level', 'summary', 'comparison', 'album2x', 'profile', 'namjoon', 
-        'streaming-tips', 'guide', 'attendance' 
+        'streaming-tips', 'guide', 'attendance',
+        'arirang-hype', 'arirang-vault'
     ];
 
     dynamicPages.forEach(pName => {
@@ -4920,13 +5593,13 @@ async function renderPageByRoute(pageName) {
             case 'helper-roles': await renderHelperRoles(); break;
             case 'chat': await renderChat(); break;
             case 'sotd': await renderSOTD(); break;
-            case 'song-of-day': await renderSOTD(); break; 
+            case 'song-of-day': await renderSOTD(); break;
             case 'streaming-tips': await renderStreamingTips(); break;
             case 'namjoon': await renderNamjoonBrain(); break;
             case 'guide': await renderGuidePage(); break; 
-            
-            // ✅ FIX 2: Added the case to actually load the attendance data
             case 'attendance': await renderAttendance(); break; 
+            case 'arirang-hype': await renderArirangHype(); break;
+            case 'arirang-vault': await renderArirangVault(); break;
         }
     } catch (e) {
         console.error('Page render error:', e);
@@ -4979,6 +5652,8 @@ function initRouter() {
 async function loadPage(page) {
     const route = getRouteFromPage(page);
     
+    localStorage.setItem('lastActivePage', page);
+    
     if (!ROUTER.initialized) {
         STATE.page = page;
         await renderPageByRoute(page);
@@ -5006,6 +5681,7 @@ function initApp() {
     console.log('🚀 Starting App v5.0 with Routing...');
     ensureAppCSS(); 
     ensureStreakCSS(); 
+    ensureRoyalBadgeCSS();
     ensureNamjoonCSS();
     loading(false);
     setupLoginListeners();
@@ -5195,11 +5871,10 @@ async function loadDashboard() {
             if (streakRes.success && streakRes.streak) {
                 const key = STREAK_KEY + STATE.agentNo;
                 
-                // 🔥 CRITICAL FIX: Ensure Dates match exact format required by initStreakTracker
-                // Backend sends YYYY-MM-DD. We need to convert to "Sat Feb 07 2026" format
-                const dbDateRaw = streakRes.streak.lastActiveDate; // "2026-02-07"
                 
-                // Create date object, ensuring we don't shift timezones on the date itself
+                const dbDateRaw = streakRes.streak.lastActiveDate; 
+                
+                
                 let formattedDate = null;
                 if(dbDateRaw) {
                     const parts = dbDateRaw.split('-'); // [2026, 02, 07]
@@ -5233,15 +5908,27 @@ async function loadDashboard() {
             console.warn('⚠️ Streak sync failed:', streakErr);
         }
 
-        const currentPage = ROUTER.initialized ? STATE.page : 'home';
-        await loadPage(currentPage); 
+        const currentHash = getCurrentRoute(); 
+        const savedPage = localStorage.getItem('lastActivePage');
+        let targetPage = 'home'; // Default
+
+        if (currentHash && currentHash !== 'login') {
+            targetPage = getPageFromRoute(currentHash);
+        } else if (savedPage && savedPage !== 'login') {
+            targetPage = savedPage;
+        }
+
+        ROUTER.initialized = true;
+        STATE.page = targetPage;
+        console.log(`🔄 Restoring session on page: ${targetPage}`);
+        await loadPage(targetPage); 
         
         setTimeout(() => {
             if (typeof initStreakTracker === 'function') initStreakTracker();
             if (typeof updateActivityFeedUI === 'function') {
                 updateActivityFeedUI();
                 if (window.activityInterval) clearInterval(window.activityInterval);
-                window.activityInterval = setInterval(updateActivityFeedUI, 60000);
+                window.activityInterval = setInterval(updateActivityFeedUI, 300000);
             }
             if (typeof setupNotificationChecks === 'function') setupNotificationChecks();
             
@@ -5526,9 +6213,15 @@ async function renderHome() {
             api('getRankings', { week: selectedWeek, limit: 5 }), 
             api('getGoalsProgress', { week: selectedWeek })
         ]);
-        
-        if (summary.lastUpdated) { 
-            STATE.lastUpdated = summary.lastUpdated; 
+         if (summary.lastUpdated) { 
+            const teamTime = new Date(summary.lastUpdated).getTime();
+            const agentTime = STATE.lastUpdated ? new Date(STATE.lastUpdated).getTime() : 0;
+            
+            
+            if (teamTime > agentTime) {
+                STATE.lastUpdated = summary.lastUpdated; 
+            }
+            
             updateTime(); 
         }
         
@@ -5755,7 +6448,7 @@ let onlineCount = 0;
 function startHeartbeat() {
     if (heartbeatInterval) clearInterval(heartbeatInterval);
     sendHeartbeat();
-    heartbeatInterval = setInterval(sendHeartbeat, 30000);
+    heartbeatInterval = setInterval(sendHeartbeat, 120000);
 }
 
 async function sendHeartbeat() {
@@ -5769,15 +6462,33 @@ async function sendHeartbeat() {
 async function updateOnlineCount() {
     try {
         const data = await api('getOnlineCount');
-        onlineCount = data.online || 0;
         const el = $('online-count');
-        if (el) el.textContent = onlineCount;
-        return data;
-    } catch (e) {
-        return { online: 0, users: [] };
+        if (!el || !data.success) return;
+
+        const allOperatives = data.users || [];
+        
+        if (STATE.chatMode === 'team') {
+            // 1. Get my team and clean it (e.g. "Team Indigo" -> "indigo")
+            const myTeamRaw = STATE.data?.profile?.team || '';
+            const myTeamClean = myTeamRaw.toLowerCase().replace('team ', '').trim();
+            
+            // 2. Filter the list using cleaned names
+            const teamUnit = allOperatives.filter(u => {
+                const opTeamClean = (u.team || '').toLowerCase().replace('team ', '').trim();
+                return opTeamClean === myTeamClean;
+            });
+            
+            // 3. Display count for specific unit
+            el.textContent = teamUnit.length;
+            console.log(`📡 Unit Scan: Found ${teamUnit.length} operatives in ${myTeamClean}`);
+        } else {
+            // Global mode: Show total network count
+            el.textContent = data.online || 0;
+        }
+    } catch (_e) {
+        console.error("Uplink Error: Online count sync failed.");
     }
 }
-
 function stopHeartbeat() {
     if (heartbeatInterval) {
         clearInterval(heartbeatInterval);
@@ -5879,6 +6590,14 @@ async function showOnlineUsers() {
 
 let chatRefreshInterval = null;
 
+// ==================== CHAT SYSTEM ====================
+
+if (typeof STATE.chatMode === 'undefined') STATE.chatMode = 'global';
+let lastMessageId = null;
+let isSending = false;
+let lastKnownMessageId = null;
+let unreadCheckInterval = null;
+
 async function renderChat() {
     let container = $('chat-content');
     if (!container) {
@@ -5889,310 +6608,297 @@ async function renderChat() {
         }
     }
     if (!container) return;
-    
-    const team = STATE.data?.profile?.team;
+
+    const team = STATE.data?.profile?.team || 'Unknown';
     const myUsername = STATE.data?.profile?.name || 'Agent';
-    
+
     container.innerHTML = `
-        <!-- Chat Rules -->
-        <div style="
-            background: rgba(255,255,255,0.03);
-            border-left: 3px solid #7b2cbf;
-            border-radius: 8px;
-            padding: 10px 12px;
-            margin-bottom: 12px;
-        ">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-                <span style="font-size:16px;">📋</span>
-                <span style="color:#fff;font-size:13px;font-weight:600;">Chat Rules</span>
+        <div class="chat-container-pro">
+            <!-- Frequency Toggle -->
+            <div class="comm-toggle-bar">
+                <button class="comm-btn ${STATE.chatMode === 'global' ? 'active' : ''}" 
+                        onclick="switchChatMode('global')">
+                    <span class="btn-icon">🌐</span> ALL FREQ
+                </button>
+                <button class="comm-btn ${STATE.chatMode === 'team' ? 'active' : ''}" 
+                        style="--team-glow: ${teamColor(team)}"
+                        onclick="switchChatMode('team')">
+                    <span class="btn-icon">🔒</span> ${team.replace('Team ', '').toUpperCase()}
+                </button>
             </div>
-            <div style="color:#888;font-size:11px;line-height:1.6;">
-                • Be kind & respectful to all agents 💜<br>
-                • Messages auto-delete after 24 hours 🕐<br>
-                • Battle related conversations only ⚔️<br>
-                • No spam, links, or inappropriate content 🚫
+
+            <!-- Rules -->
+            <div class="chat-rules-banner" onclick="showChatRules()" style="margin-bottom:10px;">
+                <span class="icon">📜</span>
+                <span class="text">Comms Protocol</span>
+                <span class="arrow">→</span>
             </div>
-        </div>
-        
-        <!-- Chat Box -->
-        <div class="chat-box" style="
-            background: #12121a;
-            border-radius: 16px;
-            border: 1px solid #7b2cbf44;
-            overflow: hidden;
-            height: calc(100vh - 320px);
-            min-height: 350px;
-            display: flex;
-            flex-direction: column;
-        ">
-            <!-- Header -->
-            <div style="
-                background: #7b2cbf22;
-                padding: 12px 15px;
-                border-bottom: 1px solid #7b2cbf33;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-            ">
-                <div style="display:flex;align-items:center;gap:10px;">
-                    <span style="font-size:20px;">🔐</span>
-                    <div>
-                        <div style="color:#fff;font-weight:600;font-size:14px;">Secret Comms</div>
-                        <div style="color:#888;font-size:10px;">All Teams • Encrypted</div>
+
+            <div class="chat-main-box">
+                <!-- Header -->
+                <div class="chat-header-pro">
+                    <div class="connection-status">
+                        <div class="pulse-dot"></div>
+                        <span class="status-text">${STATE.chatMode === 'global' ? 'GLOBAL' : 'TEAM'} — <span id="online-count">0</span> ACTIVE</span>
+                    </div>
+                    <button class="refresh-chat-btn" onclick="loadMessages(true)" title="Refresh">🔄</button>
+                </div>
+
+                <!-- Messages -->
+                <div id="chat-messages" class="chat-messages-area">
+                    <div class="chat-loading-shimmer">
+                        <div class="loader-ring"></div>
+                        <p>DECRYPTING...</p>
                     </div>
                 </div>
-                <div style="display:flex;align-items:center;gap:8px;padding:6px 12px;background:rgba(0,255,136,0.1);border-radius:20px;">
-                    <span style="width:8px;height:8px;background:#00ff88;border-radius:50%;animation:pulse 2s infinite;"></span>
-                    <span style="color:#00ff88;font-size:12px;font-weight:600;">
-                        <span id="online-count">0</span> online
-                    </span>
-                </div>
-            </div>
-            
-            <!-- Messages -->
-            <div id="chat-messages" style="
-                flex: 1;
-                overflow-y: auto;
-                padding: 15px;
-                display: flex;
-                flex-direction: column;
-                gap: 12px;
-            ">
-                <div style="text-align:center;color:#888;">Loading messages...</div>
-            </div>
-            
-            <!-- Input -->
-            <div style="
-                padding: 12px;
-                border-top: 1px solid #7b2cbf33;
-                background: #0a0a0f;
-            ">
-                <div style="display:flex;gap:10px;align-items:center;">
-                    <span style="
-                        padding: 6px 10px;
-                        background: ${teamColor(team)}22;
-                        border: 1px solid ${teamColor(team)}44;
-                        border-radius: 6px;
-                        color: ${teamColor(team)};
-                        font-size: 11px;
-                        white-space: nowrap;
-                    ">@${sanitize(myUsername)}</span>
-                    <input 
-                        type="text" 
-                        id="chat-input" 
-                        placeholder="Type message..." 
-                        maxlength="500"
-                        style="
-                            flex: 1;
-                            background: #1a1a2e;
-                            border: 1px solid #333;
-                            border-radius: 8px;
-                            padding: 10px 12px;
-                            color: #fff;
-                            font-size: 14px;
-                            outline: none;
-                        "
-                    >
-                    <button id="send-btn" onclick="sendMessage()" style="
-                        background: linear-gradient(135deg, #7b2cbf, #5a1f99);
-                        border: none;
-                        border-radius: 8px;
-                        padding: 10px 16px;
-                        color: #fff;
-                        cursor: pointer;
-                        font-size: 13px;
-                        display: flex;
-                        align-items: center;
-                        gap: 5px;
-                    ">Send ➤</button>
-                </div>
-                <div style="margin-top:6px;display:flex;justify-content:space-between;">
-                    <span style="color:#555;font-size:10px;">Press Enter to send</span>
-                    <span id="char-count" style="color:#555;font-size:10px;">0/500</span>
+
+                <!-- New message indicator -->
+                <div id="new-msg-indicator" style="
+                    display:none;
+                    text-align:center;
+                    padding:6px;
+                    background:linear-gradient(135deg,#7b2cbf,#5a1f99);
+                    cursor:pointer;
+                    font-size:11px;
+                    color:#fff;
+                    font-weight:600;
+                    letter-spacing:1px;
+                " onclick="scrollChatToBottom()">↓ NEW INTEL</div>
+
+                <!-- Input -->
+                <div class="chat-input-area-pro">
+                    <div class="input-container-inner">
+                        <div class="user-tag" style="color:${teamColor(team)}">
+                            ${sanitize(myUsername)}
+                        </div>
+                        <div class="input-row">
+                            <textarea
+                                id="chat-input"
+                                placeholder="Transmit..."
+                                maxlength="500"
+                                rows="1"
+                            ></textarea>
+                            <button id="send-btn" onclick="sendMessage()">
+                                <span class="send-icon">➤</span>
+                            </button>
+                        </div>
+                        <div class="input-footer">
+                            <span id="char-count">0/500</span>
+                            <span class="encryption-label">🔒 ENCRYPTED</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     `;
-    
-    // Setup input
+
     const input = $('chat-input');
     const charCount = $('char-count');
-    
+
     if (input) {
+        input.addEventListener('input', function () {
+            this.style.height = 'auto';
+            this.style.height = this.scrollHeight + 'px';
+            if (charCount) {
+                charCount.textContent = `${this.value.length}/500`;
+                charCount.style.color = this.value.length > 450 ? '#ff4444' : '#666';
+            }
+        });
+
         input.addEventListener('keypress', e => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 sendMessage();
             }
         });
-        
-        input.addEventListener('input', () => {
-            if (charCount) {
-                charCount.textContent = `${input.value.length}/500`;
-                charCount.style.color = input.value.length > 450 ? '#ff6b6b' : '#555';
-            }
+
+        input.addEventListener('focus', () => {
+            setTimeout(() => input.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
         });
-        
-        input.focus();
     }
-    
-    // Mark as read
+
+    lastMessageId = null;
+    isSending = false;
+
     markChatRead();
-    
-    // Load messages
-    await loadMessages();
-    
-    // Update online count
+    await loadMessages(true);
     await updateOnlineCount();
-    
-    // Auto refresh
-    if (chatRefreshInterval) clearInterval(chatRefreshInterval);
+
+    cleanupChat();
     chatRefreshInterval = setInterval(() => {
-        loadMessages();
+        loadMessages(false);
         updateOnlineCount();
-    }, 5000);
+    }, 2000);
 }
 
-// 👇 THIS WAS MISSING!
-async function loadMessages() {
+// ==================== FREQUENCY SWITCH ====================
+
+async function switchChatMode(mode) {
+    if (navigator.vibrate) navigator.vibrate(10);
+    STATE.chatMode = mode;
+    lastMessageId = null;
+    renderChat();
+    await updateOnlineCount();
+}
+
+// ==================== SCROLL HELPERS ====================
+
+function isChatAtBottom() {
+    const c = $('chat-messages');
+    if (!c) return true;
+    return (c.scrollHeight - c.scrollTop - c.clientHeight) < 60;
+}
+
+function scrollChatToBottom() {
+    const c = $('chat-messages');
+    if (c) c.scrollTop = c.scrollHeight;
+    const ind = $('new-msg-indicator');
+    if (ind) ind.style.display = 'none';
+}
+
+// ==================== LOAD MESSAGES ====================
+
+async function loadMessages(fullReload = false) {
     const container = $('chat-messages');
     if (!container) return;
-    
+
     try {
-        const data = await api('getChatMessages', { limit: 50 });
-        const messages = data.messages || [];
-        
+        const data = await api('getChatMessages', { limit: 60 });
+        let messages = data.messages || [];
+
+        // Filter for team mode
+        if (STATE.chatMode === 'team') {
+            const myTeam = STATE.data?.profile?.team;
+            messages = messages.filter(m => m.team === myTeam);
+        }
+
         if (messages.length === 0) {
             container.innerHTML = `
-                <div style="
-                    flex: 1;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    justify-content: center;
-                    color: #888;
-                    text-align: center;
-                    padding: 40px;
-                ">
-                    <div style="font-size:48px;margin-bottom:15px;">💬</div>
-                    <p style="margin:0 0 5px 0;">No messages yet</p>
-                    <p style="font-size:12px;color:#666;">Be the first to say hello!</p>
+                <div class="chat-empty">
+                    <div style="font-size:40px;margin-bottom:12px;">📡</div>
+                    <p>NO SIGNALS ON THIS FREQ</p>
                 </div>
             `;
+            lastMessageId = null;
             return;
         }
-        
+
+        const newestId = messages[messages.length - 1]?.id;
+
+        // Skip if nothing changed
+        if (!fullReload && newestId === lastMessageId) return;
+
+        const hasNew = lastMessageId !== null && newestId !== lastMessageId;
+        const wasAtBottom = isChatAtBottom();
+
         const myName = (STATE.data?.profile?.name || '').toLowerCase();
-        
+
         container.innerHTML = messages.map(msg => {
             const isMe = msg.username.toLowerCase() === myName;
             return `
-                <div style="
-                    display: flex;
-                    flex-direction: column;
-                    align-items: ${isMe ? 'flex-end' : 'flex-start'};
-                    max-width: 85%;
-                    ${isMe ? 'margin-left:auto;' : 'margin-right:auto;'}
-                ">
-                    <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
-                        <span style="color:${teamColor(msg.team)};font-size:12px;font-weight:600;">
-                            @${sanitize(msg.username)}
-                        </span>
-                        <span style="
-                            font-size:9px;
-                            color:#888;
-                            background:${teamColor(msg.team)}22;
-                            padding:2px 6px;
-                            border-radius:4px;
-                        ">${sanitize(msg.team?.replace('Team ', '') || '')}</span>
+                <div class="msg-wrapper ${isMe ? 'me' : 'other'}">
+                    <div class="msg-meta">
+                        <span class="msg-user" style="color:${teamColor(msg.team)}">@${sanitize(msg.username)}</span>
+                        <span class="msg-team-tag">${sanitize(msg.team?.replace('Team ', '') || '')}</span>
                     </div>
-                    <div style="
-                        background: ${isMe ? 'linear-gradient(135deg, #7b2cbf, #5a1f99)' : 'rgba(255,255,255,0.08)'};
-                        padding: 10px 14px;
-                        border-radius: ${isMe ? '14px 14px 4px 14px' : '14px 14px 14px 4px'};
-                        color: #fff;
-                        font-size: 14px;
-                        line-height: 1.4;
-                        word-break: break-word;
-                    ">${sanitize(msg.message)}</div>
-                    <span style="font-size:9px;color:#555;margin-top:4px;">
-                        ${formatTime(msg.timestamp)}
-                    </span>
+                    <div class="msg-bubble">${sanitize(msg.message)}</div>
+                    <span class="msg-time">${formatTime(msg.timestamp)}</span>
                 </div>
             `;
         }).join('');
-        
-        container.scrollTop = container.scrollHeight;
-        
+
+        lastMessageId = newestId;
+
+        if (fullReload || wasAtBottom) {
+            scrollChatToBottom();
+        } else if (hasNew) {
+            const ind = $('new-msg-indicator');
+            if (ind) ind.style.display = 'block';
+        }
+
     } catch (e) {
-        console.error('Failed to load chat:', e);
-        container.innerHTML = `
-            <div style="text-align:center;color:#ff6b6b;padding:40px;">
-                <p>Failed to load messages</p>
-                <button onclick="loadMessages()" class="btn-secondary" style="margin-top:10px;">Retry</button>
-            </div>
-        `;
+        if (fullReload) {
+            container.innerHTML = `
+                <div class="chat-error">
+                    <p>SIGNAL LOST</p>
+                    <button onclick="loadMessages(true)" class="btn-secondary" style="margin-top:8px;">RECONNECT</button>
+                </div>
+            `;
+        }
     }
 }
 
+// ==================== SEND MESSAGE ====================
+
 async function sendMessage() {
+    if (isSending) return;
+
     const input = $('chat-input');
     const sendBtn = $('send-btn');
-    
     if (!input) return;
-    
+
     const msg = input.value.trim();
     if (!msg) return;
-    
+
+    isSending = true;
+
     if (sendBtn) {
         sendBtn.disabled = true;
         sendBtn.style.opacity = '0.6';
-        sendBtn.innerHTML = '...';
     }
+
+    const backup = msg;
     input.value = '';
-    const charCount = $('char-count');
-    if (charCount) charCount.textContent = '0/500';
-    
+    input.style.height = 'auto';
+    if ($('char-count')) $('char-count').textContent = '0/500';
+
     try {
         const result = await api('sendChatMessage', {
             agentNo: STATE.agentNo,
-            message: msg
+            message: backup
         });
-        
+
         if (result.success) {
-            await loadMessages();
+            await loadMessages(true);
         } else {
-            showToast(result.error || 'Failed to send', 'error');
-            input.value = msg;
+            showToast(result.error || 'Transmission failed', 'error');
+            input.value = backup;
         }
     } catch (e) {
-        console.error('Send error:', e);
-        showToast('Failed to send', 'error');
-        input.value = msg;
+        showToast('Transmission failed', 'error');
+        input.value = backup;
     } finally {
+        isSending = false;
         if (sendBtn) {
             sendBtn.disabled = false;
             sendBtn.style.opacity = '1';
-            sendBtn.innerHTML = 'Send ➤';
         }
         input.focus();
     }
 }
+
+// ==================== ONLINE COUNT ====================
+
+async function updateOnlineCount() {
+    try {
+        const data = await api('getOnlineCount');
+        const el = $('online-count');
+        if (el && data.success) el.textContent = data.online || 0;
+    } catch (_e) { /* silent */ }
+}
+
+// ==================== UTILITIES ====================
 
 function formatTime(ts) {
     if (!ts) return '';
     try {
         const d = new Date(ts);
-        const now = new Date();
-        const diff = now - d;
-        
-        if (diff < 60000) return 'Just now';
-        if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago';
-        if (diff < 86400000) return Math.floor(diff / 3600000) + 'h ago';
+        const diff = Date.now() - d.getTime();
+        if (diff < 60000) return 'Now';
+        if (diff < 3600000) return Math.floor(diff / 60000) + 'm';
+        if (diff < 86400000) return Math.floor(diff / 3600000) + 'h';
         return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    } catch (e) {
-        return '';
-    }
+    } catch (_e) { return ''; }
 }
 
 function cleanupChat() {
@@ -6200,52 +6906,53 @@ function cleanupChat() {
         clearInterval(chatRefreshInterval);
         chatRefreshInterval = null;
     }
+    lastMessageId = null;
+    isSending = false;
 }
 
-function openChat() {
-    loadPage('chat');
-}
+function openChat() { loadPage('chat'); }
 
-// ==================== CHAT NOTIFICATION SYSTEM ====================
-
-let unreadCheckInterval = null;
+// ==================== UNREAD SYSTEM (Client-side) ====================
 
 async function checkUnreadMessages() {
     if (!STATE.agentNo) return;
-
     try {
-        // Use your existing api() function instead of fetch
-        const data = await api('hasUnreadMessages', { agentNo: STATE.agentNo });
-        
+        const data = await api('getChatMessages', { limit: 1 });
+        const msgs = data.messages || [];
+        if (msgs.length === 0) return;
+
+        const latestId = msgs[msgs.length - 1]?.id;
         const dot = document.getElementById('dot-chat');
-        
-        if (data.hasUnread) {
-            if (dot) dot.classList.add('active');
-        } else {
-            if (dot) dot.classList.remove('active');
+
+        // First run — store baseline
+        if (lastKnownMessageId === null) {
+            lastKnownMessageId = latestId;
+            return;
         }
-    } catch (e) {
-        console.error('Error checking unread:', e);
-    }
+
+        // On chat page — silently update
+        const onChat = document.getElementById('page-chat')?.classList.contains('active');
+        if (onChat) {
+            lastKnownMessageId = latestId;
+            if (dot) dot.classList.remove('active');
+            return;
+        }
+
+        // New message while away
+        if (latestId !== lastKnownMessageId) {
+            if (dot) dot.classList.add('active');
+        }
+    } catch (_e) { /* silent */ }
 }
 
-async function markChatRead() {
-    if (!STATE.agentNo) return;
-
-    try {
-        // Use your existing api() function instead of fetch
-        await api('markChatAsRead', { agentNo: STATE.agentNo });
-        
-        const dot = document.getElementById('dot-chat');
-        if (dot) dot.classList.remove('active');
-    } catch (e) {
-        console.error('Error marking as read:', e);
-    }
+function markChatRead() {
+    if (lastMessageId) lastKnownMessageId = lastMessageId;
+    const dot = document.getElementById('dot-chat');
+    if (dot) dot.classList.remove('active');
 }
 
 function startUnreadCheck() {
     checkUnreadMessages();
-    
     if (unreadCheckInterval) clearInterval(unreadCheckInterval);
     unreadCheckInterval = setInterval(checkUnreadMessages, 30000);
 }
@@ -6256,8 +6963,6 @@ function stopUnreadCheck() {
         unreadCheckInterval = null;
     }
 }
-
-// ==================== DRAWER (FIXED BADGE SECTION) ====================
 async function renderDrawer() {
     const container = $('drawer-content');
     if (!container) return;
@@ -6316,21 +7021,43 @@ async function renderDrawer() {
         const album2xBadge = getAlbum2xBadgeForWeek(STATE.agentNo, STATE.data, STATE.week);
         if (album2xBadge) allSpecialBadges.push(album2xBadge);
     }
-    
-    const seenBadges = new Set();
-    const uniqueSpecialBadges = allSpecialBadges.filter(b => {
-        const key = `${b.name}_${b.week}`;
-        if (seenBadges.has(key)) return false;
-        seenBadges.add(key);
-        return true;
-    });
-    
-    const totalBadgeCount = uniqueSpecialBadges.length + allXpBadges.length;
-    const currentWeekXP = parseInt(stats.totalXP) || 0;
-    const currentWeekTracks = parseInt(stats.trackScrobbles) || 0;
-    const currentWeekAlbums = parseInt(stats.albumScrobbles) || 0;
 
-    // --- LOGIC FOR EXPAND/COLLAPSE ---
+    // ===== SEPARATE SPECIAL VS ROYAL =====
+    const standardSpecialBadges = [];
+    const royalBadges = [];
+
+    // Filter unique standard special badges (Winners, Album 2X, etc.)
+    const seenBadges = new Set();
+    allSpecialBadges.forEach(b => {
+        const key = `${b.name}_${b.week}`;
+        if (!seenBadges.has(key)) {
+            seenBadges.add(key);
+            standardSpecialBadges.push(b);
+        }
+    });
+
+    // --- CALCULATE ROYAL BADGE (Only when week is completed) ---
+    if (isWeekCompleted(STATE.week)) {
+        const rank = parseInt(STATE.data?.rank);
+        if (rank > 0 && rank <= (CONFIG.ROYAL_BADGES?.TOP_N || 50)) {
+            const royalPool = CONFIG.ROYAL_BADGE_POOL;
+            const weekSeed = (STATE.week || '').split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+            const badgeIndex = (rank - 1 + weekSeed) % royalPool.length;
+            
+            royalBadges.push({
+                imageUrl: royalPool[badgeIndex],
+                rank: rank,
+                name: 'ELITE ACCESS KEY',
+                week: STATE.week,
+                type: 'royal'
+            });
+        }
+    }
+    
+    const totalBadgeCount = royalBadges.length + standardSpecialBadges.length + allXpBadges.length;
+    const currentWeekXP = parseInt(stats.totalXP) || 0;
+
+    // --- LOGIC FOR EXPAND/COLLAPSE XP BADGES ---
     const VISIBLE_LIMIT = 12;
     const visibleXpBadges = allXpBadges.slice(0, VISIBLE_LIMIT);
     const hiddenXpBadges = allXpBadges.slice(VISIBLE_LIMIT);
@@ -6342,7 +7069,7 @@ async function renderDrawer() {
                 <div style="width: 90px; height: 90px; border-radius: 50%; margin: 0 auto 15px; border: 3px solid ${teamColor(team)}; overflow: hidden; background: ${teamColor(team)}22; display: flex; align-items: center; justify-content: center; font-size: 36px; box-shadow: 0 0 20px ${teamColor(team)}44;">
                     ${teamPfp(team) ? `<img src="${teamPfp(team)}" style="width:100%;height:100%;object-fit:cover;">` : (profile.name || 'A')[0].toUpperCase()}
                 </div>
-                <h2 style="color: #fff; margin: 0 0 5px 0; font-size: 20px;">${sanitize(profile.name || 'Agent')}</h2>
+                <h2 style="color: #fff; margin: 0 0 5px 0; font-size: 20px;">${safeSanitize(profile.name || 'Agent')}</h2>
                 <p style="color: ${teamColor(team)}; margin: 0 0 8px 0; font-weight: 600;">Team ${team}</p>
                 <p style="color: #666; margin: 0; font-size: 11px;">Agent ID: ${STATE.agentNo}</p>
                 ${isAdmin ? `<div style="margin-top: 12px; padding: 6px 14px; background: linear-gradient(135deg, #ffd700, #ff8c00); color: #000; border-radius: 20px; font-size: 11px; font-weight: bold; display: inline-block;">👑 ADMIN</div>` : ''}
@@ -6381,7 +7108,7 @@ async function renderDrawer() {
                 </div>
             </div>
         </div>
-        
+
         <!-- Current Week Stats -->
         <div class="card" style="margin-bottom: 20px; border-color: #7b2cbf;">
             <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
@@ -6405,53 +7132,70 @@ async function renderDrawer() {
                 </div>
             </div>
         </div>
+
+        <!-- ===== ROYAL ACCESS KEYS (Puzzle Section) ===== -->
+        ${royalBadges.length > 0 ? `
+        <div class="card" style="border: 2px solid #ffd700; background: linear-gradient(145deg, #1a1508, #0a0a0f); margin-bottom: 20px; overflow: hidden;">
+            <div class="card-header" style="background: rgba(255, 215, 0, 0.1); display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="color: #ffd700; margin: 0; font-size: 13px; letter-spacing: 1px;">🔐 ROYAL ACCESS KEYS</h3>
+                <span style="font-size: 10px; color: #ffd700; font-weight: bold;">UNLOCKED</span>
+            </div>
+            <div class="card-body" style="padding: 20px;">
+                <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 15px;">
+                    ${royalBadges.map(b => renderRoyalBadgeHTML(b)).join('')}
+                </div>
+                <div style="margin-top: 15px; text-align: center; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px; border: 1px dashed rgba(255,215,0,0.2);">
+                    <p style="color: #aaa; font-size: 10px; margin: 0;">
+                        Keep this safe for future missions.
+                    </p>
+                </div>
+            </div>
+        </div>
+        ` : ''}
         
-        <!-- ===== BADGE COLLECTION ===== -->
+        <!-- ===== SPECIAL ACHIEVEMENTS ===== -->
         <div class="card" style="margin-bottom: 20px;">
             <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-                <h3 style="margin: 0;">🎖️ Badge Collection</h3>
-                <span style="color: #ffd700; font-size: 11px; font-weight: 600;">${totalBadgeCount} earned</span>
+                <h3 style="margin: 0;">🎖️ Special Achievements</h3>
+                <span style="color: #c56cf0; font-size: 11px;">${standardSpecialBadges.length} earned</span>
             </div>
             <div class="card-body">
-                ${totalBadgeCount > 0 ? `
-                    <!-- Special Badges -->
-                    ${uniqueSpecialBadges.length > 0 ? `
-                        <div style="margin-bottom: 20px;">
-                            <div style="color: #888; font-size: 10px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px;">✨ Special Badges</div>
-                            <div class="badge-grid">
-                                ${uniqueSpecialBadges.map(b => renderBadgeHTML(b)).join('')}
-                            </div>
-                        </div>
-                    ` : ''}
-                    
-                    <!-- XP Badges -->
-                    ${allXpBadges.length > 0 ? `
-                        <div>
-                            <div style="color: #888; font-size: 10px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px;">⭐ XP Badges</div>
-                            
-                            <!-- Visible Badges -->
-                            <div class="badge-grid">
-                                ${visibleXpBadges.map(b => renderBadgeHTML(b)).join('')}
-                            </div>
+                ${standardSpecialBadges.length > 0 ? `
+                    <div class="badge-grid">
+                        ${standardSpecialBadges.map(b => renderBadgeHTML(b)).join('')}
+                    </div>
+                ` : `
+                    <p style="text-align:center; color:#666; font-size:12px;">No special badges earned yet.</p>
+                `}
+            </div>
+        </div>
 
-                            <!-- Hidden Badges Container -->
-                            ${hiddenXpBadges.length > 0 ? `
-                                <div id="hidden-xp-badges" class="hidden-badges-container" style="display: none;">
-                                    <div class="badge-grid" style="margin-top: 10px;">
-                                        ${hiddenXpBadges.map(b => renderBadgeHTML(b)).join('')}
-                                    </div>
-                                </div>
-                                
-                                <button onclick="toggleHiddenBadges(this)" class="btn-secondary" style="width: 100%; margin-top: 12px; padding: 10px; font-size: 12px; background:rgba(255,255,255,0.05);">
-                                    View All Badges →
-                                </button>
-                            ` : ''}
+        <!-- ===== XP BADGES ===== -->
+        <div class="card" style="margin-bottom: 20px;">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin: 0;">⭐ XP Progress Badges</h3>
+                <span style="color: #7b2cbf; font-size: 11px;">${allXpBadges.length} earned</span>
+            </div>
+            <div class="card-body">
+                ${allXpBadges.length > 0 ? `
+                    <div class="badge-grid">
+                        ${visibleXpBadges.map(b => renderBadgeHTML(b)).join('')}
+                    </div>
+
+                    ${hiddenXpBadges.length > 0 ? `
+                        <div id="hidden-xp-badges" class="hidden-badges-container" style="display: none;">
+                            <div class="badge-grid" style="margin-top: 10px;">
+                                ${hiddenXpBadges.map(b => renderBadgeHTML(b)).join('')}
+                            </div>
                         </div>
+                        
+                        <button onclick="toggleHiddenBadges(this)" class="btn-secondary" style="width: 100%; margin-top: 12px; padding: 10px; font-size: 12px; background:rgba(255,255,255,0.05);">
+                            View All Badges (${allXpBadges.length}) →
+                        </button>
                     ` : ''}
                 ` : `
-                    <div style="text-align: center; padding: 25px 15px;">
-                        <div style="font-size: 36px; margin-bottom: 10px;">🔒</div>
-                        <p style="color: #888; margin: 0; font-size: 12px;">Earn <strong style="color: #ffd700;">50 XP</strong> to unlock your first badge!</p>
+                    <div style="text-align: center; padding: 15px;">
+                        <p style="color: #666; margin: 0; font-size: 12px;">Reach 50 XP to unlock your first progression badge!</p>
                     </div>
                 `}
             </div>
@@ -6474,29 +7218,42 @@ async function renderDrawer() {
         
         <!-- Quick Actions -->
         <div class="card" style="margin-bottom: 20px;">
-            <div class="card-header"><h3 style="margin: 0;">⚡ Quick Actions</h3></div>
             <div class="card-body" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
                 <button onclick="loadPage('profile')" class="btn-secondary" style="padding: 12px 8px; font-size: 10px;">👤 Profile</button>
                 <button onclick="loadPage('rankings')" class="btn-secondary" style="padding: 12px 8px; font-size: 10px;">🏆 Rankings</button>
                 <button onclick="loadPage('goals')" class="btn-secondary" style="padding: 12px 8px; font-size: 10px;">🎯 Goals</button>
-                <button onclick="loadPage('secret-missions')" class="btn-secondary" style="padding: 12px 8px; font-size: 10px;">🕵️ Missions</button>
-                <button onclick="loadPage('playlists')" class="btn-secondary" style="padding: 12px 8px; font-size: 10px;">🎵 Playlists</button>
-                <button onclick="loadPage('team-level')" class="btn-secondary" style="padding: 12px 8px; font-size: 10px;">📊 Teams</button>
             </div>
         </div>
         
-        ${isAdmin ? `<div class="card" style="border-color: #ffd700; margin-bottom: 20px;"><div class="card-header" style="background: rgba(255,215,0,0.05);"><h3 style="margin: 0; color: #ffd700;">👑 Admin Controls</h3></div><div class="card-body"><button onclick="showAdminPanel()" class="btn-primary" style="width: 100%; padding: 14px; background: linear-gradient(135deg, #ffd700, #ff8c00); color: #000; font-weight: bold; font-size: 13px;">🎛️ Open Mission Control</button></div></div>` : ''}
+        <!-- Admin Controls -->
+        ${isAdmin ? `
+        <div class="card" style="border-color: #ffd700; margin-bottom: 20px;">
+            <div class="card-header" style="background: rgba(255,215,0,0.05);">
+                <h3 style="margin: 0; color: #ffd700;">👑 Admin Controls</h3>
+            </div>
+            <div class="card-body">
+                <button onclick="showAdminPanel()" class="btn-primary" style="width: 100%; padding: 14px; background: linear-gradient(135deg, #ffd700, #ff8c00); color: #000; font-weight: bold; font-size: 13px;">🎛️ Open Mission Control</button>
+            </div>
+        </div>
+        ` : ''}
         
         <div style="text-align: center; padding: 15px; color: #888; font-size: 10px;">
-            <p style="margin: 0;">BTS Spy Battle v5.0</p>
+            <p style="margin: 0;">BTS Spy Battle v6.0</p>
             <p style="margin: 4px 0 0 0;">💜 Fighting! 💜</p>
         </div>
     `;
     
+    // Update local notification state
     const currentXPStats = parseInt(stats.totalXP) || 0;
     STATE.lastChecked.badges = Math.floor(currentXPStats / 50);
     STATE.lastChecked.album2xBadge = album2xStatus.passed || false;
     saveNotificationState();
+}
+
+// Helper to handle potential missing sanitize function
+function safeSanitize(str) {
+    if (typeof sanitize === 'function') return sanitize(str);
+    return str || '';
 }
 // ==================== PROFILE (FIXED ORDER: LEAVE & RETIRE AT BOTTOM) ====================
 async function renderProfile() {
@@ -8280,7 +9037,7 @@ async function renderSummary() {
                 <div style="background:linear-gradient(135deg, rgba(255,215,0,0.15) 0%, rgba(255,215,0,0.05) 100%); border:1px solid rgba(255,215,0,0.3); border-radius:16px; padding:25px; text-align:center; margin-bottom:25px; position:relative; overflow:hidden;">
                     <div style="position:absolute; top:0; left:0; width:100%; height:2px; background:linear-gradient(90deg, transparent, #ffd700, transparent);"></div>
                     <div style="font-size:36px; margin-bottom:10px;">🏆</div>
-                    <div style="color:#ffd700; font-size:10px; font-weight:800; letter-spacing:3px; margin-bottom:5px;">MISSION VICTOR</div>
+                    <div style="color:#ffd700; font-size:10px; font-weight:800; letter-spacing:3px; margin-bottom:5px;">MISSION CLEARED BY</div>
                     <div style="color:#fff; font-size:24px; font-weight:900; text-shadow:0 0 20px rgba(255,215,0,0.3);">${winner}</div>
                 </div>
             ` : `
@@ -9313,19 +10070,15 @@ async function renderSOTD() {
     const container = document.getElementById('sotd-content');
     if (!container) return;
 
-    // ✅ FIX: Mark SOTD notification as seen when page loads
     if (STATE.lastChecked) {
         STATE.lastChecked.songOfDay = new Date().toDateString();
         saveNotificationState();
-        
-        // Remove from local notification list immediately
         if (STATE.notifications) {
             STATE.notifications = STATE.notifications.filter(n => n.type !== 'sotd');
             updateNotificationBadge();
         }
     }
 
-    // Show loading
     container.innerHTML = `
         <div style="text-align:center;padding:60px 20px;">
             <div style="font-size:40px;margin-bottom:15px;">🎬</div>
@@ -9334,20 +10087,29 @@ async function renderSOTD() {
     `;
 
     try {
-        // Fetch Current Song AND Latest Results
         const [songData, resultsData] = await Promise.all([
             api('getSongOfDay', { agentNo: STATE.agentNo }),
             api('getLatestSOTDResult').catch(() => ({ success: false }))
         ]);
 
-        const today = new Date();
-        const dateDisplay = today.toLocaleDateString('en-US', { 
-            weekday: 'long', month: 'long', day: 'numeric' 
-        });
-        const todayStr = today.toDateString();
+        // ✅ FIX: Only declare dateDisplay once
+        const todayKST = getKSTDateString();
+        const dateDisplay = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Seoul"}))
+                            .toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
-        // --- Build Main Content ---
+        const resetNotice = `
+            <div style="background: rgba(123, 44, 191, 0.1); border: 1px solid rgba(123, 44, 191, 0.3); border-radius: 10px; padding: 10px; margin-bottom: 16px; text-align: center;">
+                <span style="color: #c9a0ff; font-size: 11px; font-weight: bold; letter-spacing: 0.5px;">
+                    📡 MISSION PROTOCOL: SOTD resets at 8:30 PM IST (Midnight KST)
+                </span>
+            </div>
+        `;
+
         let html = `
+            <div style="color:#ff4444; font-size:10px; font-weight:bold; margin-bottom:12px; letter-spacing:1px; text-transform:uppercase;">
+                ⚠️ GHOST PROTOCOL: AGENTS ON LEAVE EARN 0 XP
+            </div>
+            ${resetNotice}
             <div class="card" style="background:linear-gradient(135deg, #ff000015, #ff000008);border-color:#ff000033;margin-bottom:16px;">
                 <div class="card-body" style="text-align:center;padding:25px;">
                     <div style="font-size:50px;margin-bottom:12px;">🎬</div>
@@ -9359,11 +10121,10 @@ async function renderSOTD() {
             </div>
         `;
 
-        // --- Current Song Logic ---
         if (songData?.success && songData?.song) {
             const song = songData.song;
-            const attemptsKey = 'sotd_attempts_' + STATE.agentNo + '_' + todayStr;
-            const correctKey = 'sotd_correct_' + STATE.agentNo + '_' + todayStr;
+            const attemptsKey = 'sotd_attempts_' + STATE.agentNo + '_' + todayKST;
+            const correctKey = 'sotd_correct_' + STATE.agentNo + '_' + todayKST;
             let attempts = parseInt(localStorage.getItem(attemptsKey) || '0');
             let wasCorrect = localStorage.getItem(correctKey) === 'true';
 
@@ -9371,7 +10132,6 @@ async function renderSOTD() {
             const remaining = Math.max(0, maxAttempts - attempts);
             const canAnswer = !wasCorrect && attempts < maxAttempts;
 
-            // Only show hint if they haven't answered yet
             if (canAnswer) {
                 html += `
                     <div class="card" style="margin-bottom:16px;">
@@ -9405,20 +10165,10 @@ async function renderSOTD() {
                                 <div style="margin-top:10px;padding:12px;background:rgba(255,255,255,0.05);border-radius:10px;">
                                     <div style="color:#fff;font-weight:bold;">${sanitize(song.title)}</div>
                                 </div>
-
-                                <!-- 🔴 YOUTUBE STREAM BOX -->
                                 ${song.youtubeId ? `
                                     <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1);">
                                         <p style="color:#aaa; font-size:12px; margin-bottom:12px;">Now go give it a stream! 💜</p>
-                                        <a href="https://www.youtube.com/watch?v=${song.youtubeId}" target="_blank" style="
-                                            display: flex; align-items: center; justify-content: center; gap: 10px;
-                                            width: 100%; padding: 14px;
-                                            background: linear-gradient(135deg, #ff0000, #cc0000);
-                                            color: #fff; border-radius: 10px;
-                                            text-decoration: none; font-weight: bold; font-size: 14px;
-                                            box-shadow: 0 4px 15px rgba(255, 0, 0, 0.4);
-                                            transition: transform 0.2s;
-                                        " onactive="this.style.transform='scale(0.98)'">
+                                        <a href="https://www.youtube.com/watch?v=${song.youtubeId}" target="_blank" style="display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 14px; background: linear-gradient(135deg, #ff0000, #cc0000); color: #fff; border-radius: 10px; text-decoration: none; font-weight: bold; font-size: 14px; box-shadow: 0 4px 15px rgba(255, 0, 0, 0.4);">
                                             <span style="font-size:18px;">▶️</span> Watch on YouTube
                                         </a>
                                     </div>
@@ -9430,20 +10180,17 @@ async function renderSOTD() {
             `;
         }
 
-        // --- Previous Results Section ---
-        if (resultsData?.success && resultsData?.result) {
-            const res = resultsData.result;
-            const resDate = new Date(res.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        if (resultsData?.success && resultsData?.winner) {
+            const res = resultsData;
+            const dateParts = res.date.split('-');
+            const resultDateObj = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
+            const resDate = resultDateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
             const winnerColor = teamColor(res.winner);
-
-            // ✅ FIX: Mark Results notification as seen if visible here
-            const resultKey = 'sotd_result_seen_' + new Date(res.date).toDateString();
-            localStorage.setItem(resultKey, 'true');
 
             html += `
                 <div class="card" style="border: 1px solid rgba(255, 215, 0, 0.3); background: rgba(255, 215, 0, 0.02);">
                     <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
-                        <h3 style="margin:0; color:#ffd700;">🏆 Previous Results</h3>
+                        <h3 style="margin:0; color:#ffd700;">🏆 Latest Mission Result</h3>
                         <span style="font-size:11px; color:#888;">${resDate}</span>
                     </div>
                     <div class="card-body" style="padding: 15px;">
@@ -9451,25 +10198,18 @@ async function renderSOTD() {
                             <div style="font-size:24px;">👑</div>
                             <div style="flex:1;">
                                 <div style="font-size:11px; color:#888; text-transform:uppercase;">Daily Winner</div>
-                                <div style="color:${winnerColor}; font-weight:bold; font-size:16px;">${res.winner}</div>
+                                <div style="color:${winnerColor}; font-weight:bold; font-size:16px;">${res.winner || 'TBD'}</div>
                             </div>
                             <div style="text-align:right;">
                                 <div style="font-size:11px; color:#888;">Song Reveal</div>
-                                <div style="color:#fff; font-size:12px; font-weight:600;">${sanitize(res.song)}</div>
+                                <div style="color:#fff; font-size:12px; font-weight:600;">${sanitize(res.song?.title || '???')}</div>
                             </div>
                         </div>
-
-                        <!-- Mini Scoreboard -->
                         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
-                            ${[
-                                { name: 'Indigo', val: res.teamIndigo, color: teamColor('Team Indigo') },
-                                { name: 'Echo', val: res.teamEcho, color: teamColor('Team Echo') },
-                                { name: 'Agust D', val: res.teamAgustD, color: teamColor('Team Agust D') },
-                                { name: 'JITB', val: res.teamJITB, color: teamColor('Team JITB') }
-                            ].map(t => `
-                                <div style="display:flex; justify-content:space-between; padding:6px 10px; background:rgba(0,0,0,0.2); border-radius:6px; border-left:3px solid ${t.color};">
-                                    <span style="font-size:11px; color:#aaa;">${t.name}</span>
-                                    <span style="font-size:11px; color:#fff; font-weight:bold;">${t.val || 0}</span>
+                            ${['Team Indigo', 'Team Echo', 'Team Agust D', 'Team JITB'].map(team => `
+                                <div style="display:flex; justify-content:space-between; padding:6px 10px; background:rgba(0,0,0,0.2); border-radius:6px; border-left:3px solid ${teamColor(team)};">
+                                    <span style="font-size:11px; color:#aaa;">${team.replace('Team ', '')}</span>
+                                    <span style="font-size:11px; color:#fff; font-weight:bold;">${res.teams?.[team]?.correct || 0}</span>
                                 </div>
                             `).join('')}
                         </div>
@@ -9486,10 +10226,9 @@ async function renderSOTD() {
 
     } catch (e) {
         console.error('SOTD Error:', e);
-        container.innerHTML = `<div class="card"><div class="card-body error-text">Failed to load Song of the Day.</div></div>`;
+        container.innerHTML = `<div class="card"><div class="card-body error-text">Failed to load SOTD: ${e.message}</div></div>`;
     }
-}
-
+}   
 // ==================== SUBMIT SOTD ANSWER ====================
 async function submitSOTDAnswer() {
     const input = document.getElementById('sotd-answer-input');
@@ -9504,11 +10243,11 @@ async function submitSOTDAnswer() {
         return;
     }
     
-    const today = new Date().toDateString();
-    const attemptsKey = 'sotd_attempts_' + STATE.agentNo + '_' + today;
-    const correctKey = 'sotd_correct_' + STATE.agentNo + '_' + today;
+    // ✅ FIX: Consistently use todayKST
+    const todayKST = getKSTDateString(); 
+    const attemptsKey = 'sotd_attempts_' + STATE.agentNo + '_' + todayKST;
+    const correctKey = 'sotd_correct_' + STATE.agentNo + '_' + todayKST;
     
-    // Check if already done
     if (localStorage.getItem(correctKey) === 'true') {
         showToast('Already answered correctly!', 'info');
         renderSOTD();
@@ -9522,7 +10261,6 @@ async function submitSOTDAnswer() {
         return;
     }
     
-    // Disable button
     if (btn) {
         btn.disabled = true;
         btn.innerHTML = '⏳ Checking...';
@@ -9535,9 +10273,6 @@ async function submitSOTDAnswer() {
             answer: answer
         });
         
-        console.log('🎬 Submit result:', result);
-        
-        // Increment attempts
         const newAttempts = currentAttempts + 1;
         localStorage.setItem(attemptsKey, String(newAttempts));
         
@@ -9561,7 +10296,6 @@ async function submitSOTDAnswer() {
     } catch (e) {
         console.error('Submit error:', e);
         showToast('Error: ' + e.message, 'error');
-        
         if (btn) {
             btn.disabled = false;
             btn.innerHTML = '▶️ Submit Answer';
@@ -11934,6 +12668,38 @@ async function renderAttendance() {
                 </div>
             </div>
         `;
+                // --- POLICE SECTION ---
+        html += `
+            <div id="police-section" style="margin-top:20px;">
+                <div class="attendance-summary-card" onclick="showPoliceLogin()" style="cursor:pointer;">
+                    <div class="summary-header">
+                        <span class="summary-icon">👮</span>
+                        <span class="summary-title">POLICE VERIFICATION</span>
+                    </div>
+                    <div style="color:#666; font-size:10px; padding:10px 14px;">Tap to access </div>
+                </div>
+            </div>
+
+            <div id="police-login-modal" style="display:none; margin-top:10px;">
+                <div class="attendance-summary-card">
+                    <div class="summary-header">
+                        <span class="summary-icon">🔐</span>
+                        <span class="summary-title">ENTER POLICE CODE</span>
+                    </div>
+                    <div style="padding:14px; display:flex; gap:8px;">
+                        <input type="password" id="police-password" placeholder="Enter police password..." 
+                            style="flex:1; padding:10px 12px; background:#0d0d12; border:1px solid #2a2a3a; border-radius:8px; color:#fff; font-size:12px; outline:none;"
+                            onkeydown="if(event.key==='Enter') verifyPoliceAccess()">
+                        <button onclick="verifyPoliceAccess()" 
+                            style="padding:10px 16px; background:linear-gradient(135deg, #7b2cbf, #5a1f99); border:none; border-radius:8px; color:#fff; font-weight:700; font-size:11px; cursor:pointer; white-space:nowrap;">
+                            VERIFY
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="police-lastfm-container" style="display:none; margin-top:10px;"></div>
+        `;
 
         container.innerHTML = html;
         
@@ -12218,8 +12984,161 @@ function cleanupOldCheckmarks() {
 // Run cleanup on load
 cleanupOldCheckmarks();
 
-// ==================== EXPOSE GLOBALLY ====================
+// ==================== POLICE VERIFICATION ====================
 
+function showPoliceLogin() {
+    const modal = document.getElementById('police-login-modal');
+    const section = document.getElementById('police-section');
+    if (modal) {
+        modal.style.display = 'block';
+        const input = document.getElementById('police-password');
+        if (input) input.focus();
+    }
+    if (section) section.style.display = 'none';
+}
+
+async function verifyPoliceAccess() {
+    const input = document.getElementById('police-password');
+    const password = input?.value?.trim();
+    
+    if (!password) {
+        showToast('Enter password', 'error');
+        return;
+    }
+
+    // Hide login, show loading
+    const loginModal = document.getElementById('police-login-modal');
+    const container = document.getElementById('police-lastfm-container');
+    if (loginModal) loginModal.style.display = 'none';
+    if (container) {
+        container.style.display = 'block';
+        container.innerHTML = `
+            <div class="attendance-summary-card">
+                <div style="text-align:center; padding:20px; color:#666; font-size:11px;">
+                    ⏳ Loading Last.fm profiles...
+                </div>
+            </div>
+        `;
+    }
+
+    try {
+        const res = await api('getPoliceData', { 
+            password: password, 
+            week: STATE.week 
+        });
+
+        if (!res.success) {
+            // Wrong password comes back here
+            showToast(res.error || '❌ Access Denied', 'error');
+            if (input) input.value = '';
+            if (loginModal) loginModal.style.display = 'block';
+            if (container) container.style.display = 'none';
+            return;
+        }
+
+        const teams = res.teams || {};
+        let html = '';
+
+        for (const [teamName, members] of Object.entries(teams)) {
+            const teamColorVal = teamColor(teamName);
+            const teamId = teamName.replace(/\s+/g, '-').toLowerCase();
+
+            html += `
+                <div class="attendance-summary-card" style="margin-bottom:10px; border-left:3px solid ${teamColorVal};">
+                    <div class="summary-header" onclick="togglePoliceTeam('police-team-${teamId}')" style="cursor:pointer;">
+                        <span class="summary-icon" style="color:${teamColorVal};">👮</span>
+                        <span class="summary-title" style="color:${teamColorVal};">${teamName.toUpperCase()}</span>
+                        <span style="color:#444; font-size:10px; margin-left:auto;">${members.length} agents ▼</span>
+                    </div>
+                    <div id="police-team-${teamId}" style="display:none; padding:0 14px 14px;">
+                        ${members.map(m => {
+                            const usernames = m.usernames || [];
+                            const hasLastFm = usernames.length > 0;
+                            
+                            return `
+                                <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.03);">
+                                    <div style="min-width:0; flex:1;">
+                                        <div style="color:#ccc; font-size:11px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                                            ${sanitize(m.name || 'Agent')}
+                                        </div>
+                                        
+                                    </div>
+                                    <div style="display:flex; gap:4px; flex-shrink:0; margin-left:8px;">
+                                        ${hasLastFm ? usernames.map((u, i) => `
+                                            <a href="https://www.last.fm/user/${encodeURIComponent(u)}/library?from=${res.weekRange?.fromDate || ''}&to=${res.weekRange?.toDate || ''}" 
+                                               target="_blank" rel="noopener"
+                                               style="padding:4px 8px; background:rgba(185,0,0,0.15); border:1px solid rgba(185,0,0,0.3); border-radius:6px; color:#d41109; font-size:9px; font-weight:700; text-decoration:none; white-space:nowrap;">
+                                                🎵 ${usernames.length > 1 ? 'LFM ' + (i+1) : 'Last.fm'}
+                                            </a>
+                                        `).join('') : `
+                                            <span style="padding:4px 8px; background:rgba(255,255,255,0.03); border:1px solid #222; border-radius:6px; color:#444; font-size:9px;">
+                                                No Last.fm
+                                            </span>
+                                        `}
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Weekly range info
+        html += `
+            <div style="text-align:center; padding:10px; color:#333; font-size:8px; letter-spacing:1px;">
+                WEEK RANGE: ${res.weekRange?.fromDate || '?'} → ${res.weekRange?.toDate || '?'}
+            </div>
+        `;
+                
+        html += `
+            <button onclick="logoutPolice()" style="width:100%; margin-top:10px; padding:12px; background:#111118; border:1px solid #2a2a3a; border-radius:10px; color:#666; font-size:11px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
+                🔒 Lock Police Panel
+            </button>
+        `;
+
+        if (container) container.innerHTML = html;
+        showToast('👮 Police access granted', 'success');
+
+    } catch (e) {
+        console.error('Police data error:', e);
+        if (container) {
+            container.innerHTML = `
+                <div class="attendance-summary-card">
+                    <div style="text-align:center; padding:20px; color:#ff4444; font-size:11px;">
+                        ⚠️ Failed to load: ${e.message}
+                    </div>
+                </div>
+            `;
+        }
+    }
+}
+function logoutPolice() {
+    const section = document.getElementById('police-section');
+    const loginModal = document.getElementById('police-login-modal');
+    const container = document.getElementById('police-lastfm-container');
+    const input = document.getElementById('police-password');
+
+    if (section) section.style.display = 'block';
+    if (loginModal) loginModal.style.display = 'none';
+    if (container) { container.style.display = 'none'; container.innerHTML = ''; }
+    if (input) input.value = '';
+
+    showToast('🔒 Police panel locked', 'info');
+}
+
+function togglePoliceTeam(id) {
+    const el = document.getElementById(id);
+    if (el) {
+        el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    }
+}
+
+// ==================== EXPOSE GLOBALLY ====================
+window.logoutPolice = logoutPolice;
+window.showPoliceLogin = showPoliceLogin;
+window.verifyPoliceAccess = verifyPoliceAccess;
+window.togglePoliceTeam = togglePoliceTeam;
 window.renderAttendance = renderAttendance;
 window.toggleAttendanceSection = toggleAttendanceSection;
 window.filterAttendanceList = filterAttendanceList;
@@ -13209,6 +14128,1067 @@ function promptDeleteAccount() {
 
 // Export it so HTML can use it
 window.promptDeleteAccount = promptDeleteAccount;
+// ==================== ROYAL BADGE RENDER ====================
+
+function renderRoyalBadgeHTML(badge) {
+    const url = badge.imageUrl || '';
+    const rank = badge.rank || '?';
+    
+    return `
+        <div class="royal-badge-wrapper">
+            <div class="royal-badge-card" onclick="previewRoyalBadge('${url}', 'ELITE KEY #${rank}')">
+                <!-- Digital Rank Signature -->
+                <div class="royal-rank-tag">#${rank}</div>
+                
+                <div class="royal-img-wrapper">
+                    <div class="royal-scan"></div>
+                    <img src="${url}" alt="Elite Agent" loading="lazy">
+                    
+                    <!-- Ghost HUD Text -->
+                    <div class="royal-info-bar">
+                        <div class="royal-title">SECRET KEY</div>
+                        <div class="royal-status">UNLOCKED</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+function previewRoyalBadge(url, name) {
+    document.querySelectorAll('.royal-preview-modal').forEach(m => m.remove());
+    
+    const modal = document.createElement('div');
+    modal.className = 'royal-preview-modal';
+    modal.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.97); z-index: 99999999;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        cursor: pointer; backdrop-filter: blur(15px);
+    `;
+    
+    modal.innerHTML = `
+        <div style="position:absolute; width:350px; height:450px; border-radius:50%; background:radial-gradient(ellipse, rgba(255,215,0,0.15) 0%, transparent 60%); filter:blur(30px); pointer-events:none;"></div>
+        
+        <div style="position:relative; width:280px; max-width:85vw; aspect-ratio:3/4; border-radius:12px; overflow:hidden; box-shadow: 0 0 0 2px rgba(255,215,0,0.5), 0 25px 80px rgba(0,0,0,0.8), 0 0 60px rgba(255,215,0,0.15);">
+            <img src="${url}" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.innerHTML='<div style=\\'display:flex;align-items:center;justify-content:center;width:100%;height:100%;background:#1a1508;color:#ffd700;font-size:80px;\\'>👑</div>'">
+        </div>
+        
+        <div style="margin-top:25px; text-align:center;">
+            <div style="display:inline-flex; align-items:center; gap:8px; background:linear-gradient(135deg, rgba(255,215,0,0.15), rgba(184,134,11,0.1)); border:1px solid rgba(255,215,0,0.3); padding:8px 20px; border-radius:25px;">
+                <span style="font-size:20px;">👑</span>
+                <span style="color:#ffd700; font-size:14px; font-weight:800; letter-spacing:2px;">${sanitize(name)} ELITE</span>
+            </div>
+            <div style="color:#b8860b; font-size:11px; margin-top:10px; letter-spacing:2px; text-transform:uppercase;">Royal Collection • Top 50</div>
+        </div>
+        
+        <button onclick="this.closest('.royal-preview-modal').remove()" style="margin-top:30px; padding:14px 50px; background:linear-gradient(135deg, #b8860b, #daa520); border:none; border-radius:30px; color:#000; font-weight:800; font-size:13px; cursor:pointer;">Close</button>
+    `;
+    
+    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+    document.body.appendChild(modal);
+}
+
+window.previewRoyalBadge = previewRoyalBadge;
+// ==================== ROYAL BADGE CSS ====================
+
+function ensureRoyalBadgeCSS() {
+    if (document.getElementById('royal-badge-styles')) return;
+    const style = document.createElement('style');
+    style.id = 'royal-badge-styles';
+    style.innerHTML = `
+        :root {
+            --royal-gold: #ffd700;
+            --royal-border: linear-gradient(135deg, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c);
+        }
+
+        .royal-badge-wrapper {
+            padding: 10px;
+            display: inline-block;
+            perspective: 1000px;
+        }
+
+        /* WIDE TACTICAL SHIELD - Prevents cutting people in 538x343 wide photos */
+        .royal-badge-card {
+            position: relative;
+            width: 185px; 
+            height: 150px;
+            background: #0a0a0c;
+            /* Unique tactical shape */
+            clip-path: polygon(15% 0%, 85% 0%, 100% 25%, 100% 75%, 85% 100%, 15% 100%, 0% 75%, 0% 25%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        }
+
+        .royal-badge-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: var(--royal-border);
+            padding: 3px; 
+            clip-path: polygon(15% 0%, 85% 0%, 100% 25%, 100% 75%, 85% 100%, 15% 100%, 0% 75%, 0% 25%);
+            z-index: -1;
+        }
+
+        .royal-badge-card:hover { 
+            transform: scale(1.1) rotateX(5deg); 
+            filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.3));
+        }
+
+        .royal-img-wrapper {
+            width: calc(100% - 6px);
+            height: calc(100% - 6px);
+            clip-path: polygon(15% 0%, 85% 0%, 100% 25%, 100% 75%, 85% 100%, 15% 100%, 0% 75%, 0% 25%);
+            background: #000;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .royal-img-wrapper img {
+            width: 100%; height: 100%; 
+            object-fit: cover; 
+            object-position: center 15%; /* Protects faces in top half */
+            filter: brightness(0.9) contrast(1.1);
+            transition: transform 0.8s ease;
+        }
+
+        .royal-badge-card:hover img { transform: scale(1.15); }
+
+        /* GHOST UI - Transparent HUD bar */
+        .royal-info-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%);
+            padding: 20px 0 10px;
+            text-align: center;
+            z-index: 15;
+            pointer-events: none;
+        }
+
+        .royal-title {
+            color: #fff;
+            font-size: 8px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            text-shadow: 0 0 10px rgba(0,0,0,1);
+        }
+
+        .royal-status {
+            color: var(--royal-gold);
+            font-size: 7px;
+            font-weight: 700;
+            text-shadow: 0 0 5px #000;
+        }
+
+        /* GHOST GLASS RANK TAG - Glassmorphism fixed */
+        .royal-rank-tag {
+            position: absolute;
+            top: 10px;
+            right: 25px;
+            background: rgba(255, 215, 0, 0.1); 
+            backdrop-filter: blur(4px); 
+            -webkit-backdrop-filter: blur(4px);
+            color: var(--royal-gold);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            padding: 2px 10px;
+            font-size: 11px;
+            font-weight: 900;
+            border-radius: 4px;
+            z-index: 20;
+            font-family: 'Orbitron', monospace;
+            text-shadow: 0 0 5px rgba(0,0,0,0.5);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        /* FIXED LASER SCAN - Sharper energy beam */
+        .royal-scan {
+            position: absolute;
+            top: -10%; left: 0; width: 100%; height: 15px;
+            background: linear-gradient(to bottom, 
+                transparent, 
+                rgba(255, 215, 0, 0.4) 50%, 
+                transparent);
+            z-index: 10;
+            animation: tacticalScan 3s linear infinite;
+            pointer-events: none;
+            opacity: 0.6;
+        }
+
+        @keyframes tacticalScan { 
+            0% { top: -15%; } 
+            100% { top: 115%; } 
+        }
+        
+        .royal-badge-wrapper { animation: badgeFloat 5s ease-in-out infinite; }
+        @keyframes badgeFloat { 
+            0%, 100% { transform: translateY(0); } 
+            50% { transform: translateY(-6px); } 
+        }
+    `;
+    document.head.appendChild(style);
+}
+function showRoyalAwardModal(rank, week) {
+    // 1. Clean up existing modals
+    document.querySelectorAll('.royal-award-overlay').forEach(el => el.remove());
+
+    // 2. Get the specific badge image
+    const royalPool = CONFIG.ROYAL_BADGE_POOL;
+    const weekSeed = (week || '').split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const badgeIndex = (rank - 1 + weekSeed) % royalPool.length;
+    const imageUrl = royalPool[badgeIndex];
+
+    // 3. Create Overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'royal-award-overlay';
+    overlay.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.9); z-index: 1000000;
+        display: flex; align-items: center; justify-content: center;
+        backdrop-filter: blur(10px); animation: fadeIn 0.3s ease;
+    `;
+
+    overlay.innerHTML = `
+        <div style="
+            background: linear-gradient(145deg, #1a1a2e, #0a0a0f);
+            border: 2px solid #ffd700;
+            border-radius: 16px;
+            padding: 20px;
+            width: 85%;
+            max-width: 320px;
+            text-align: center;
+            box-shadow: 0 0 40px rgba(255, 215, 0, 0.25);
+        ">
+            <div style="color: #ffd700; font-size: 9px; font-weight: 800; letter-spacing: 3px; margin-bottom: 10px;">
+                🏆 TOP 50 AGENT
+            </div>
+
+            <h2 style="color: #fff; font-size: 16px; margin: 0 0 15px 0; font-weight: 800;">
+                ROYAL BADGE EARNED!
+            </h2>
+
+            <!-- Badge (Smaller Scale) -->
+            <div style="transform: scale(0.9); margin-bottom: 15px; display: inline-block;">
+                ${renderRoyalBadgeHTML({ imageUrl: imageUrl, rank: rank, week: week })}
+            </div>
+
+            <p style="color: #aaa; font-size: 11px; margin: 0 0 15px 0; line-height: 1.5;">
+                You finished <strong style="color:#ffd700;">Rank #${rank}</strong> in ${week || 'last week'}!
+            </p>
+
+            <button onclick="this.closest('.royal-award-overlay').remove()" style="
+                width: 100%; padding: 12px;
+                background: linear-gradient(135deg, #ffd700, #ffaa00);
+                border: none; border-radius: 10px;
+                color: #000; font-weight: 800; font-size: 12px;
+                cursor: pointer;
+            ">
+                COLLECT BADGE
+            </button>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    // 4. Confetti
+    if (typeof confetti === 'function') {
+        confetti({
+            particleCount: 100,
+            spread: 60,
+            origin: { y: 0.6 },
+            colors: ['#ffd700', '#ffffff', '#7b2cbf']
+        });
+    }
+}
+// ==================== ARIRANG HYPE FORCE (MOBILE NUCLEAR FIX) ====================
+
+async function renderArirangHype() {
+    const container = document.getElementById('arirang-hype-content');
+    if (!container) return;
+
+    // ── 1. Base Strategies (HQ Protocols) ──
+    const baseStrategies = [
+        "Comment under 10 non-fan viral reels with a BTS hook.",
+        "Make a transition reel with trending audio + BTS flash.",
+        "Post a 'If you don't stan BTS yet, watch this' reel.",
+        "Share a theory about the comeback concept.",
+        "Create a 'Send this to someone' type edit.",
+        "Edit a compilation of previous eras."
+    ];
+
+    container.innerHTML = '<div style="text-align:center; padding:30px; color:#888;">📡 Decrypting Intel...</div>';
+
+    try {
+        // ── 2. Fetch Community Ideas ──
+        const response = await api('getActivityFeed', { limit: 100 });
+        const activities = response.activities || [];
+
+        const communityStrategies = activities
+            .filter(a => a.type === 'strategy_intel' && a.data?.idea)
+            .map(a => ({
+                id: a.id,
+                text: a.data.idea,
+                author: a.data.author || 'Agent',
+                agentNo: a.agentNo
+            }));
+
+        // ── 3. Random Daily Strategy ──
+        const dailyStrategy = baseStrategies[Math.floor(Math.random() * baseStrategies.length)];
+
+        // ── 4. Render Full UI ──
+        container.innerHTML = `
+            <style>
+                /* ══════════════════════════════════════════════════ */
+                /* NUCLEAR RESET - PREVENT ALL HORIZONTAL OVERFLOW   */
+                /* ══════════════════════════════════════════════════ */
+                #arirang-hype-content,
+                #arirang-hype-content *,
+                #arirang-hype-content *::before,
+                #arirang-hype-content *::after {
+                    box-sizing: border-box !important;
+                }
+                
+                #arirang-hype-content {
+                    width: 100% !important;
+                    max-width: 100% !important;
+                    overflow-x: hidden !important;
+                    padding: 0 !important;
+                    margin: 0 !important;
+                }
+                
+                .hype-wrapper {
+                    width: 100%;
+                    max-width: 100%;
+                    overflow: hidden;
+                    padding: 0 2px;
+                }
+
+                /* ══════════════════════════════════════════════════ */
+                /* CARDS                                              */
+                /* ══════════════════════════════════════════════════ */
+                .hype-card {
+                    background: #151520;
+                    border-radius: 12px;
+                    margin-bottom: 12px;
+                    width: 100%;
+                    overflow: hidden;
+                }
+                
+                .hype-card-body {
+                    padding: 14px;
+                }
+
+                /* ══════════════════════════════════════════════════ */
+                /* INPUTS - CRITICAL FIX                              */
+                /* ══════════════════════════════════════════════════ */
+                .hype-input {
+                    display: block;
+                    width: 100% !important;
+                    max-width: 100% !important;
+                    padding: 12px;
+                    background: #0d0d12;
+                    border: 1px solid #333;
+                    border-radius: 8px;
+                    color: #fff;
+                    font-size: 14px;
+                    outline: none;
+                    -webkit-appearance: none;
+                    appearance: none;
+                }
+                
+                .hype-input:focus {
+                    border-color: #7b2cbf;
+                }
+                
+                .hype-input::placeholder {
+                    color: #666;
+                    font-size: 13px;
+                }
+
+                /* ══════════════════════════════════════════════════ */
+                /* BUTTONS                                            */
+                /* ══════════════════════════════════════════════════ */
+                .hype-btn {
+                    display: block;
+                    width: 100%;
+                    padding: 14px;
+                    background: linear-gradient(135deg, #7b2cbf, #5a189a);
+                    border: none;
+                    border-radius: 10px;
+                    color: #fff;
+                    font-weight: 700;
+                    font-size: 14px;
+                    cursor: pointer;
+                    text-align: center;
+                }
+                
+                .hype-btn:disabled {
+                    opacity: 0.5;
+                    cursor: not-allowed;
+                }
+
+                /* ══════════════════════════════════════════════════ */
+                /* TABS                                               */
+                /* ══════════════════════════════════════════════════ */
+                .hype-tabs {
+                    display: flex;
+                    gap: 8px;
+                    margin-bottom: 12px;
+                    width: 100%;
+                }
+                
+                .hype-tab {
+                    flex: 1;
+                    padding: 10px 5px;
+                    background: #1a1a25;
+                    border: 1px solid #333;
+                    border-radius: 8px;
+                    color: #888;
+                    font-size: 12px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    text-align: center;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+                
+                .hype-tab.active {
+                    background: #7b2cbf;
+                    border-color: #7b2cbf;
+                    color: #fff;
+                }
+
+                /* ══════════════════════════════════════════════════ */
+                /* SIGNAL CARDS                                       */
+                /* ══════════════════════════════════════════════════ */
+                .hype-signal {
+                    background: #1a1a25;
+                    border-left: 3px solid #00ff88;
+                    border-radius: 8px;
+                    padding: 12px;
+                    margin-bottom: 10px;
+                    width: 100%;
+                    overflow: hidden;
+                }
+                
+                .hype-signal-row {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    width: 100%;
+                }
+                
+                .hype-signal-info {
+                    flex: 1;
+                    min-width: 0;
+                    overflow: hidden;
+                }
+                
+                .hype-signal-meta {
+                    font-size: 10px;
+                    color: #666;
+                    margin-bottom: 3px;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+                
+                .hype-signal-name {
+                    font-size: 13px;
+                    font-weight: 600;
+                    color: #fff;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+                
+                .hype-engage-btn {
+                    flex-shrink: 0;
+                    background: #00ff88;
+                    color: #000;
+                    font-weight: 800;
+                    font-size: 11px;
+                    padding: 8px 14px;
+                    border-radius: 20px;
+                    text-decoration: none;
+                    white-space: nowrap;
+                }
+
+                /* ══════════════════════════════════════════════════ */
+                /* IDEA CARDS                                         */
+                /* ══════════════════════════════════════════════════ */
+                .hype-idea {
+                    background: #1a1a25;
+                    border-left: 2px solid #444;
+                    border-radius: 8px;
+                    padding: 12px;
+                    margin-bottom: 8px;
+                    font-size: 12px;
+                    color: #aaa;
+                    line-height: 1.5;
+                    word-break: break-word;
+                    overflow-wrap: break-word;
+                }
+                
+                .hype-idea.community {
+                    border-left-color: #ffd700;
+                    background: rgba(255, 215, 0, 0.05);
+                }
+                
+                .hype-idea-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-start;
+                    gap: 8px;
+                    margin-bottom: 6px;
+                }
+                
+                .hype-idea-label {
+                    font-size: 9px;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                    color: #666;
+                }
+                
+                .hype-idea.community .hype-idea-label {
+                    color: #ffd700;
+                }
+                
+                .hype-delete {
+                    background: none;
+                    border: none;
+                    color: #ff4444;
+                    font-size: 14px;
+                    cursor: pointer;
+                    padding: 0;
+                    line-height: 1;
+                    opacity: 0.6;
+                }
+
+                /* ══════════════════════════════════════════════════ */
+                /* IDEA FORM                                          */
+                /* ══════════════════════════════════════════════════ */
+                .hype-idea-form {
+                    display: flex;
+                    gap: 8px;
+                    width: 100%;
+                }
+                
+                .hype-idea-form input {
+                    flex: 1;
+                    min-width: 0;
+                }
+                
+                .hype-idea-form button {
+                    flex-shrink: 0;
+                    padding: 12px 16px;
+                    background: #333;
+                    border: 1px solid #555;
+                    border-radius: 8px;
+                    color: #fff;
+                    font-weight: 700;
+                    cursor: pointer;
+                }
+
+                /* ══════════════════════════════════════════════════ */
+                /* WARNING BOX                                        */
+                /* ══════════════════════════════════════════════════ */
+                .hype-warning {
+                    background: rgba(255, 50, 50, 0.1);
+                    border: 1px dashed #ff4444;
+                    border-radius: 8px;
+                    padding: 10px;
+                    margin-bottom: 12px;
+                    font-size: 11px;
+                    color: #ff6666;
+                    line-height: 1.4;
+                }
+
+                /* ══════════════════════════════════════════════════ */
+                /* DELETE FOOTER                                      */
+                /* ══════════════════════════════════════════════════ */
+                .hype-signal-footer {
+                    margin-top: 8px;
+                    padding-top: 8px;
+                    border-top: 1px solid #222;
+                    text-align: right;
+                }
+                
+                .hype-signal-footer button {
+                    background: none;
+                    border: none;
+                    color: #ff4444;
+                    font-size: 11px;
+                    cursor: pointer;
+                    opacity: 0.7;
+                }
+            </style>
+
+            <div class="hype-wrapper">
+            
+                <!-- 💡 HQ IDEA -->
+                <div class="hype-card" style="border-left: 3px solid #ffd700;">
+                    <div class="hype-card-body">
+                        <div style="display:flex; gap:10px; align-items:flex-start;">
+                            <span style="font-size:22px;">💡</span>
+                            <div style="flex:1; min-width:0;">
+                                <div style="color:#ffd700; font-size:10px; font-weight:700; margin-bottom:4px;">HQ IDEA</div>
+                                <div style="color:#fff; font-size:13px; line-height:1.5; word-break:break-word;">"${sanitize(dailyStrategy)}"</div>
+                                <button onclick="renderArirangHype()" style="background:none; border:none; color:#666; font-size:11px; margin-top:6px; cursor:pointer; padding:0;">
+                                    🎲 New Idea
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 📡 BOOST STATION -->
+                <div class="hype-card" style="border: 1px solid #7b2cbf;">
+                    <div style="background:rgba(123,44,191,0.15); padding:10px 14px; display:flex; justify-content:space-between; align-items:center;">
+                        <span style="color:#fff; font-size:14px; font-weight:700;">📡 BOOST STATION</span>
+                        <span style="background:#7b2cbf; color:#fff; font-size:9px; padding:3px 8px; border-radius:4px; font-weight:600;">LIVE</span>
+                    </div>
+                    <div class="hype-card-body">
+                        <p style="color:#888; font-size:12px; margin:0 0 12px 0; line-height:1.4;">
+                            Drop your post link. Squad will be notified to engage.
+                        </p>
+
+                        <div class="hype-warning">
+                            ⚠️ <strong>BTS Comeback content ONLY.</strong> Off-topic = removed.
+                        </div>
+
+                        <div style="display:flex; flex-direction:column; gap:10px;">
+                            <input type="text" id="hype-link" placeholder="Paste link (Insta/TikTok/X)..." class="hype-input">
+                            <input type="text" id="hype-agent-confirm" placeholder="Your Agent ID (e.g. AGENT001)" class="hype-input" style="text-transform:uppercase; font-family:monospace;">
+                            <button id="boost-btn" onclick="submitHypeLink()" class="hype-btn">⚡ BROADCAST</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TABS -->
+                <div class="hype-tabs">
+                    <button class="hype-tab active" data-hype-tab="signals" onclick="switchHypeTab('signals')">🔥 Signals</button>
+                    <button class="hype-tab" data-hype-tab="ideas" onclick="switchHypeTab('ideas')">📂 Ideas</button>
+                </div>
+                
+                <!-- SIGNALS PANEL -->
+                <div id="hype-signals-panel">
+                    <div id="hype-feed-container">
+                        <div style="text-align:center; padding:30px; color:#666;">
+                            📡 Scanning...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- IDEAS PANEL -->
+                <div id="hype-ideas-panel" style="display:none;">
+                    
+                    <!-- Submit Idea -->
+                    <div class="hype-card">
+                        <div class="hype-card-body">
+                            <div style="color:#fff; font-size:13px; font-weight:600; margin-bottom:10px;">🧠 Add Strategy</div>
+                            <div class="hype-idea-form">
+                                <input type="text" id="new-strategy-input" placeholder="Your idea..." class="hype-input">
+                                <button id="add-idea-btn" onclick="submitHypeIdea()">ADD</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Ideas List -->
+                    <div id="ideas-list" style="margin-top:12px;">
+                        ${baseStrategies.map(idea => `
+                            <div class="hype-idea">
+                                <div class="hype-idea-label">📋 HQ</div>
+                                <div>"${sanitize(idea)}"</div>
+                            </div>
+                        `).join('')}
+
+                        ${communityStrategies.length > 0 ? communityStrategies.map(item => {
+                            const canDelete = item.agentNo === STATE.agentNo || STATE.agentNo === 'AGENT000';
+                            return `
+                                <div class="hype-idea community" id="idea-${item.id}">
+                                    <div class="hype-idea-header">
+                                        <div class="hype-idea-label">💡 ${sanitize(item.author)}</div>
+                                        ${canDelete ? `<button class="hype-delete" onclick="deleteHypeItem(${item.id}, 'idea')">✕</button>` : ''}
+                                    </div>
+                                    <div>"${sanitize(item.text)}"</div>
+                                </div>
+                            `;
+                        }).join('') : `
+                            <div style="text-align:center; padding:25px; color:#555; font-size:12px;">
+                                🧠 No community ideas yet.
+                            </div>
+                        `}
+                    </div>
+                </div>
+            
+            </div>
+        `;
+
+        loadHypeFeed();
+
+    } catch (e) {
+        console.error('Hype Force error:', e);
+        container.innerHTML = `
+            <div style="text-align:center; padding:40px; color:#ff4444;">
+                ⚠️ Connection Lost
+                <br><br>
+                <button onclick="renderArirangHype()" style="background:#333; color:#fff; border:none; padding:10px 20px; border-radius:8px; cursor:pointer;">Retry</button>
+            </div>
+        `;
+    }
+}
+
+// ── TAB SWITCHER ──
+function switchHypeTab(tab) {
+    const signalsPanel = document.getElementById('hype-signals-panel');
+    const ideasPanel = document.getElementById('hype-ideas-panel');
+    if (!signalsPanel || !ideasPanel) return;
+
+    signalsPanel.style.display = tab === 'signals' ? 'block' : 'none';
+    ideasPanel.style.display = tab === 'ideas' ? 'block' : 'none';
+
+    document.querySelectorAll('[data-hype-tab]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.hypeTab === tab);
+    });
+}
+
+// ── SUBMIT BOOST LINK ──
+async function submitHypeLink() {
+    const linkInput = document.getElementById('hype-link');
+    const agentConfirmInput = document.getElementById('hype-agent-confirm');
+    const btn = document.getElementById('boost-btn');
+
+    const link = (linkInput?.value || '').trim();
+    const agentConfirm = (agentConfirmInput?.value || '').trim().toUpperCase();
+
+    if (!link) { 
+        showToast('❌ Paste a link!', 'error'); 
+        return; 
+    }
+
+    if (!agentConfirm) {
+        showToast('❌ Enter Agent ID!', 'error');
+        return;
+    }
+
+    if (agentConfirm !== STATE.agentNo) {
+        showToast('⛔ Agent ID mismatch!', 'error');
+        return;
+    }
+
+    const allowed = ['instagram.com', 'tiktok.com', 'twitter.com', 'x.com', 'youtube.com', 'youtu.be', 'weverse.io'];
+    if (!allowed.some(d => link.includes(d))) {
+        showToast('❌ Invalid link!', 'error');
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '📡 SENDING...';
+
+    try {
+        const agentName = STATE.data?.profile?.name || STATE.data?.agent?.profile?.name || 'Agent';
+        const agentTeam = STATE.data?.profile?.team || STATE.data?.agent?.profile?.team || 'Unknown';
+
+        const result = await api('broadcastActivity', {
+            type: 'priority_alert',
+            agentNo: STATE.agentNo,
+            data: {
+                title: 'BOOST REQUESTED',
+                message: 'Engage!',
+                link: link,
+                author: agentName,
+                team: agentTeam
+            }
+        });
+
+        if (result.success) {
+            showToast('✅ Broadcasted!', 'success');
+            linkInput.value = '';
+            agentConfirmInput.value = '';
+            setTimeout(loadHypeFeed, 800);
+
+            if (typeof confetti === 'function') {
+                confetti({ particleCount: 60, spread: 60, origin: { y: 0.7 } });
+            }
+        } else {
+            throw new Error(result.error || 'Failed');
+        }
+
+    } catch (e) {
+        showToast('❌ ' + (e.message || 'Error'), 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '⚡ BROADCAST';
+    }
+}
+
+// ── SUBMIT STRATEGY IDEA ──
+async function submitHypeIdea() {
+    const input = document.getElementById('new-strategy-input');
+    const btn = document.getElementById('add-idea-btn');
+    const idea = (input?.value || '').trim();
+
+    if (!idea) { 
+        showToast('❌ Enter idea!', 'error'); 
+        return; 
+    }
+    if (idea.length < 10) { 
+        showToast('❌ Too short!', 'error'); 
+        return; 
+    }
+
+    btn.disabled = true;
+    btn.innerText = '...';
+
+    try {
+        const agentName = STATE.data?.profile?.name || STATE.data?.agent?.profile?.name || 'Agent';
+
+        const result = await api('broadcastActivity', {
+            type: 'strategy_intel',
+            agentNo: STATE.agentNo,
+            data: {
+                idea: idea,
+                author: agentName
+            }
+        });
+
+        if (result.success) {
+            showToast('✅ Added!', 'success');
+            input.value = '';
+
+            setTimeout(async () => {
+                await renderArirangHype();
+                setTimeout(() => switchHypeTab('ideas'), 100);
+            }, 600);
+        } else {
+            throw new Error(result.error || 'Failed');
+        }
+    } catch (e) {
+        showToast('❌ ' + (e.message || 'Error'), 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerText = 'ADD';
+    }
+}
+
+// ── LOAD SIGNAL FEED ──
+async function loadHypeFeed() {
+    const container = document.getElementById('hype-feed-container');
+    if (!container) return;
+
+    try {
+        const response = await api('getActivityFeed', { limit: 50 });
+        const activities = response.activities || [];
+
+        const hypeLinks = activities.filter(a =>
+            a.type === 'priority_alert' && a.data?.link
+        );
+
+        if (hypeLinks.length === 0) {
+            container.innerHTML = `
+                <div style="text-align:center; padding:30px; border:1px dashed #333; border-radius:10px; color:#555;">
+                    📡 No signals yet.<br>
+                    <span style="font-size:11px; color:#444;">Be the first!</span>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = hypeLinks.map(item => {
+            const data = item.data;
+            const safeLink = sanitize(data.link);
+            const safeAuthor = sanitize(data.author || 'Agent');
+            const safeTeam = sanitize(data.team || 'Unknown');
+            const canDelete = item.agentNo === STATE.agentNo || STATE.agentNo === 'AGENT000';
+
+            return `
+                <div class="hype-signal" id="hype-item-${item.id}">
+                    <div class="hype-signal-row">
+                        <div class="hype-signal-info">
+                            <div class="hype-signal-meta">
+                                ${formatTime(item.timestamp)} · <span style="color:${teamColor(safeTeam)}">${safeTeam}</span>
+                            </div>
+                            <div class="hype-signal-name">${safeAuthor}</div>
+                        </div>
+                        <a href="${safeLink}" target="_blank" rel="noopener" class="hype-engage-btn">⚡ GO</a>
+                    </div>
+                    ${canDelete ? `
+                        <div class="hype-signal-footer">
+                            <button onclick="deleteHypeItem(${item.id}, 'signal')">🗑️ Remove</button>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }).join('');
+
+    } catch (e) {
+        container.innerHTML = `
+            <div style="text-align:center; padding:20px; color:#ff4444;">
+                ⚠️ Error
+                <br>
+                <button onclick="loadHypeFeed()" style="margin-top:10px; background:#333; color:#fff; border:none; padding:8px 16px; border-radius:6px; cursor:pointer;">Retry</button>
+            </div>
+        `;
+    }
+}
+
+// ── DELETE HYPE ITEM ──
+async function deleteHypeItem(activityId, type) {
+    if (!confirm('Remove this?')) return;
+
+    const itemEl = document.getElementById(type === 'signal' ? `hype-item-${activityId}` : `idea-${activityId}`);
+    if (itemEl) itemEl.style.opacity = '0.5';
+
+    try {
+        const result = await api('deleteActivity', {
+            activityId: activityId,
+            agentNo: STATE.agentNo,
+            adminKey: STATE.adminSession || ''
+        });
+
+        if (result.success) {
+            if (itemEl) itemEl.remove();
+            showToast('✅ Removed', 'success');
+        } else {
+            throw new Error(result.error);
+        }
+    } catch (e) {
+        if (itemEl) itemEl.style.opacity = '1';
+        showToast('❌ Failed', 'error');
+    }
+}
+
+// ── EXPORTS ──
+window.renderArirangHype = renderArirangHype;
+window.submitHypeLink = submitHypeLink;
+window.submitHypeIdea = submitHypeIdea;
+window.switchHypeTab = switchHypeTab;
+window.loadHypeFeed = loadHypeFeed;
+window.deleteHypeItem = deleteHypeItem;
+
+async function renderArirangVault() {
+    const container = document.getElementById('arirang-vault-content');
+    if (!container) return;
+
+    container.innerHTML = `
+        <div style="text-align:center; padding:40px 20px;">
+            
+            <!-- VAULT ICON -->
+            <div style="font-size:80px; margin-bottom:20px; opacity:0.8;">🔒</div>
+            
+            <!-- TITLE -->
+            <h1 style="color:#ffd700; font-size:24px; margin:0 0 10px 0; letter-spacing:2px;">
+                ARIRANG VAULT
+            </h1>
+            
+            <p style="color:#888; font-size:13px; margin:0 0 30px 0;">
+                Resource Allocation Unit
+            </p>
+            
+            <!-- COMING SOON BOX -->
+            <div style="
+                background: linear-gradient(135deg, rgba(255,215,0,0.1), rgba(0,0,0,0));
+                border: 1px dashed #ffd700;
+                border-radius: 16px;
+                padding: 30px 20px;
+                margin-bottom: 25px;
+            ">
+                <div style="color:#ffd700; font-size:14px; font-weight:bold; margin-bottom:10px;">
+                    🚧 UNDER CONSTRUCTION
+                </div>
+                <p style="color:#aaa; font-size:12px; line-height:1.6; margin:0;">
+                    The Vault will open soon to provide Spotify/Apple Music/YouTube Premium support for agents who need it, so our collective streaming impact becomes even stronger
+                
+                </p>
+            </div>
+            
+            <!-- MISSION STATS -->
+            <div style="
+                background: rgba(255,255,255,0.03);
+                border: 1px solid #333;
+                border-radius: 12px;
+                padding: 20px;
+                margin-bottom: 25px;
+            ">
+                <div style="color:#fff; font-size:13px; font-weight:bold; margin-bottom:15px;">
+                    📊 Current Mission Status
+                </div>
+                <div style="display:flex; justify-content:space-around; text-align:center;">
+                    <div>
+                        <div style="color:#00ff88; font-size:24px; font-weight:bold;">160+</div>
+                        <div style="color:#666; font-size:10px;">AGENTS</div>
+                    </div>
+                    <div>
+                        <div style="color:#7b2cbf; font-size:24px; font-weight:bold;">4</div>
+                        <div style="color:#666; font-size:10px;">TEAMS</div>
+                    </div>
+                    <div>
+                        <div style="color:#ffd700; font-size:24px; font-weight:bold;">∞</div>
+                        <div style="color:#666; font-size:10px;">POTENTIAL</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- WHAT'S COMING -->
+            <div style="text-align:left; padding:15px; background:rgba(0,255,136,0.05); border-radius:10px; margin-bottom:20px;">
+                <div style="color:#00ff88; font-size:11px; font-weight:bold; margin-bottom:8px;">
+                    🎯 VAULT MISSION (Coming Soon)
+                </div>
+                <ul style="color:#aaa; font-size:11px; line-height:1.8; margin:0; padding-left:20px;">
+                    <li>Fund Premium accounts for agents in need</li>
+                    <li>Open and transparent tracking for everyone</li>
+                </ul>
+            </div>
+            
+            <!-- NOTIFY ME -->
+            <div style="
+                background: rgba(123,44,191,0.1);
+                border: 1px solid rgba(123,44,191,0.3);
+                border-radius: 10px;
+                padding: 15px;
+                margin-bottom: 25px;
+            ">
+                <div style="color:#7b2cbf; font-size:12px; margin-bottom:5px;">
+                    💬 Want to help when it launches?
+                </div>
+                <div style="color:#888; font-size:11px;">
+                    Stay active in the mission. We'll announce in the chat!
+                </div>
+            </div>
+            
+            <!-- BACK BUTTON -->
+            <button onclick="loadPage('home')" style="
+                width: 100%;
+                padding: 14px;
+                background: rgba(255,255,255,0.05);
+                border: 1px solid #333;
+                border-radius: 10px;
+                color: #888;
+                font-size: 13px;
+                cursor: pointer;
+                transition: all 0.2s;
+            " onmouseover="this.style.borderColor='#ffd700'; this.style.color='#fff';" 
+               onmouseout="this.style.borderColor='#333'; this.style.color='#888';">
+                ← Return to Mission Control
+            </button>
+            
+            <!-- FOOTER -->
+            <div style="margin-top:30px; color:#444; font-size:10px; line-height:1.6;">
+                Fan-run initiative. Not affiliated with HYBE/BigHit.<br>
+                Streaming manually helps just as much! 💜
+            </div>
+        </div>
+    `;
+}
+
+window.renderArirangVault = renderArirangVault;
 
 // ==================== EXPORTS & INIT ====================
 document.addEventListener('DOMContentLoaded', initApp);
@@ -13273,8 +15253,6 @@ window.scrollToGuideSection = scrollToGuideSection;
 
 // Week confirmation functions
 window.renderWeekConfirmation = renderWeekConfirmation;
-window.adminConfirmAttendance = adminConfirmAttendance;
-window.adminConfirmPolice = adminConfirmPolice;
 window.isTeamEligibleForWin = isTeamEligibleForWin;
 window.getTeamEligibilityStatus = getTeamEligibilityStatus;
 window.getWeekWinner = getWeekWinner;
