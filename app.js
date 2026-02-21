@@ -25,6 +25,33 @@ const CONFIG = {
         'Week 15': '2026-03-15',
         'Week 16': '2026-03-22'
 },
+    // ==================== ROAD TO ARIRANG (UNIFIED MISSION) ====================
+    ROAD_TO_ARIRANG: {
+        enabled: true,
+        startDate: '2026-03-01',
+        endDate: '2026-03-19',
+        schedule: {
+            '2026-03-01': { name: '2 Cool 4 Skool', icon: '🎒' },
+            '2026-03-02': { name: 'O!RUL8,2?', icon: '📢' },
+            '2026-03-03': { name: 'Skool Luv Affair', icon: '📚' },
+            '2026-03-04': { name: 'Dark & Wild', icon: '🎸' },
+            '2026-03-05': { name: 'Wake Up', icon: '⏰' },
+            '2026-03-06': { name: 'HYYH pt.1', icon: '🌸' },
+            '2026-03-07': { name: 'HYYH pt.2', icon: '🦋' },
+            '2026-03-08': { name: 'HYYH: Young Forever', icon: '🎈' },
+            '2026-03-09': { name: 'Youth', icon: '🏃' },
+            '2026-03-10': { name: 'Wings', icon: '🕊️' },
+            '2026-03-11': { name: 'You Never Walk Alone', icon: '☂️' },
+            '2026-03-12': { name: 'Love Yourself: Her', icon: '🌹' },
+            '2026-03-13': { name: 'Face Yourself', icon: '🎭' },
+            '2026-03-14': { name: 'Love Yourself: Tear', icon: '💧' },
+            '2026-03-15': { name: 'Love Yourself: Answer', icon: '💖' },
+            '2026-03-16': { name: 'Map of the Soul: Persona', icon: '💗' },
+            '2026-03-17': { name: 'Map of the Soul: 7', icon: '📐' },
+            '2026-03-18': { name: 'MOTS: 7 ~The Journey~', icon: '🗺️' },
+            '2026-03-19': { name: 'Be + Proof', icon: '💎' }
+        }
+    },
 
     // ==================== BADGE SYSTEM ====================
     BADGE_REPO_URL: 'https://raw.githubusercontent.com/hbot7875-gif/btscomebackmission/main/lvl1badges/',
@@ -140,33 +167,6 @@ ROYAL_BADGES: {
         ALBUM_COVER: "https://raw.githubusercontent.com/hbot7875-gif/btscomebackmission/4f6fef44395ff9ca1609131af105a19db01e4e19/team%20pfps/cover.png"
     }
 };
-// ==================== ROAD TO ARIRANG (UNIFIED MISSION) ====================
-    ROAD_TO_ARIRANG: {
-        enabled: true,
-        startDate: '2026-03-01',
-        endDate: '2026-03-19',
-        schedule: {
-            '2026-03-01': { name: '2 Cool 4 Skool', icon: '🎒' },
-            '2026-03-02': { name: 'O!RUL8,2?', icon: '📢' },
-            '2026-03-03': { name: 'Skool Luv Affair', icon: '📚' },
-            '2026-03-04': { name: 'Dark & Wild', icon: '🎸' },
-            '2026-03-05': { name: 'Wake Up', icon: '⏰' },
-            '2026-03-06': { name: 'HYYH pt.1', icon: '🌸' },
-            '2026-03-07': { name: 'HYYH pt.2', icon: '🦋' },
-            '2026-03-08': { name: 'HYYH: Young Forever', icon: '🎈' },
-            '2026-03-09': { name: 'Youth', icon: '🏃' },
-            '2026-03-10': { name: 'Wings', icon: '🕊️' },
-            '2026-03-11': { name: 'You Never Walk Alone', icon: '☂️' },
-            '2026-03-12': { name: 'Love Yourself: Her', icon: '🌹' },
-            '2026-03-13': { name: 'Face Yourself', icon: '🎭' },
-            '2026-03-14': { name: 'Love Yourself: Tear', icon: '💧' },
-            '2026-03-15': { name: 'Love Yourself: Answer', icon: '💖' },
-            '2026-03-16': { name: 'Map of the Soul: Persona', icon: '💗' },
-            '2026-03-17': { name: 'Map of the Soul: 7', icon: '📐' },
-            '2026-03-18': { name: 'MOTS: 7 ~The Journey~', icon: '🗺️' },
-            '2026-03-19': { name: 'Be + Proof', icon: '💎' }
-        }
-    },
 
 const STREAK_CONFIG = {
     // Activity requirement
