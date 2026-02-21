@@ -15231,42 +15231,71 @@ function renderRoadToArirang(communityTotal = 0) {
     if (now < start || !currentAlbum) return ''; 
 
     // --- DAILY PROGRESS CALCULATION ---
-    // This takes the total and shows progress toward the NEXT 5,000
     const dailyProgress = communityTotal % cfg.dailyTarget; 
     const dailyPct = Math.min(100, (dailyProgress / cfg.dailyTarget) * 100);
 
     return `
-        <div class="rta-hero">
-            <div class="rta-hero-inner">
-                <div class="rta-hero-main">
-                    <div class="rta-logo-box">
-                        <img src="${CONFIG.COMEBACK.BTS_LOGO}" alt="Arirang Logo">
-                    </div>
-                    <div class="rta-details">
-                        <span class="rta-meta">ROAD TO ARIRANG • DAILY FOCUS</span>
-                        <h2 class="rta-title">${currentAlbum.name}</h2>
-                        <div class="rta-target-pill">
-                            🎯 TARGET: ${fmt(dailyProgress)} / ${fmt(cfg.dailyTarget)}
-                        </div>
+    <div class="rta-premium-card">
+        <!-- Main Content Area -->
+        <div class="rta-content">
+            <!-- Left: Visual -->
+            <div class="rta-visual">
+                <div class="rta-album-art">
+                    <img src="${CONFIG.COMEBACK.BTS_LOGO}" alt="Album Cover">
+                </div>
+            </div>
+
+            <!-- Right: Data -->
+            <div class="rta-data">
+                <!-- Header -->
+                <div class="rta-header-row">
+                    <span class="rta-badge">Global Goal</span>
+                    <div class="rta-live-indicator">
+                        <span class="rta-dot"></span> Live
                     </div>
                 </div>
 
-                <div class="rta-progress-area">
-                    <div class="rta-bar-bg">
-                        <div class="rta-bar-fill" style="width: ${dailyPct}%">
-                            <div class="rta-bar-shimmer"></div>
+                <!-- Title -->
+                <div class="rta-title-group">
+                    <h3>${currentAlbum.name}</h3>
+                    <p>Daily Community Focus</p>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="rta-progress-wrapper">
+                    <div class="rta-track-info">
+                        <div>
+                            <span class="rta-stat-label">Current</span><br>
+                            <span class="rta-stat-val">${fmt(dailyProgress)} / ${fmt(cfg.dailyTarget)}</span>
+                        </div>
+                        <div style="text-align: right;">
+                            <span class="rta-percent">${Math.round(dailyPct)}%</span>
                         </div>
                     </div>
-                    <div class="rta-bar-stats">
-                        <span>UNIFIED COMMUNITY STREAMS</span>
-                        <span>${Math.round(dailyPct)}%</span>
+                    
+                    <div class="rta-bar-track">
+                        <div class="rta-bar-fill" style="width: ${dailyPct}%;"></div>
                     </div>
                 </div>
             </div>
-            <div class="rta-footer">
-                <span class="rta-dot"></span> OPERATION IS LIVE • ALL TEAMS SYNCED
+        </div>
+
+        <!-- Footer Stats (Grid) -->
+        <div class="rta-footer">
+            <div class="rta-footer-item">
+                <span class="rta-f-label">Status</span>
+                <span class="rta-f-value text-gold">ACTIVE</span>
+            </div>
+            <div class="rta-footer-item">
+                <span class="rta-f-label">Contribution</span>
+                <span class="rta-f-value">ALL TEAMS</span>
+            </div>
+            <div class="rta-footer-item">
+                <span class="rta-f-label">Reset</span>
+                <span class="rta-f-value text-red">12:00 AM KST</span>
             </div>
         </div>
+    </div>
     `;
 }
 // ==================== EXPORTS & INIT ====================
