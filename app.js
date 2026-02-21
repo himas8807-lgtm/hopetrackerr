@@ -6266,6 +6266,7 @@ async function renderHome() {
                 ${btsCountdownHtml}
                 ${refreshNotice}
                 <div id="streak-widget-container"></div>
+                ${rtaHtml}
                 <div class="card quick-stats-card" style="border-color:${teamColor(team)}40;background:linear-gradient(135deg, ${teamColor(team)}11, var(--bg-card));">
                     <div class="card-body">
                         <div class="quick-header">
