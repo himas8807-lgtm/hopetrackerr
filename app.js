@@ -28,7 +28,7 @@ const CONFIG = {
     // ==================== ROAD TO ARIRANG (UNIFIED MISSION) ====================
     ROAD_TO_ARIRANG: {
         enabled: true,
-        startDate: ''2026-02-20',
+        startDate: '2026-02-20',
         endDate: '2026-03-19',
         schedule: {
             
