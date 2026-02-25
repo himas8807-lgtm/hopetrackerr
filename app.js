@@ -36,7 +36,7 @@ const CONFIG = {
 
         // Date → albums + tracklists (fill/adjust to match your Last.fm naming)
         SCHEDULE: {
-            '2026-02-25': {
+            '2026-02-26': {
                   combined: false,
                   albums: [{
                     name: 'Testing: Proof',
