@@ -36,6 +36,13 @@ const CONFIG = {
 
         // Date → albums + tracklists (fill/adjust to match your Last.fm naming)
         SCHEDULE: {
+            '2026-02-25': {
+                  combined: false,
+                  albums: [{
+                    name: 'Testing: Proof',
+                    tracks: ['Run BTS', 'Yet To Come', 'For Youth']
+               }]
+            },
             '2026-03-01': {
                 combined: false,
                 albums: [{
@@ -6309,7 +6316,12 @@ async function renderHome() {
             api('getWeeklySummary', { week: selectedWeek }), 
             api('getRankings', { week: selectedWeek, limit: 5 }), 
             api('getGoalsProgress', { week: selectedWeek }),
-            (rtaCfg?.ENABLED ? api('getRoadToArirangStatus', { date: todayKST, tracks: todayTracks }) : Promise.resolve(null))
+            (rtaCfg?.ENABLED ? 
+             api('getRoadToArirangStatus', { date: todayKST, tracks: todayTracks }).catch(err => {
+                 console.log("RTA not active for this date yet");
+                 return null;
+             }) : 
+             Promise.resolve(null))
         ]);
          if (summary.lastUpdated) { 
             const teamTime = new Date(summary.lastUpdated).getTime();
