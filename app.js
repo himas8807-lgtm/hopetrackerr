@@ -28,7 +28,7 @@ const CONFIG = {
     // ==================== ROAD TO ARIRANG (COUNTDOWN EVENT) ====================
     ROAD_TO_ARIRANG: {
         ENABLED: true,
-        START_DATE: '2026-02-20',
+        START_DATE: '2026-02-25',
         END_DATE: '2026-03-19',
         DAILY_TARGET: 1000,      // global community goal (streams)
         REQUIRED_STREAMS: 2,     // per-track 2X requirement
