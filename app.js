@@ -15483,44 +15483,42 @@ function computeBombPower(phasesCharged, totalPhases) {
 
 function renderChargingBomb(bombPower, stats, fullyCharged) {
     const pct = stats.percentComplete || 0;
-    const tier = bombPower?.tier || 'dark';
+    
+    // Determine gradient based on % (Dopamine effect)
+    // Dark -> Purple -> Bright Pink/White
+    let gradientClass = 'fill-dim';
+    if(pct > 30) gradientClass = 'fill-energized';
+    if(pct > 80) gradientClass = 'fill-blazing';
     
     return `
         <div class="charging-bomb-display">
-            <!-- Background Glow -->
-            <div class="charge-ambient-glow glow-${tier}"></div>
+            <!-- Background Glow (Pulses) -->
+            <div class="charge-ambient-glow" style="background: radial-gradient(circle, ${pct > 0 ? '#7c3aed' : 'transparent'} 0%, transparent 70%); opacity: ${0.2 + (pct/200)}"></div>
             
-            <!-- THE REALISTIC ARMY BOMB -->
-            <div class="army-bomb bomb-${tier}">
-                
-                <!-- Top Cap (Black) -->
+            <div class="army-bomb">
                 <div class="charge-button"></div>
                 
-                <!-- Glass Sphere -->
                 <div class="charge-sphere">
-                    <!-- Shine Reflection -->
                     <div class="sphere-reflection"></div>
                     
-                    <!-- Liquid Energy Fill -->
+                    <!-- Liquid -->
                     <div class="energy-fill-level" style="height:${pct}%">
-                        <div class="energy-fill-gradient fill-${tier}"></div>
+                        <div class="energy-fill-gradient ${gradientClass}"></div>
                         <div class="energy-fill-surface"></div>
                     </div>
                     
-                    <!-- Optional Particles (Only at high levels) -->
-                    ${pct >= 40 ? `
-                        <div class="charge-particles particles-${tier}">
-                            <span></span><span></span><span></span>
-                        </div>
-                    ` : ''}
+                    <!-- Magic Particles (Always render, CSS handles visibility) -->
+                    ${pct > 10 ? `
+                    <div class="charge-particles">
+                        <span></span><span></span><span></span>
+                    </div>` : ''}
                     
-                    <!-- Frosted Logo Insert -->
-                    <div class="charge-core core-${tier}">
+                    <!-- Logo (Etched) -->
+                    <div class="charge-core">
                         <span class="bts-logo">⟭⟬</span>
                     </div>
                 </div>
                 
-                <!-- Matte Black Handle -->
                 <div class="bomb-handle">
                     <div class="handle-connector"></div>
                     <div class="handle-grip"></div>
@@ -15528,12 +15526,274 @@ function renderChargingBomb(bombPower, stats, fullyCharged) {
                 </div>
             </div>
             
-            <!-- Text Label -->
-            <div class="bomb-power-label label-${tier}">
+            <div class="bomb-power-label">
                 ${fullyCharged ? '💜 FULLY CHARGED' : `⚡ ${pct}% POWER`}
             </div>
         </div>
     `;
+}
+            /* ===== CUTE PRO ARMY BOMB (Magical Version) ===== */
+.arirang-bomb-core { 
+    background: radial-gradient(circle at 50% 30%, #1a1a2e 0%, #0a0a0f 100%); 
+    border: 1px solid rgba(147, 51, 234, 0.2); 
+    overflow: hidden; 
+    position: relative; 
+}
+
+.charging-bomb-display { 
+    position: relative; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    padding: 60px 20px 50px; 
+}
+
+/* Magical Background Glow */
+.charge-ambient-glow { 
+    position: absolute; 
+    width: 300px; 
+    height: 300px; 
+    border-radius: 50%; 
+    filter: blur(60px); 
+    top: 0px; 
+    transition: all 0.5s ease; 
+    z-index: 0;
+    opacity: 0.4;
+}
+
+.army-bomb { 
+    position: relative; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    z-index: 10; 
+    filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5));
+}
+
+/* Red Fuse (Cute Version) */
+.army-bomb::before {
+    content: '';
+    position: absolute;
+    top: -5px;
+    right: 40px;
+    width: 6px;
+    height: 6px;
+    background: #ff4d4d;
+    border-radius: 50%;
+    box-shadow: 0 0 8px #ff4d4d;
+    z-index: 5;
+    animation: fuse-pulse 2s infinite;
+}
+@keyframes fuse-pulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
+
+/* Top Cap */
+.charge-button { 
+    width: 20px; 
+    height: 6px; 
+    background: #222;
+    border-radius: 4px 4px 0 0; 
+    margin-bottom: -1px; 
+    z-index: 4; 
+}
+
+/* GLASS SPHERE (Thick & Shiny) */
+.charge-sphere { 
+    width: 140px; 
+    height: 140px; 
+    border-radius: 50%; 
+    /* Premium Glass Look */
+    background: radial-gradient(circle at 70% 30%, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.02) 50%, rgba(0,0,0,0.2) 100%);
+    border: 1px solid rgba(255,255,255,0.2); 
+    box-shadow: 
+        inset 0 0 20px rgba(255,255,255,0.1), /* Inner thickness */
+        inset 0 -10px 20px rgba(147, 51, 234, 0.2), /* Purple tint at bottom */
+        0 0 20px rgba(147, 51, 234, 0.1); /* Outer faint glow */
+    position: relative; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    overflow: hidden; 
+    z-index: 3;
+    backdrop-filter: blur(0px); /* Crystal clear */
+}
+
+/* Cute Reflection (Heart Shape Option or Round) */
+.sphere-reflection { 
+    position: absolute; 
+    top: 20px; 
+    right: 25px; 
+    width: 30px; 
+    height: 18px; 
+    background: rgba(255,255,255,0.7); 
+    border-radius: 50%; 
+    transform: rotate(45deg); 
+    filter: blur(3px);
+    z-index: 10;
+}
+
+/* LIQUID ENERGY (The Dopamine Part) */
+.energy-fill-level { 
+    position: absolute; 
+    bottom: 0; 
+    left: 0; 
+    right: 0; 
+    width: 100%;
+    /* No border radius needed inside overflow:hidden sphere */
+    transition: height 1.2s cubic-bezier(0.34, 1.56, 0.64, 1); /* Bouncy fill! */
+    z-index: 1;
+}
+
+/* The Magic Liquid Gradient */
+.energy-fill-gradient { 
+    width: 100%; 
+    height: 100%; 
+    /* Galaxy Purple Gradient */
+    background: linear-gradient(to top, #4c1d95 0%, #7c3aed 50%, #c084fc 100%);
+    opacity: 0.8;
+}
+
+/* Bubbles / Sparkles inside liquid */
+.energy-fill-gradient::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image: 
+        radial-gradient(white 1px, transparent 1px),
+        radial-gradient(white 1px, transparent 1px);
+    background-size: 20px 20px;
+    background-position: 0 0, 10px 10px;
+    opacity: 0.3;
+    animation: liquid-sparkle 4s linear infinite;
+}
+@keyframes liquid-sparkle { 0%{background-position:0 0, 10px 10px} 100%{background-position:0 20px, 10px 30px} }
+
+/* Liquid Surface (Wavy Line) */
+.energy-fill-surface { 
+    position: absolute; 
+    top: -2px; 
+    left: -50%; 
+    width: 200%; 
+    height: 10px; 
+    background: rgba(255,255,255,0.4); 
+    border-radius: 50%;
+    animation: surface-bob 3s ease-in-out infinite; 
+    filter: blur(1px);
+}
+@keyframes surface-bob { 
+    0%,100%{transform:translateX(0) rotate(0deg)} 
+    50%{transform:translateX(-10px) rotate(2deg)} 
+}
+
+/* BTS LOGO (Etched Look) */
+.charge-core { 
+    position: relative; 
+    z-index: 5; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+}
+
+.bts-logo { 
+    font-size: 60px; 
+    font-weight: 700; 
+    color: rgba(255,255,255,0.8);
+    /* Blend mode makes it look inside the liquid */
+    mix-blend-mode: overlay; 
+    text-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* PARTICLES (Floating Magic) */
+.charge-particles { 
+    position: absolute; 
+    inset: 0;
+    pointer-events: none;
+    z-index: 2;
+}
+.charge-particles span {
+    position: absolute;
+    width: 4px; 
+    height: 4px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 0 6px #fff;
+    animation: particle-float 3s infinite ease-in;
+    opacity: 0;
+}
+.charge-particles span:nth-child(1) { left: 30%; bottom: 20%; animation-delay: 0s; }
+.charge-particles span:nth-child(2) { right: 30%; bottom: 30%; animation-delay: 1s; }
+.charge-particles span:nth-child(3) { left: 50%; bottom: 40%; animation-delay: 2s; }
+@keyframes particle-float { 
+    0% { transform: translateY(0) scale(0); opacity: 0; }
+    50% { opacity: 1; }
+    100% { transform: translateY(-40px) scale(1.5); opacity: 0; }
+}
+
+/* HANDLE (Smooth Cylinder) */
+.bomb-handle { 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    margin-top: -8px;
+    z-index: 2;
+}
+
+.handle-connector { 
+    width: 40px; 
+    height: 10px; 
+    background: #111; 
+    border-radius: 2px;
+}
+
+.handle-grip { 
+    width: 34px; 
+    height: 130px; 
+    /* Round cylinder effect */
+    background: linear-gradient(90deg, #000, #333 40%, #000); 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center;
+    justify-content: center;
+}
+
+/* Handle Button */
+.handle-grip::after {
+    content: '';
+    width: 12px;
+    height: 20px;
+    background: #111;
+    border: 1px solid #444;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.handle-base { 
+    width: 38px; 
+    height: 8px; 
+    background: #111; 
+    border-radius: 0 0 6px 6px;
+}
+
+/* POWER LABEL */
+.bomb-power-label { 
+    margin-top: 20px; 
+    font-size: 13px; 
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: #a855f7;
+    background: rgba(147, 51, 234, 0.1);
+    padding: 6px 16px;
+    border-radius: 20px;
+    border: 1px solid rgba(147, 51, 234, 0.3);
+    text-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
+}
+
+/* MOBILE FIX */
+@media (max-width: 380px) {
+    .charging-bomb-display {
+        transform: scale(0.8);
+        padding: 20px 0;
+        margin: -20px 0 -30px 0;
+    }
 }
 
 // =============================================
@@ -16382,13 +16642,14 @@ function addArirangStyles() {
     height: 100%;
 }
 
+/* BTS LOGO (Smaller & Etched) */
 .bts-logo { 
-    font-size: 55px; /* Larger to match photo */
-    font-weight: 300; 
-    color: rgba(255,255,255,0.7); /* Frosted white look */
-    text-shadow: 0 0 10px rgba(255,255,255,0.3);
-    /* Make it look 3D */
-    transform: scaleY(1.2); 
+    font-size: 42px; /* Was 60px - Reduced by ~30% */
+    font-weight: 700; 
+    color: rgba(255,255,255,0.85); /* Slightly brighter for visibility */
+    mix-blend-mode: overlay; 
+    text-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    letter-spacing: -2px; /* Tighten the symbol */
 }
 
 /* 5. LIQUID FILL (Charging Effect) */
