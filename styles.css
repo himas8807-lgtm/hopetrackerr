@@ -11700,3 +11700,100 @@ input, textarea, select {
         display: none;
     }
 }
+/* ==================== OPERATION DEFUSE NAV STYLES ==================== */
+
+/* Featured Nav Link (Operation Defuse) */
+.nav-link-featured {
+    background: linear-gradient(135deg, rgba(255, 68, 68, 0.15), rgba(123, 44, 191, 0.15)) !important;
+    border: 1px solid rgba(255, 68, 68, 0.3) !important;
+    animation: defuse-glow 2s ease-in-out infinite;
+}
+
+.nav-link-featured:hover {
+    background: linear-gradient(135deg, rgba(255, 68, 68, 0.25), rgba(123, 44, 191, 0.25)) !important;
+}
+
+.nav-link-featured .nav-icon {
+    animation: bomb-shake 0.5s ease-in-out infinite;
+}
+
+@keyframes defuse-glow {
+    0%, 100% {
+        box-shadow: 0 0 5px rgba(255, 68, 68, 0.2);
+    }
+    50% {
+        box-shadow: 0 0 15px rgba(255, 68, 68, 0.4);
+    }
+}
+
+@keyframes bomb-shake {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-3deg); }
+    75% { transform: rotate(3deg); }
+}
+
+/* Nav Badge Styles */
+.nav-badge {
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-left: auto;
+}
+
+.nav-badge-live {
+    background: #ff4444;
+    color: #fff;
+    animation: badge-pulse 1.5s ease-in-out infinite;
+}
+
+.nav-badge-new {
+    background: #00ff88;
+    color: #000;
+}
+
+.nav-badge-hot {
+    background: #ff9800;
+    color: #000;
+}
+
+@keyframes badge-pulse {
+    0%, 100% { 
+        opacity: 1; 
+        transform: scale(1);
+    }
+    50% { 
+        opacity: 0.7; 
+        transform: scale(1.05);
+    }
+}
+
+/* Operation Defuse Page Loading Placeholder */
+.loading-placeholder {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.bomb-loading-icon {
+    font-size: 60px;
+    animation: bomb-pulse 1s ease-in-out infinite;
+}
+
+@keyframes bomb-pulse {
+    0%, 100% { 
+        transform: scale(1); 
+        filter: drop-shadow(0 0 10px #ff4444);
+    }
+    50% { 
+        transform: scale(1.1); 
+        filter: drop-shadow(0 0 30px #ff4444);
+    }
+}
+
+.loading-placeholder p {
+    color: #888;
+    margin-top: 15px;
+    font-size: 14px;
+}
