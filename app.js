@@ -15280,17 +15280,15 @@ async function renderArirangProtocol() {
         // DEFENSIVE DATA EXTRACTION WITH FALLBACKS
         // =============================================
         
-        // Stats - use defaults if missing
         const stats = data.stats || {
-            phasesCharged: data.wiresDefused || 0,      // Old name fallback
-            phasesMissed: data.wiresFailed || 0,        // Old name fallback
-            totalPhases: data.totalWires || 22,         // Old name fallback
+            phasesCharged: data.wiresDefused || 0,
+            phasesMissed: data.wiresFailed || 0,
+            totalPhases: data.totalWires || 22,
             userQualifiedDays: 0,
             unclaimedRewards: 0,
             percentComplete: 0
         };
         
-        // Normalize old naming to new naming
         if (stats.wiresDefused !== undefined && stats.phasesCharged === undefined) {
             stats.phasesCharged = stats.wiresDefused;
         }
@@ -15301,27 +15299,22 @@ async function renderArirangProtocol() {
             stats.totalPhases = stats.totalWires;
         }
         
-        // Calculate percentComplete if missing
         if (stats.percentComplete === undefined || stats.percentComplete === 0) {
             stats.percentComplete = stats.totalPhases > 0 
                 ? Math.round((stats.phasesCharged / stats.totalPhases) * 100) 
                 : 0;
         }
         
-        // Phases/Wires - normalize naming
         const phases = data.phases || data.wires || [];
         
-        // Normalize phase properties (wire -> phase naming)
         phases.forEach(p => {
             if (p.wireNumber !== undefined && p.phase === undefined) p.phase = p.wireNumber;
             if (p.defused !== undefined && p.charged === undefined) p.charged = p.defused;
             if (p.state === 'defused') p.state = 'charged';
         });
         
-        // Eras - provide default if missing
         const eras = data.eras || {};
         
-        // Today's challenge - normalize
         const todayChallenge = data.todayChallenge || null;
         if (todayChallenge) {
             if (todayChallenge.wireNumber !== undefined && todayChallenge.phase === undefined) {
@@ -15329,7 +15322,6 @@ async function renderArirangProtocol() {
             }
         }
         
-        // Bomb status
         const bombStatus = data.bombStatus || 'CHARGING';
         
         // =============================================
@@ -15337,7 +15329,6 @@ async function renderArirangProtocol() {
         // =============================================
         const bombPower = data.bombPower || computeBombPower(stats.phasesCharged || 0, stats.totalPhases || 22);
         
-        // Other fields
         const timeRemaining = data.timeRemaining || '--';
         const config = data.config || {
             requiredStreams: 2,
@@ -15362,7 +15353,6 @@ async function renderArirangProtocol() {
                 <div class="card-body">
                     <div class="arirang-header-top">
                         <div class="arirang-badge-pill">
-                        
                             <span class="badge-text">SPECIAL OPS</span>
                         </div>
                         <div class="power-level-badge power-${bombPower.tier}">
@@ -15484,16 +15474,14 @@ function computeBombPower(phasesCharged, totalPhases) {
 function renderChargingBomb(bombPower, stats, fullyCharged) {
     const pct = stats.percentComplete || 0;
     
-    // Determine gradient based on % (Dopamine effect)
-    // Dark -> Purple -> Bright Pink/White
     let gradientClass = 'fill-dim';
-    if(pct > 30) gradientClass = 'fill-energized';
-    if(pct > 80) gradientClass = 'fill-blazing';
+    if (pct > 30) gradientClass = 'fill-energized';
+    if (pct > 80) gradientClass = 'fill-blazing';
     
     return `
         <div class="charging-bomb-display">
             <!-- Background Glow (Pulses) -->
-            <div class="charge-ambient-glow" style="background: radial-gradient(circle, ${pct > 0 ? '#7c3aed' : 'transparent'} 0%, transparent 70%); opacity: ${0.2 + (pct/200)}"></div>
+            <div class="charge-ambient-glow" style="background: radial-gradient(circle, ${pct > 0 ? '#7c3aed' : 'transparent'} 0%, transparent 70%); opacity: ${0.2 + (pct / 200)}"></div>
             
             <div class="army-bomb">
                 <div class="charge-button"></div>
@@ -15532,269 +15520,6 @@ function renderChargingBomb(bombPower, stats, fullyCharged) {
         </div>
     `;
 }
-            /* ===== CUTE PRO ARMY BOMB (Magical Version) ===== */
-.arirang-bomb-core { 
-    background: radial-gradient(circle at 50% 30%, #1a1a2e 0%, #0a0a0f 100%); 
-    border: 1px solid rgba(147, 51, 234, 0.2); 
-    overflow: hidden; 
-    position: relative; 
-}
-
-.charging-bomb-display { 
-    position: relative; 
-    display: flex; 
-    flex-direction: column; 
-    align-items: center; 
-    padding: 60px 20px 50px; 
-}
-
-/* Magical Background Glow */
-.charge-ambient-glow { 
-    position: absolute; 
-    width: 300px; 
-    height: 300px; 
-    border-radius: 50%; 
-    filter: blur(60px); 
-    top: 0px; 
-    transition: all 0.5s ease; 
-    z-index: 0;
-    opacity: 0.4;
-}
-
-.army-bomb { 
-    position: relative; 
-    display: flex; 
-    flex-direction: column; 
-    align-items: center; 
-    z-index: 10; 
-    filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5));
-}
-
-/* Red Fuse (Cute Version) */
-.army-bomb::before {
-    content: '';
-    position: absolute;
-    top: -5px;
-    right: 40px;
-    width: 6px;
-    height: 6px;
-    background: #ff4d4d;
-    border-radius: 50%;
-    box-shadow: 0 0 8px #ff4d4d;
-    z-index: 5;
-    animation: fuse-pulse 2s infinite;
-}
-@keyframes fuse-pulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
-
-/* Top Cap */
-.charge-button { 
-    width: 20px; 
-    height: 6px; 
-    background: #222;
-    border-radius: 4px 4px 0 0; 
-    margin-bottom: -1px; 
-    z-index: 4; 
-}
-
-/* GLASS SPHERE (Thick & Shiny) */
-.charge-sphere { 
-    width: 140px; 
-    height: 140px; 
-    border-radius: 50%; 
-    /* Premium Glass Look */
-    background: radial-gradient(circle at 70% 30%, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.02) 50%, rgba(0,0,0,0.2) 100%);
-    border: 1px solid rgba(255,255,255,0.2); 
-    box-shadow: 
-        inset 0 0 20px rgba(255,255,255,0.1), /* Inner thickness */
-        inset 0 -10px 20px rgba(147, 51, 234, 0.2), /* Purple tint at bottom */
-        0 0 20px rgba(147, 51, 234, 0.1); /* Outer faint glow */
-    position: relative; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    overflow: hidden; 
-    z-index: 3;
-    backdrop-filter: blur(0px); /* Crystal clear */
-}
-
-/* Cute Reflection (Heart Shape Option or Round) */
-.sphere-reflection { 
-    position: absolute; 
-    top: 20px; 
-    right: 25px; 
-    width: 30px; 
-    height: 18px; 
-    background: rgba(255,255,255,0.7); 
-    border-radius: 50%; 
-    transform: rotate(45deg); 
-    filter: blur(3px);
-    z-index: 10;
-}
-
-/* LIQUID ENERGY (The Dopamine Part) */
-.energy-fill-level { 
-    position: absolute; 
-    bottom: 0; 
-    left: 0; 
-    right: 0; 
-    width: 100%;
-    /* No border radius needed inside overflow:hidden sphere */
-    transition: height 1.2s cubic-bezier(0.34, 1.56, 0.64, 1); /* Bouncy fill! */
-    z-index: 1;
-}
-
-/* The Magic Liquid Gradient */
-.energy-fill-gradient { 
-    width: 100%; 
-    height: 100%; 
-    /* Galaxy Purple Gradient */
-    background: linear-gradient(to top, #4c1d95 0%, #7c3aed 50%, #c084fc 100%);
-    opacity: 0.8;
-}
-
-/* Bubbles / Sparkles inside liquid */
-.energy-fill-gradient::after {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background-image: 
-        radial-gradient(white 1px, transparent 1px),
-        radial-gradient(white 1px, transparent 1px);
-    background-size: 20px 20px;
-    background-position: 0 0, 10px 10px;
-    opacity: 0.3;
-    animation: liquid-sparkle 4s linear infinite;
-}
-@keyframes liquid-sparkle { 0%{background-position:0 0, 10px 10px} 100%{background-position:0 20px, 10px 30px} }
-
-/* Liquid Surface (Wavy Line) */
-.energy-fill-surface { 
-    position: absolute; 
-    top: -2px; 
-    left: -50%; 
-    width: 200%; 
-    height: 10px; 
-    background: rgba(255,255,255,0.4); 
-    border-radius: 50%;
-    animation: surface-bob 3s ease-in-out infinite; 
-    filter: blur(1px);
-}
-@keyframes surface-bob { 
-    0%,100%{transform:translateX(0) rotate(0deg)} 
-    50%{transform:translateX(-10px) rotate(2deg)} 
-}
-
-/* BTS LOGO (Etched Look) */
-.charge-core { 
-    position: relative; 
-    z-index: 5; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-}
-
-.bts-logo { 
-    font-size: 60px; 
-    font-weight: 700; 
-    color: rgba(255,255,255,0.8);
-    /* Blend mode makes it look inside the liquid */
-    mix-blend-mode: overlay; 
-    text-shadow: 0 2px 5px rgba(0,0,0,0.2);
-}
-
-/* PARTICLES (Floating Magic) */
-.charge-particles { 
-    position: absolute; 
-    inset: 0;
-    pointer-events: none;
-    z-index: 2;
-}
-.charge-particles span {
-    position: absolute;
-    width: 4px; 
-    height: 4px;
-    background: #fff;
-    border-radius: 50%;
-    box-shadow: 0 0 6px #fff;
-    animation: particle-float 3s infinite ease-in;
-    opacity: 0;
-}
-.charge-particles span:nth-child(1) { left: 30%; bottom: 20%; animation-delay: 0s; }
-.charge-particles span:nth-child(2) { right: 30%; bottom: 30%; animation-delay: 1s; }
-.charge-particles span:nth-child(3) { left: 50%; bottom: 40%; animation-delay: 2s; }
-@keyframes particle-float { 
-    0% { transform: translateY(0) scale(0); opacity: 0; }
-    50% { opacity: 1; }
-    100% { transform: translateY(-40px) scale(1.5); opacity: 0; }
-}
-
-/* HANDLE (Smooth Cylinder) */
-.bomb-handle { 
-    display: flex; 
-    flex-direction: column; 
-    align-items: center; 
-    margin-top: -8px;
-    z-index: 2;
-}
-
-.handle-connector { 
-    width: 40px; 
-    height: 10px; 
-    background: #111; 
-    border-radius: 2px;
-}
-
-.handle-grip { 
-    width: 34px; 
-    height: 130px; 
-    /* Round cylinder effect */
-    background: linear-gradient(90deg, #000, #333 40%, #000); 
-    display: flex; 
-    flex-direction: column; 
-    align-items: center;
-    justify-content: center;
-}
-
-/* Handle Button */
-.handle-grip::after {
-    content: '';
-    width: 12px;
-    height: 20px;
-    background: #111;
-    border: 1px solid #444;
-    border-radius: 10px;
-    margin-bottom: 20px;
-}
-
-.handle-base { 
-    width: 38px; 
-    height: 8px; 
-    background: #111; 
-    border-radius: 0 0 6px 6px;
-}
-
-/* POWER LABEL */
-.bomb-power-label { 
-    margin-top: 20px; 
-    font-size: 13px; 
-    font-weight: 700;
-    letter-spacing: 1.5px;
-    color: #a855f7;
-    background: rgba(147, 51, 234, 0.1);
-    padding: 6px 16px;
-    border-radius: 20px;
-    border: 1px solid rgba(147, 51, 234, 0.3);
-    text-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
-}
-
-/* MOBILE FIX */
-@media (max-width: 380px) {
-    .charging-bomb-display {
-        transform: scale(0.8);
-        padding: 20px 0;
-        margin: -20px 0 -30px 0;
-    }
-}
 
 // =============================================
 // ERA TIMELINE
@@ -15820,7 +15545,7 @@ function renderEraTimeline(phases, eras, currentEra) {
                     else if (isActive) stateClass = 'era-active';
                     else {
                         const eraPhases = (eraData.phases || []);
-                        const anyPast = phases.some((p)  => eraPhases.includes(p.phase) && (p.state === 'charged' || p.state === 'missed' || p.state === 'active'));
+                        const anyPast = phases.some((p) => eraPhases.includes(p.phase) && (p.state === 'charged' || p.state === 'missed' || p.state === 'active'));
                         if (anyPast) stateClass = 'era-partial';
                     }
                     
@@ -16302,7 +16027,7 @@ async function showArirangLeaderboard() {
                 <div class="lb-body">
                     ${data.leaderboard?.length > 0 ? data.leaderboard.map((agent, i) => `
                         <div class="lb-entry" style="--team-color:${teamColor(agent.team)}">
-                            <span class="lb-rank ${i < 3 ? 'top' + (i+1) : ''}">${i + 1}</span>
+                            <span class="lb-rank ${i < 3 ? 'top' + (i + 1) : ''}">${i + 1}</span>
                             <div class="lb-info">
                                 <span class="lb-name">${sanitize(agent.name)}</span>
                                 <span class="lb-team">${agent.team}</span>
@@ -16427,7 +16152,6 @@ function showArirangHelp() {
 // =============================================
 
 function renderArirangHomeWidget(data) {
-    // data can be pre-fetched or we show a static widget
     const pct = data?.stats?.percentComplete || 0;
     const nextAlbum = data?.nextPhase?.albums?.[0] || 'Loading...';
     const phasesCharged = data?.stats?.phasesCharged || 0;
@@ -16456,6 +16180,11 @@ function renderArirangHomeWidget(data) {
         </div>
     `;
 }
+
+// =============================================
+// STYLES (Injected once)
+// =============================================
+
 function addArirangStyles() {
     if (document.getElementById('arirang-styles')) return;
     
@@ -16474,8 +16203,6 @@ function addArirangStyles() {
         }
         .loading-handle-charge { width:20px; height:30px; background:linear-gradient(180deg,#333,#1a1a1a); border-radius:0 0 6px 6px; margin-top:-5px; }
         @keyframes loading-pulse { 0%,100%{transform:scale(1);box-shadow:0 0 20px rgba(147,51,234,0.3)} 50%{transform:scale(1.05);box-shadow:0 0 40px rgba(147,51,234,0.5)} }
-        
-        /* Reuse existing mini-army-bomb styles */
         
         /* ===== GUIDE ===== */
         .arirang-guide { background:rgba(147,51,234,0.05); border:1px solid rgba(147,51,234,0.15); border-left:3px solid #9333ea; }
@@ -16539,228 +16266,259 @@ function addArirangStyles() {
         .power-bar-label { font-size:11px; color:#666; margin-top:8px; }
         
         /* ===== REALISTIC ARMY BOMB (MOTS EDITION) ===== */
-.arirang-bomb-core { background: #050508; border: 1px solid #1a1a24; overflow: hidden; position: relative; }
+        .arirang-bomb-core { background: #050508; border: 1px solid #1a1a24; overflow: hidden; position: relative; }
 
-.charging-bomb-display { 
-    position: relative; 
-    display: flex; 
-    flex-direction: column; 
-    align-items: center; 
-    padding: 50px 20px 40px; 
-}
+        .charging-bomb-display { 
+            position: relative; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            padding: 50px 20px 40px; 
+        }
 
-/* Ambient Glow (Background) */
-.charge-ambient-glow { 
-    position: absolute; 
-    width: 250px; 
-    height: 250px; 
-    border-radius: 50%; 
-    filter: blur(80px); 
-    top: 20px; 
-    transition: all 0.5s ease; 
-    z-index: 0;
-}
+        .charge-ambient-glow { 
+            position: absolute; 
+            width: 250px; 
+            height: 250px; 
+            border-radius: 50%; 
+            filter: blur(80px); 
+            top: 20px; 
+            transition: all 0.5s ease; 
+            z-index: 0;
+        }
 
-/* THE BOMB CONTAINER */
-.army-bomb { 
-    position: relative; 
-    display: flex; 
-    flex-direction: column; 
-    align-items: center; 
-    z-index: 10; 
-}
+        .army-bomb { 
+            position: relative; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            z-index: 10; 
+        }
 
-/* 1. THE RED FUSE (The small red dot on top) */
-.army-bomb::before {
-    content: '';
-    position: absolute;
-    top: -6px;
-    right: 38px; /* Offset to side like real bomb */
-    width: 8px;
-    height: 6px;
-    background: #ef4444; /* The Red Fuse */
-    border-radius: 2px;
-    box-shadow: 0 0 5px rgba(239, 68, 68, 0.8);
-    z-index: 5;
-}
+        .army-bomb::before {
+            content: '';
+            position: absolute;
+            top: -6px;
+            right: 38px;
+            width: 8px;
+            height: 6px;
+            background: #ef4444;
+            border-radius: 2px;
+            box-shadow: 0 0 5px rgba(239, 68, 68, 0.8);
+            z-index: 5;
+        }
 
-/* 2. THE BLACK CAP (Top of sphere) */
-.charge-button { 
-    width: 24px; 
-    height: 8px; 
-    background: #1a1a1a;
-    border-radius: 4px 4px 0 0; 
-    position: relative; 
-    margin-bottom: -2px; 
-    z-index: 4; 
-    box-shadow: inset 0 2px 2px rgba(255,255,255,0.1);
-}
+        @keyframes fuse-pulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
 
-/* 3. THE GLASS SPHERE */
-.charge-sphere { 
-    width: 130px; 
-    height: 130px; 
-    border-radius: 50%; 
-    /* Glass Effect */
-    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 40%, rgba(255,255,255,0.01) 60%, rgba(0,0,0,0.3) 100%);
-    border: 1px solid rgba(255,255,255,0.15); 
-    box-shadow: 
-        inset 0 10px 20px rgba(255,255,255,0.1), /* Top shine */
-        inset 0 -10px 30px rgba(0,0,0,0.6),      /* Bottom shadow */
-        0 0 15px rgba(255,255,255,0.05);         /* Outer glow */
-    position: relative; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    overflow: hidden; 
-    z-index: 3;
-    backdrop-filter: blur(1px);
-}
+        .charge-button { 
+            width: 24px; 
+            height: 8px; 
+            background: #1a1a1a;
+            border-radius: 4px 4px 0 0; 
+            position: relative; 
+            margin-bottom: -2px; 
+            z-index: 4; 
+            box-shadow: inset 0 2px 2px rgba(255,255,255,0.1);
+        }
 
-/* Sphere Reflection (The shiny glare) */
-.sphere-reflection { 
-    position: absolute; 
-    top: 15px; 
-    right: 20px; 
-    width: 25px; 
-    height: 15px; 
-    background: rgba(255,255,255,0.4); 
-    border-radius: 50%; 
-    transform: rotate(45deg); 
-    filter: blur(2px);
-    z-index: 10;
-}
+        .charge-sphere { 
+            width: 130px; 
+            height: 130px; 
+            border-radius: 50%; 
+            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 40%, rgba(255,255,255,0.01) 60%, rgba(0,0,0,0.3) 100%);
+            border: 1px solid rgba(255,255,255,0.15); 
+            box-shadow: 
+                inset 0 10px 20px rgba(255,255,255,0.1),
+                inset 0 -10px 30px rgba(0,0,0,0.6),
+                0 0 15px rgba(255,255,255,0.05);
+            position: relative; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            overflow: hidden; 
+            z-index: 3;
+            backdrop-filter: blur(1px);
+        }
 
-/* 4. THE BTS LOGO (Frosted Insert) */
-.charge-core { 
-    position: relative; 
-    z-index: 5; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    width: 100%;
-    height: 100%;
-}
+        .sphere-reflection { 
+            position: absolute; 
+            top: 15px; 
+            right: 20px; 
+            width: 25px; 
+            height: 15px; 
+            background: rgba(255,255,255,0.4); 
+            border-radius: 50%; 
+            transform: rotate(45deg); 
+            filter: blur(2px);
+            z-index: 10;
+        }
 
-/* BTS LOGO (Smaller & Etched) */
-.bts-logo { 
-    font-size: 42px; /* Was 60px - Reduced by ~30% */
-    font-weight: 700; 
-    color: rgba(255,255,255,0.85); /* Slightly brighter for visibility */
-    mix-blend-mode: overlay; 
-    text-shadow: 0 2px 5px rgba(0,0,0,0.3);
-    letter-spacing: -2px; /* Tighten the symbol */
-}
+        .charge-core { 
+            position: relative; 
+            z-index: 5; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            width: 100%;
+            height: 100%;
+        }
 
-/* 5. LIQUID FILL (Charging Effect) */
-.energy-fill-level { 
-    position: absolute; 
-    bottom: 0; 
-    left: 0; 
-    right: 0; 
-    width: 100%;
-    border-radius: 0 0 130px 130px; /* Match sphere curve */
-    overflow: hidden; 
-    transition: height 1s cubic-bezier(0.4, 0, 0.2, 1); 
-    z-index: 1; /* Behind logo */
-    opacity: 0.9;
-}
+        .bts-logo { 
+            font-size: 42px;
+            font-weight: 700; 
+            color: rgba(255,255,255,0.85);
+            mix-blend-mode: overlay; 
+            text-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            letter-spacing: -2px;
+            -webkit-font-smoothing: antialiased;
+        }
 
-.energy-fill-surface { 
-    position: absolute; 
-    top: 0; 
-    left: 0; 
-    right: 0; 
-    height: 5px; 
-    background: rgba(255,255,255,0.6); 
-    box-shadow: 0 0 10px rgba(255,255,255,0.8);
-    animation: surface-wave 3s ease-in-out infinite; 
-}
+        .energy-fill-level { 
+            position: absolute; 
+            bottom: 0; 
+            left: 0; 
+            right: 0; 
+            width: 100%;
+            border-radius: 0 0 130px 130px;
+            overflow: hidden; 
+            transition: height 1s cubic-bezier(0.4, 0, 0.2, 1); 
+            z-index: 1;
+            opacity: 0.9;
+        }
 
-/* 6. THE HANDLE (Matte Black) */
-.bomb-handle { 
-    display: flex; 
-    flex-direction: column; 
-    align-items: center; 
-    margin-top: -5px; /* Connect tightly to sphere */
-    z-index: 2;
-}
+        .energy-fill-gradient { 
+            width: 100%; 
+            height: 100%; 
+            background: linear-gradient(to top, #4c1d95 0%, #7c3aed 50%, #c084fc 100%);
+            opacity: 0.8;
+        }
 
-/* The Neck Ring */
-.handle-connector { 
-    width: 44px; 
-    height: 12px; 
-    background: #0f0f0f; 
-    border-radius: 2px;
-    border-top: 1px solid #333;
-    box-shadow: inset 0 -2px 5px rgba(0,0,0,0.8);
-}
+        .energy-fill-gradient::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: 
+                radial-gradient(white 1px, transparent 1px),
+                radial-gradient(white 1px, transparent 1px);
+            background-size: 20px 20px;
+            background-position: 0 0, 10px 10px;
+            opacity: 0.3;
+            animation: liquid-sparkle 4s linear infinite;
+        }
+        @keyframes liquid-sparkle { 0%{background-position:0 0, 10px 10px} 100%{background-position:0 20px, 10px 30px} }
 
-/* The Main Grip */
-.handle-grip { 
-    width: 32px; 
-    height: 140px; /* Longer handle */
-    background: linear-gradient(90deg, #1a1a1a, #2a2a2a 40%, #111); /* Matte cylinder look */
-    display: flex; 
-    flex-direction: column; 
-    align-items: center;
-    position: relative;
-}
+        .energy-fill-surface { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            right: 0; 
+            height: 5px; 
+            background: rgba(255,255,255,0.6); 
+            box-shadow: 0 0 10px rgba(255,255,255,0.8);
+            animation: surface-wave 3s ease-in-out infinite; 
+        }
+        @keyframes surface-wave { 
+            0%,100%{transform:translateX(0) scaleY(1)} 
+            50%{transform:translateX(-5px) scaleY(1.3)} 
+        }
 
-/* The Switch (Button on Handle) */
-.handle-grip::after {
-    content: '';
-    position: absolute;
-    top: 20px;
-    width: 14px;
-    height: 24px;
-    background: #000;
-    border: 1px solid #333;
-    border-radius: 10px; /* Pill shape button */
-    box-shadow: 0 2px 0 rgba(255,255,255,0.05);
-}
+        .charge-particles { 
+            position: absolute; 
+            inset: 0;
+            pointer-events: none;
+            z-index: 2;
+        }
+        .charge-particles span {
+            position: absolute;
+            width: 4px; 
+            height: 4px;
+            background: #fff;
+            border-radius: 50%;
+            box-shadow: 0 0 6px #fff;
+            animation: particle-float 3s infinite ease-in;
+            opacity: 0;
+        }
+        .charge-particles span:nth-child(1) { left: 30%; bottom: 20%; animation-delay: 0s; }
+        .charge-particles span:nth-child(2) { right: 30%; bottom: 30%; animation-delay: 1s; }
+        .charge-particles span:nth-child(3) { left: 50%; bottom: 40%; animation-delay: 2s; }
+        @keyframes particle-float { 
+            0% { transform: translateY(0) scale(0); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translateY(-40px) scale(1.5); opacity: 0; }
+        }
 
-/* Handle Base Flare */
-.handle-base { 
-    width: 36px; 
-    height: 10px; 
-    background: #111; 
-    border-radius: 0 0 4px 4px;
-    margin-top: -2px;
-}
+        .bomb-handle { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            margin-top: -5px;
+            z-index: 2;
+        }
 
-/* ===== COLOR STATES (Applying to the Fill & Glow) ===== */
+        .handle-connector { 
+            width: 44px; 
+            height: 12px; 
+            background: #0f0f0f; 
+            border-radius: 2px;
+            border-top: 1px solid #333;
+            box-shadow: inset 0 -2px 5px rgba(0,0,0,0.8);
+        }
 
-/* Fill Gradients */
-.fill-dim .energy-fill-gradient { background: linear-gradient(to top, #312e81, #4338ca); }
-.fill-flickering .energy-fill-gradient { background: linear-gradient(to top, #4338ca, #6366f1); }
-.fill-warming .energy-fill-gradient { background: linear-gradient(to top, #4f46e5, #818cf8); }
-.fill-energized .energy-fill-gradient { background: linear-gradient(to top, #7c3aed, #a855f7); }
-.fill-blazing .energy-fill-gradient { background: linear-gradient(to top, #9333ea, #c084fc); }
-.fill-fully-charged .energy-fill-gradient { background: linear-gradient(to top, #a855f7, #e879f9, #fff); }
+        .handle-grip { 
+            width: 32px; 
+            height: 140px;
+            background: linear-gradient(90deg, #1a1a1a, #2a2a2a 40%, #111);
+            display: flex; 
+            flex-direction: column; 
+            align-items: center;
+            position: relative;
+        }
 
-/* Glow Colors */
-.glow-dim { background: #3730a3; opacity: 0.1; }
-.glow-flickering { background: #4f46e5; opacity: 0.2; }
-.glow-warming { background: #6366f1; opacity: 0.3; }
-.glow-energized { background: #a855f7; opacity: 0.5; }
-.glow-blazing { background: #c084fc; opacity: 0.7; }
-.glow-fully-charged { background: #e879f9; opacity: 0.9; }
+        .handle-grip::after {
+            content: '';
+            position: absolute;
+            top: 20px;
+            width: 14px;
+            height: 24px;
+            background: #000;
+            border: 1px solid #333;
+            border-radius: 10px;
+            box-shadow: 0 2px 0 rgba(255,255,255,0.05);
+        }
 
-/* Logo Glow (When Charged) */
-.core-fully-charged .bts-logo { 
-    color: #fff;
-    text-shadow: 0 0 15px #e879f9, 0 0 30px #a855f7;
-}
+        .handle-base { 
+            width: 36px; 
+            height: 10px; 
+            background: #111; 
+            border-radius: 0 0 4px 4px;
+            margin-top: -2px;
+        }
 
-/* Text Label */
-.bomb-power-label { 
-    margin-top: 15px; 
-    font-family: 'Orbitron', sans-serif;
-    font-size: 14px; 
-    letter-spacing: 1px;
-}
-.label-fully-charged { color: #e879f9; text-shadow: 0 0 10px rgba(232,121,249,0.5); }
+        /* Fill color states */
+        .fill-dim .energy-fill-gradient { background: linear-gradient(to top, #312e81, #4338ca); }
+        .fill-flickering .energy-fill-gradient { background: linear-gradient(to top, #4338ca, #6366f1); }
+        .fill-warming .energy-fill-gradient { background: linear-gradient(to top, #4f46e5, #818cf8); }
+        .fill-energized .energy-fill-gradient { background: linear-gradient(to top, #7c3aed, #a855f7); }
+        .fill-blazing .energy-fill-gradient { background: linear-gradient(to top, #9333ea, #c084fc); }
+        .fill-fully-charged .energy-fill-gradient { background: linear-gradient(to top, #a855f7, #e879f9, #fff); }
+
+        .core-fully-charged .bts-logo { 
+            color: #fff;
+            text-shadow: 0 0 15px #e879f9, 0 0 30px #a855f7;
+        }
+
+        .bomb-power-label { 
+            margin-top: 15px; 
+            font-size: 13px; 
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            color: #a855f7;
+            background: rgba(147, 51, 234, 0.1);
+            padding: 6px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(147, 51, 234, 0.3);
+            text-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
+        }
         
         /* ===== ERA TIMELINE ===== */
         .era-timeline { margin-top:25px; padding-top:25px; border-top:1px solid #1a1a24; }
@@ -17018,7 +16776,18 @@ function addArirangStyles() {
         .lb-empty span { font-size:32px; display:block; margin-bottom:10px; }
         
         /* ===== RESPONSIVE ===== */
-        @media (max-width:360px) {
+        @media (max-width:380px) {
+            .charging-bomb-display {
+                transform: scale(0.85);
+                transform-origin: center top;
+                padding: 40px 10px 10px;
+                margin-bottom: -40px;
+            }
+            .charge-ambient-glow {
+                width: 200px;
+                height: 200px;
+                filter: blur(60px);
+            }
             .charge-sphere { width:90px; height:90px; }
             .power-stats-grid { gap:8px; }
             .power-stat { padding:8px 12px; }
@@ -17033,35 +16802,11 @@ function addArirangStyles() {
         @media (prefers-reduced-motion:reduce) {
             .wire-flow { animation:none; display:none; }
             .charge-sparks span { animation:none; display:none; }
-            .charge-ring { animation:none; }
             .charge-particles span { animation:none; }
             .charge-ambient-glow { animation:none; }
             .charge-wire.wire-live { animation:none; }
             .power-bar-shimmer { animation:none; display:none; }
         }
-        /* ==================== MOBILE OPTIMIZATION ==================== */
-@media (max-width: 380px) {
-    /* Scale the whole bomb down 15% on small screens so it fits nicely */
-    .charging-bomb-display {
-        transform: scale(0.85);
-        transform-origin: center top;
-        padding: 40px 10px 10px; /* Reduce padding */
-        margin-bottom: -40px;    /* Pull content below it up */
-    }
-
-    /* Adjust the background glow so it doesn't overflow screen */
-    .charge-ambient-glow {
-        width: 200px;
-        height: 200px;
-        filter: blur(60px);
-    }
-}
-
-/* Fix for High-DPI Mobile Screens (Sharper Text) */
-.bts-logo {
-    -webkit-font-smoothing: antialiased;
-}
-        
     `;
     
     document.head.appendChild(style);
