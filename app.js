@@ -15268,9 +15268,7 @@ async function renderOperationDefuse() {
         const bombVisualStatus = getBombVisualStatus(stats, bombStatus);
         container.innerHTML = `
           ${renderHobiHelpButton()} 
-        
-        container.innerHTML = `
-            ${renderDefuseGuide()}
+          ${renderDefuseGuide()}
             
             <!-- MISSION BRIEFING HEADER -->
             <div class="card defuse-briefing">
