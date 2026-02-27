@@ -6216,6 +6216,7 @@ if (btn) {
 }
 // ==================== START APP ====================
 document.addEventListener('DOMContentLoaded', initApp);
+
 async function renderHome() {
     const selectedWeek = STATE.week;
     const weekEl = $('current-week');
@@ -6228,7 +6229,9 @@ async function renderHome() {
     }
 
     const btsCountdownHtml = (typeof renderBTSCountdown === 'function') ? renderBTSCountdown() : '';
-    const defuseWidget = ${CONFIG.OPERATION_DEFUSE?.ENABLED ? renderDefuseHomeWidget() : ''}
+    
+    // ✅ FIXED: Removed invalid ${} wrapper - use plain ternary expression
+    const defuseWidget = CONFIG.OPERATION_DEFUSE?.ENABLED ? renderDefuseHomeWidget() : '';
     
     const refreshNotice = `
         <div style="
@@ -6250,10 +6253,10 @@ async function renderHome() {
             api('getRankings', { week: selectedWeek, limit: 5 }), 
             api('getGoalsProgress', { week: selectedWeek })
         ]);
-         if (summary.lastUpdated) { 
+        
+        if (summary.lastUpdated) { 
             const teamTime = new Date(summary.lastUpdated).getTime();
             const agentTime = STATE.lastUpdated ? new Date(STATE.lastUpdated).getTime() : 0;
-            
             
             if (teamTime > agentTime) {
                 STATE.lastUpdated = summary.lastUpdated; 
@@ -6323,6 +6326,7 @@ async function renderHome() {
         const teamTracks = allTeamTracks[team] || [];
         const tracksCompleted2x = teamTracks.filter(t => (album2xStatus.tracks?.[t]?.count || album2xStatus.tracks?.[t] || 0) >= (CONFIG.ALBUM_CHALLENGE.REQUIRED_STREAMS || 2)).length;
         const isActuallyComplete = teamTracks.length > 0 && tracksCompleted2x === teamTracks.length;
+        
         const trackGoalsList = Object.entries(trackGoals).map(([trackName, info]) => {
             const tp = info.teams?.[team] || {};
             return { name: trackName, current: tp.current || 0, goal: info.goal || 0, done: tp.status === 'Completed' || (tp.current || 0) >= (info.goal || 0) };
@@ -6472,9 +6476,13 @@ async function renderHome() {
     } catch (e) { 
         console.error('Error rendering home:', e); 
         const topAgentsEl = document.getElementById('home-top-agents');
-        if (topAgentsEl) topAgentsEl.innerHTML = '<p class="error-text" style="text-align:center;">Failed to load data. Tap to retry.</p><div style="text-align:center;"><button class="btn-sm btn-secondary" onclick="renderHome()">Retry</button></div>';
+        if (topAgentsEl) {
+            topAgentsEl.innerHTML = '<p class="error-text" style="text-align:center;">Failed to load data. Tap to retry.</p><div style="text-align:center;"><button class="btn-sm btn-secondary" onclick="renderHome()">Retry</button></div>';
+        }
         const standingsEl = document.getElementById('home-standings');
-        if (standingsEl) standingsEl.innerHTML = '<p class="error-text" style="text-align:center;">Failed to load standings.</p>';
+        if (standingsEl) {
+            standingsEl.innerHTML = '<p class="error-text" style="text-align:center;">Failed to load standings.</p>';
+        }
         showToast('Failed to load home data', 'error'); 
     }
 }
