@@ -13148,3 +13148,157 @@ input, textarea, select {
 #arirang-home-widget-container:empty {
     display: none;
 }
+/* ===== SIMPLE DUAL CHARGE STATUS ===== */
+.dual-charge-simple {
+    display: flex;
+    gap: 10px;
+    margin: 15px 0;
+}
+
+.charge-item {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: rgba(255,255,255,0.02);
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+.charge-item.charge-done {
+    background: rgba(34,197,94,0.08);
+    border-color: rgba(34,197,94,0.2);
+}
+
+.charge-letter {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: rgba(147,51,234,0.2);
+    color: #a855f7;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.charge-item.charge-done .charge-letter {
+    background: rgba(34,197,94,0.2);
+    color: #22c55e;
+}
+
+.charge-label {
+    flex: 1;
+    font-size: 11px;
+    color: #888;
+}
+
+.charge-status {
+    font-size: 11px;
+    font-weight: 600;
+    color: #666;
+}
+
+.charge-item.charge-done .charge-status {
+    color: #22c55e;
+}
+
+/* ===== CHARGE PROGRESS BARS ===== */
+.charge-progress-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.cpb-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.cpb-label {
+    width: 50px;
+    font-size: 10px;
+    color: #666;
+}
+
+.cpb-track {
+    flex: 1;
+    height: 4px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.cpb-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #7c3aed, #a855f7);
+    border-radius: 10px;
+    transition: width 0.5s ease;
+}
+
+.cpb-fill.cpb-team {
+    background: linear-gradient(90deg, #4f46e5, #6366f1);
+}
+
+.cpb-fill.cpb-done {
+    background: linear-gradient(90deg, #16a34a, #22c55e);
+}
+
+/* ===== SIMPLE LEADERBOARD ===== */
+.lb-simple {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.lb-row {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    gap: 10px;
+}
+
+.lb-row:last-child {
+    border-bottom: none;
+}
+
+.lb-rank {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #222;
+    color: #888;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.lb-rank.top {
+    background: #fbbf24;
+    color: #000;
+}
+
+.lb-name {
+    flex: 1;
+    font-size: 12px;
+    color: #fff;
+    font-weight: 500;
+}
+
+.lb-team {
+    font-size: 10px;
+    color: #888;
+}
+
+.lb-score {
+    font-size: 12px;
+    color: #22c55e;
+    font-weight: 600;
+}
