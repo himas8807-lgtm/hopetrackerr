@@ -15228,211 +15228,583 @@ async function renderArirangVault() {
 
 window.renderArirangVault = renderArirangVault;
 // =============================================
-// RENDER OPERATION DEFUSE PAGE
+// OPERATION DEFUSE: BTS ARMY BOMB VISUAL
 // =============================================
+
 async function renderOperationDefuse() {
-    const container = $('arirang-road-content') || $('operation-defuse-content');
+    const container = $('operation-defuse-content');
     if (!container) return;
     
-    // 1. Show initial loading state (No variables used yet)
     container.innerHTML = `
-        <div style="text-align:center;padding:60px 20px;">
-            <div class="bomb-loading">💣</div>
-            <p style="color:#888;margin-top:15px;">Accessing Bomb Defusal Unit...</p>
+        <div class="defuse-loading">
+            <div class="loading-bomb">
+                <div class="loading-sphere"></div>
+                <div class="loading-handle"></div>
+            </div>
+            <p>Establishing secure connection...</p>
         </div>
     `;
     
     try {
-        // 2. Fetch the data from Backend
         const data = await api('getDefuseStatus', { agentNo: STATE.agentNo });
         
         if (!data.success) {
             container.innerHTML = `
                 <div class="card" style="text-align:center;padding:40px;">
-                    <div style="font-size:48px;margin-bottom:15px;">🔒</div>
-                    <h3 style="color:#ff6b6b;">Operation Not Active</h3>
-                    <p style="color:#888;">${data.error || 'Check back when the mission begins!'}</p>
+                    <div class="mini-army-bomb inactive">
+                        <div class="mini-sphere"><span>⟭⟬</span></div>
+                        <div class="mini-handle"></div>
+                    </div>
+                    <h3 style="color:#7b2cbf;margin-top:20px;">Operation Classified</h3>
+                    <p style="color:#888;font-size:13px;">${data.error || 'Mission will commence soon. Stand by, Agent.'}</p>
                 </div>
             `;
             return;
         }
         
-        // 3. Define variables AFTER data is received
         const { stats, wires, todayChallenge, bombStatus, timeRemaining, config } = data;
         
-        // 4. Determine threat level color
-        const threatPct = stats.totalWires > 0 ? ((stats.totalWires - stats.wiresDefused) / stats.totalWires) * 100 : 100;
-        let threatColor = '#00ff88';
-        let threatLevel = 'LOW';
-        if (threatPct > 70) { threatColor = '#ff4444'; threatLevel = 'CRITICAL'; }
-        else if (threatPct > 40) { threatColor = '#ff9800'; threatLevel = 'HIGH'; }
-        else if (threatPct > 20) { threatColor = '#ffd700'; threatLevel = 'MODERATE'; }
-        
-        // 5. Ingest Styles and generate Wire HTML
-        addDefuseStyles();
-        const wiresHTML = generateWiresHTML(stats.totalWires, wires);
-
-        // 6. Build UI
+        // Determine bomb status for visual
+        const bombVisualStatus = getBombVisualStatus(stats, bombStatus);
         container.innerHTML = `
-            <!-- HEADER / STATUS PANEL -->
-            <div class="card defuse-header" style="background:linear-gradient(135deg, rgba(255,68,68,0.1), rgba(123,44,191,0.1));border:1px solid rgba(255,68,68,0.3);">
-                <div class="card-body" style="text-align:center;padding:20px;">
-                    <div style="display:flex;justify-content:center;align-items:center;gap:10px;margin-bottom:10px;">
-                        <span class="threat-indicator" style="background:${threatColor};"></span>
-                        <span style="color:${threatColor};font-weight:700;font-size:14px;">THREAT LEVEL: ${threatLevel}</span>
+          ${renderHobiHelpButton()} 
+        
+        container.innerHTML = `
+            ${renderDefuseGuide()}
+            
+            <!-- MISSION BRIEFING HEADER -->
+            <div class="card defuse-briefing">
+                <div class="card-body">
+                    <div class="briefing-header">
+                        <div class="briefing-badge">
+                            <span class="badge-icon">🎯</span>
+                            <span class="badge-text">CLASSIFIED</span>
+                        </div>
+                        <div class="briefing-status ${bombVisualStatus.statusClass}">
+                            <span class="status-indicator"></span>
+                            <span class="status-text">${bombVisualStatus.statusLabel}</span>
+                        </div>
                     </div>
-                    <h2 style="margin:0;color:#fff;font-size:18px;">⚠️ OPERATION DEFUSE ⚠️</h2>
-                    <div style="display:flex;justify-content:center;gap:30px;margin-top:15px;">
-                        <div class="defuse-stat">
-                            <div style="font-size:28px;font-weight:700;color:#00ff88;">${stats.wiresDefused}</div>
-                            <div style="font-size:11px;color:#888;">Wires Cut</div>
+                    
+                    <h2 class="briefing-title">OPERATION DEFUSE</h2>
+                    <p class="briefing-subtitle">Arirang Countdown • Day ${getTodayWireNumber(wires)} of ${stats.totalWires}</p>
+                    
+                    <!-- Stats Grid -->
+                    <div class="defuse-stats-grid">
+                        <div class="stat-box success">
+                            <div class="stat-icon">✂️</div>
+                            <div class="stat-value">${stats.wiresDefused}</div>
+                            <div class="stat-label">Defused</div>
                         </div>
-                        <div class="defuse-stat">
-                            <div style="font-size:28px;font-weight:700;color:#ff4444;">${stats.wiresFailed}</div>
-                            <div style="font-size:11px;color:#888;">Failed</div>
+                        <div class="stat-box warning">
+                            <div class="stat-icon">⏳</div>
+                            <div class="stat-value">${stats.totalWires - stats.wiresDefused - stats.wiresFailed}</div>
+                            <div class="stat-label">Remaining</div>
                         </div>
+                        <div class="stat-box ${stats.wiresFailed > 0 ? 'danger' : 'neutral'}">
+                            <div class="stat-icon">${stats.wiresFailed > 0 ? '💔' : '✓'}</div>
+                            <div class="stat-value">${stats.wiresFailed}</div>
+                            <div class="stat-label">Missed</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Progress Bar -->
+                    <div class="mission-progress">
+                        <div class="progress-track">
+                            <div class="progress-fill ${bombVisualStatus.progressClass}" style="width:${stats.percentComplete}%"></div>
+                        </div>
+                        <div class="progress-label">${stats.percentComplete}% Complete</div>
                     </div>
                 </div>
             </div>
             
-            <!-- THE BOMB VISUAL WITH ACTUAL WIRE LINES -->
-            <div class="card" style="background:#0a0a0f;border:1px solid #333; overflow:visible;">
-                <div class="card-body" style="padding:50px 20px; text-align:center; position:relative;">
-                    <div class="bomb-container">
-                        ${wiresHTML}
-                        <div class="army-bomb ${bombStatus === 'DEFUSED' ? 'defused' : bombStatus === 'DETONATED' ? 'detonated' : 'active'}">
-                            💣
+            <!-- THE ARMY BOMB CONSOLE -->
+            <div class="card army-bomb-console ${bombVisualStatus.consoleClass}">
+                <div class="card-header">
+                    <h3><span class="header-icon">💎</span> Defusal Core</h3>
+                    ${todayChallenge ? `<span class="countdown-badge ${bombVisualStatus.urgentClass}">⏱ ${timeRemaining}</span>` : ''}
+                </div>
+                <div class="card-body">
+                    
+                    <!-- ARMY BOMB 3D VISUAL -->
+                    <div class="army-bomb-display">
+                        <!-- Ambient Glow -->
+                        <div class="ambient-glow ${bombVisualStatus.glowClass}"></div>
+                        
+                        <!-- The Army Bomb -->
+                        <div class="army-bomb ${bombVisualStatus.bombClass}">
+                            <!-- Top Detonator Button -->
+                            <div class="detonator-button ${bombVisualStatus.buttonClass}">
+                                <div class="button-light"></div>
+                            </div>
+                            
+                            <!-- Glass Sphere -->
+                            <div class="bomb-sphere">
+                                <!-- Glass Reflection -->
+                                <div class="sphere-reflection"></div>
+                                <div class="sphere-reflection-2"></div>
+                                
+                                <!-- Inner Energy Ring -->
+                                <div class="energy-ring ${bombVisualStatus.ringClass}"></div>
+                                <div class="energy-ring inner ${bombVisualStatus.ringClass}"></div>
+                                
+                                <!-- BTS Logo Core -->
+                                <div class="bts-core ${bombVisualStatus.coreClass}">
+                                    <span class="bts-logo">⟭⟬</span>
+                                </div>
+                                
+                                <!-- Energy Particles -->
+                                <div class="energy-particles ${bombVisualStatus.particleClass}">
+                                    <span></span><span></span><span></span>
+                                    <span></span><span></span><span></span>
+                                </div>
+                            </div>
+                            
+                            <!-- Handle/Base -->
+                            <div class="bomb-handle">
+                                <div class="handle-connector"></div>
+                                <div class="handle-grip">
+                                    <div class="grip-line"></div>
+                                    <div class="grip-line"></div>
+                                    <div class="grip-line"></div>
+                                </div>
+                                <div class="handle-base"></div>
+                            </div>
+                            
+                            <!-- Wire Connections (at base) -->
+                            <div class="wire-connections">
+                                <div class="wire-port left ${getWirePortStatus(wires, 'left')}"></div>
+                                <div class="wire-port center ${getWirePortStatus(wires, 'center')}"></div>
+                                <div class="wire-port right ${getWirePortStatus(wires, 'right')}"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Status Label -->
+                        <div class="bomb-status-label ${bombVisualStatus.labelClass}">
+                            ${bombVisualStatus.statusMessage}
                         </div>
                     </div>
                     
-                    <div style="margin-top:40px;padding:10px;background:rgba(255,107,53,0.1);border-radius:8px;display:${todayChallenge ? 'inline-block' : 'none'}">
-                        <div style="color:#ff6b35;font-size:11px;font-weight:600;">⏰ TIME TO DETONATION</div>
-                        <div style="color:#fff;font-size:18px;font-weight:700;margin-top:5px;font-family:monospace;">${timeRemaining}</div>
+                    <!-- WIRE PANEL -->
+                    <div class="wire-panel">
+                        <div class="panel-header">
+                            <span class="panel-icon">🔌</span>
+                            <span class="panel-title">Wire Status Panel</span>
+                        </div>
+                        
+                        <div class="wire-grid">
+                            ${renderWireGrid(wires)}
+                        </div>
+                        
+                        <div class="wire-legend">
+                            <div class="legend-item"><span class="dot defused"></span>Defused</div>
+                            <div class="legend-item"><span class="dot active"></span>Active</div>
+                            <div class="legend-item"><span class="dot locked"></span>Locked</div>
+                            <div class="legend-item"><span class="dot failed"></span>Missed</div>
+                        </div>
                     </div>
                 </div>
             </div>
             
             <!-- TODAY'S MISSION -->
-            ${todayChallenge ? renderTodayDefuseMission(todayChallenge, config) : `
-                <div class="card" style="text-align:center;padding:30px;">
-                    <div style="font-size:40px;margin-bottom:10px;">✅</div>
-                    <h3 style="color:#00ff88;">No Active Wire Today</h3>
-                </div>
-            `}
+            ${todayChallenge ? renderTodayDefuseMission(todayChallenge, config) : renderNoMissionCard()}
             
             <!-- REWARDS VAULT -->
-            <div class="card">
-                <div class="card-header"><h3>🎁 Rewards Vault</h3></div>
+            ${renderRewardsVault(wires, stats)}
+            
+            <!-- MYSTERY BOX -->
+            ${renderMysteryBox(data.mysteryBoxUnlocked, stats)}
+            
+            <!-- LEADERBOARD -->
+            <div class="card defuse-action-card" onclick="showDefuseLeaderboard()">
                 <div class="card-body">
-                    <div class="rewards-grid">
-                        ${wires.filter(w => w.state !== 'locked').map(wire => `
-                            <div class="reward-box reward-${wire.state} ${wire.qualified && !wire.claimed ? 'qualified' : ''}" 
-                                 onclick="${wire.qualified && !wire.claimed ? `claimDefuseReward('${wire.date}')` : ''}">
-                                ${wire.claimed ? '✅' : wire.qualified ? '🎁' : '🔒'}
-                                <span class="reward-day">D${wire.wireNumber}</span>
-                            </div>
-                        `).join('')}
+                    <div class="action-content">
+                        <span class="action-icon">🏆</span>
+                        <div class="action-text">
+                            <span class="action-title">Defuse Leaderboard</span>
+                            <span class="action-subtitle">See top agents</span>
+                        </div>
+                        <span class="action-arrow">→</span>
                     </div>
                 </div>
             </div>
-
-            <button onclick="loadPage('home')" class="btn-secondary" style="width:100%; margin-top:15px;">← Back to Command Center</button>
         `;
+        
+        addArmyBombStyles();
         
     } catch (e) {
         console.error('Error loading Operation Defuse:', e);
-        container.innerHTML = `<div class="card" style="text-align:center;padding:40px;"><p>Connection Error</p><button class="btn-primary" onclick="renderOperationDefuse()">Retry</button></div>`;
+        container.innerHTML = `
+            <div class="card" style="text-align:center;padding:40px;">
+                <div class="mini-army-bomb error">
+                    <div class="mini-sphere"><span>⟭⟬</span></div>
+                    <div class="mini-handle"></div>
+                </div>
+                <h3 style="color:#ef4444;margin-top:20px;">Connection Lost</h3>
+                <p style="color:#888;font-size:13px;">Could not reach HQ servers</p>
+                <button class="btn-primary" onclick="renderOperationDefuse()" style="margin-top:15px;">
+                    Reconnect
+                </button>
+            </div>
+        `;
     }
 }
 
-function getWireIcon(state) {
-    switch(state) {
-        case 'defused': return '✂️';
-        case 'active': return '🔴';
-        case 'failed': return '💀';
-        case 'locked': return '⚫';
-        default: return '⚫';
+// =============================================
+// HELPER FUNCTIONS
+// =============================================
+
+function getBombVisualStatus(stats, bombStatus) {
+    const remaining = stats.totalWires - stats.wiresDefused - stats.wiresFailed;
+    const pct = stats.percentComplete;
+    
+    if (bombStatus === 'DEFUSED') {
+        return {
+            statusClass: 'status-success',
+            statusLabel: 'STABILIZED',
+            statusMessage: '✨ Core Stabilized',
+            consoleClass: 'console-success',
+            bombClass: 'stabilized',
+            glowClass: 'glow-green',
+            buttonClass: 'button-green',
+            ringClass: 'ring-green',
+            coreClass: 'core-green',
+            particleClass: 'particles-green',
+            labelClass: 'label-success',
+            progressClass: 'progress-success',
+            urgentClass: ''
+        };
     }
+    
+    if (bombStatus === 'DETONATED') {
+        return {
+            statusClass: 'status-ended',
+            statusLabel: 'MISSION ENDED',
+            statusMessage: '💫 Mission Complete',
+            consoleClass: 'console-neutral',
+            bombClass: 'ended',
+            glowClass: 'glow-neutral',
+            buttonClass: 'button-off',
+            ringClass: 'ring-neutral',
+            coreClass: 'core-neutral',
+            particleClass: 'particles-off',
+            labelClass: 'label-neutral',
+            progressClass: 'progress-neutral',
+            urgentClass: ''
+        };
+    }
+    
+    // Active states based on progress
+    if (pct < 30 || stats.wiresFailed > 2) {
+        return {
+            statusClass: 'status-critical',
+            statusLabel: 'CRITICAL',
+            statusMessage: '⚠️ Unstable Energy Detected',
+            consoleClass: 'console-critical',
+            bombClass: 'critical',
+            glowClass: 'glow-red',
+            buttonClass: 'button-red',
+            ringClass: 'ring-red',
+            coreClass: 'core-red',
+            particleClass: 'particles-red',
+            labelClass: 'label-critical',
+            progressClass: 'progress-critical',
+            urgentClass: 'urgent'
+        };
+    }
+    
+    if (pct < 60) {
+        return {
+            statusClass: 'status-warning',
+            statusLabel: 'ELEVATED',
+            statusMessage: '⚡ Energy Fluctuating',
+            consoleClass: 'console-warning',
+            bombClass: 'elevated',
+            glowClass: 'glow-orange',
+            buttonClass: 'button-orange',
+            ringClass: 'ring-orange',
+            coreClass: 'core-orange',
+            particleClass: 'particles-orange',
+            labelClass: 'label-warning',
+            progressClass: 'progress-warning',
+            urgentClass: ''
+        };
+    }
+    
+    return {
+        statusClass: 'status-active',
+        statusLabel: 'ACTIVE',
+        statusMessage: '💜 Defusal In Progress',
+        consoleClass: 'console-active',
+        bombClass: 'active',
+        glowClass: 'glow-purple',
+        buttonClass: 'button-purple',
+        ringClass: 'ring-purple',
+        coreClass: 'core-purple',
+        particleClass: 'particles-purple',
+        labelClass: 'label-active',
+        progressClass: 'progress-active',
+        urgentClass: ''
+    };
+}
+
+function getTodayWireNumber(wires) {
+    const today = wires.find(w => w.state === 'active');
+    return today ? today.wireNumber : wires.length;
+}
+
+function getWirePortStatus(wires, position) {
+    const defused = wires.filter(w => w.state === 'defused').length;
+    const total = wires.length;
+    const pct = (defused / total) * 100;
+    
+    if (position === 'left') return pct > 33 ? 'port-active' : 'port-inactive';
+    if (position === 'center') return pct > 66 ? 'port-active' : 'port-inactive';
+    if (position === 'right') return pct === 100 ? 'port-active' : 'port-inactive';
+    return 'port-inactive';
+}
+
+function renderDefuseGuide() {
+    return `
+        <div class="card defuse-guide">
+            <div class="card-body">
+                <div class="guide-content">
+                    <span class="guide-icon">🕵️</span>
+                    <div class="guide-text">
+                        <strong>Daily Defusal Protocol</strong>
+                        <p>Stream each track <span class="highlight">2X</span> daily. When the whole team hits the collective goal, you qualify for that day's badge + XP!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function renderWireGrid(wires) {
+    // Split into 2 rows
+    const half = Math.ceil(wires.length / 2);
+    const row1 = wires.slice(0, half);
+    const row2 = wires.slice(half);
+    
+    return `
+        <div class="wire-row">
+            ${row1.map(w => renderWireCell(w)).join('')}
+        </div>
+        <div class="wire-row">
+            ${row2.map(w => renderWireCell(w)).join('')}
+        </div>
+    `;
+}
+
+function renderWireCell(wire) {
+    const stateClass = `wire-${wire.state}`;
+    const icons = {
+        'defused': '✓',
+        'active': '●',
+        'failed': '✗',
+        'locked': '○'
+    };
+    
+    return `
+        <div class="wire-cell ${stateClass}" 
+             onclick="showWireInfo('${wire.date}', '${wire.codename}', '${wire.albums.join(', ')}')"
+             title="${wire.codename}: ${wire.albums.join(', ')}">
+            <span class="wire-num">${wire.wireNumber}</span>
+            <span class="wire-icon">${icons[wire.state] || '○'}</span>
+        </div>
+    `;
+}
+
+function renderNoMissionCard() {
+    return `
+        <div class="card defuse-rest-card">
+            <div class="card-body">
+                <div class="rest-content">
+                    <div class="rest-icon">🌙</div>
+                    <div class="rest-text">
+                        <h3>No Active Wire Today</h3>
+                        <p>Rest up, Agent. The next wire awaits.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
 }
 
 function renderTodayDefuseMission(challenge, config) {
-    const pct = challenge.totalTracks > 0 ? Math.round((challenge.completedTracks / challenge.totalTracks) * 100) : 0;
+    const userPct = challenge.totalTracks > 0 
+        ? Math.round((challenge.completedTracks / challenge.totalTracks) * 100) 
+        : 0;
     const teamPct = Math.min(100, Math.round((challenge.collectiveStreams / challenge.targetStreams) * 100));
     
     return `
-        <div class="card today-mission" style="border:2px solid #ff6b35;">
-            <div class="card-header" style="background:rgba(255,107,53,0.1);">
-                <div>
-                    <h3 style="margin:0;color:#ff6b35;">🔴 TODAY'S WIRE: ${challenge.codename}</h3>
-                    <p style="margin:5px 0 0;color:#888;font-size:12px;">
-                        ${challenge.albums.join(' + ')}
-                    </p>
+        <div class="card defuse-mission-card ${challenge.qualified ? 'mission-complete' : ''}">
+            <div class="card-header">
+                <div class="mission-header-left">
+                    <h3><span class="header-icon">🎯</span> Today's Wire</h3>
+                    <span class="wire-badge">${challenge.codename}</span>
                 </div>
+                ${challenge.qualified ? '<span class="complete-badge">✓ DEFUSED</span>' : ''}
             </div>
             <div class="card-body">
-                <!-- Your 2X Progress -->
-                <div style="margin-bottom:20px;">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                        <span style="color:#fff;font-weight:600;">Your ${config.requiredStreams}X Progress</span>
-                        <span style="color:${challenge.passed2x ? '#00ff88' : '#ff6b35'};">
-                            ${challenge.passed2x ? '✅ Complete' : `${challenge.completedTracks || 0}/${challenge.totalTracks || 0}`}
+                <!-- Album -->
+                <div class="album-tag">
+                    <span class="album-icon">💿</span>
+                    <span class="album-name">${challenge.albums.join(' + ')}</span>
+                </div>
+                
+                <!-- Your Progress -->
+                <div class="progress-block">
+                    <div class="progress-info">
+                        <span class="progress-title">Your ${config.requiredStreams}X Progress</span>
+                        <span class="progress-status ${challenge.passed2x ? 'done' : ''}">
+                            ${challenge.passed2x ? '✓ Complete' : `${challenge.completedTracks || 0}/${challenge.totalTracks || 0}`}
                         </span>
                     </div>
-                    <div style="background:#222;border-radius:8px;height:10px;overflow:hidden;">
-                        <div style="height:100%;width:${pct}%;background:${challenge.passed2x ? '#00ff88' : '#ff6b35'};transition:width 0.3s;"></div>
+                    <div class="progress-bar">
+                        <div class="progress-fill user ${challenge.passed2x ? 'complete' : ''}" style="width:${userPct}%"></div>
                     </div>
                 </div>
                 
-                <!-- Team Goal Progress -->
-                <div style="margin-bottom:20px;">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                        <span style="color:#fff;font-weight:600;">Team Goal</span>
-                        <span style="color:${challenge.teamGoalMet ? '#00ff88' : '#7b2cbf'};">
-                            ${challenge.teamGoalMet ? '✅ Complete' : `${fmt(challenge.collectiveStreams)}/${fmt(challenge.targetStreams)}`}
+                <!-- Team Progress -->
+                <div class="progress-block">
+                    <div class="progress-info">
+                        <span class="progress-title">Team Streams</span>
+                        <span class="progress-status ${challenge.teamGoalMet ? 'done' : ''}">
+                            ${challenge.teamGoalMet ? '✓ Goal Met' : `${fmt(challenge.collectiveStreams)}/${fmt(challenge.targetStreams)}`}
                         </span>
                     </div>
-                    <div style="background:#222;border-radius:8px;height:10px;overflow:hidden;">
-                        <div style="height:100%;width:${teamPct}%;background:${challenge.teamGoalMet ? '#00ff88' : '#7b2cbf'};transition:width 0.3s;"></div>
+                    <div class="progress-bar">
+                        <div class="progress-fill team ${challenge.teamGoalMet ? 'complete' : ''}" style="width:${teamPct}%"></div>
                     </div>
                 </div>
                 
                 <!-- Track List -->
-                <div style="border-top:1px solid #333;padding-top:15px;">
-                    <div style="color:#888;font-size:12px;margin-bottom:10px;">TRACK CHECKLIST</div>
-                    <div class="defuse-tracks">
-                        ${challenge.tracks.map((track, i) => {
-                            const userCount = challenge.userProgress[track.name] || 0;
-                            const passed = userCount >= config.requiredStreams;
+                <div class="track-checklist">
+                    <div class="checklist-header">
+                        <span>📋 Track Checklist</span>
+                        <span class="checklist-count">${challenge.completedTracks || 0}/${challenge.totalTracks || 0}</span>
+                    </div>
+                    <div class="track-list">
+                        ${(challenge.tracks || []).map((track, i) => {
+                            const count = challenge.userProgress?.[track.name] || 0;
+                            const done = count >= config.requiredStreams;
                             return `
-                                <div class="defuse-track ${passed ? 'complete' : ''}">
-                                    <span class="track-num">${i + 1}</span>
+                                <div class="track-row ${done ? 'done' : ''}">
+                                    <span class="track-idx">${i + 1}</span>
                                     <span class="track-name">${sanitize(track.name)}</span>
-                                    <span class="track-status ${passed ? 'done' : ''}">${userCount}/${config.requiredStreams}</span>
+                                    <span class="track-count ${done ? 'complete' : ''}">${count}/${config.requiredStreams}</span>
                                 </div>
                             `;
                         }).join('')}
                     </div>
                 </div>
                 
-                <!-- Qualification Status -->
-                <div style="margin-top:20px;padding:15px;border-radius:10px;text-align:center;
-                    background:${challenge.qualified ? 'rgba(0,255,136,0.1)' : 'rgba(255,255,255,0.03)'};
-                    border:1px solid ${challenge.qualified ? '#00ff88' : '#333'};">
+                <!-- Qualification -->
+                <div class="qualification-box ${challenge.qualified ? 'qualified' : ''}">
                     ${challenge.qualified ? `
-                        <div style="font-size:24px;margin-bottom:5px;">🎉</div>
-                        <div style="color:#00ff88;font-weight:600;">WIRE DEFUSED!</div>
-                        <div style="color:#888;font-size:12px;">Claim your reward in the vault above</div>
+                        <span class="qual-icon">🎉</span>
+                        <span class="qual-msg">Wire Defused! Claim your reward above.</span>
                     ` : `
-                        <div style="color:#888;font-size:13px;">
-                            ${!challenge.passed2x ? '⏳ Complete all tracks 2X' : ''}
-                            ${!challenge.passed2x && !challenge.teamGoalMet ? ' & ' : ''}
-                            ${!challenge.teamGoalMet ? '⏳ Team needs more streams' : ''}
-                        </div>
+                        <span class="qual-icon">💜</span>
+                        <span class="qual-msg">
+                            ${!challenge.passed2x && !challenge.teamGoalMet ? 'Complete 2X + Help team reach goal' :
+                              !challenge.passed2x ? 'Complete all tracks 2X' :
+                              'Waiting for team to reach goal'}
+                        </span>
                     `}
                 </div>
             </div>
         </div>
     `;
+}
+
+function renderRewardsVault(wires, stats) {
+    return `
+        <div class="card defuse-vault-card">
+            <div class="card-header">
+                <h3><span class="header-icon">🎁</span> Rewards Vault</h3>
+                ${stats.unclaimedRewards > 0 ? `<span class="unclaimed-count">${stats.unclaimedRewards} to claim</span>` : ''}
+            </div>
+            <div class="card-body">
+                <div class="vault-grid">
+                    ${wires.map(wire => {
+                        let boxClass = 'vault-box';
+                        let icon = '🔒';
+                        let clickable = false;
+                        
+                        if (wire.state === 'locked') {
+                            boxClass += ' locked';
+                            icon = '🔒';
+                        } else if (wire.claimed) {
+                            boxClass += ' claimed';
+                            icon = '✅';
+                        } else if (wire.qualified) {
+                            boxClass += ' claimable';
+                            icon = '🎁';
+                            clickable = true;
+                        } else if (wire.state === 'failed') {
+                            boxClass += ' missed';
+                            icon = '💔';
+                        } else if (wire.state === 'active') {
+                            boxClass += ' active';
+                            icon = '⏳';
+                        } else {
+                            boxClass += ' pending';
+                            icon = '○';
+                        }
+                        
+                        return `
+                            <div class="${boxClass}" 
+                                 ${clickable ? `onclick="claimDefuseReward('${wire.date}')"` : ''}
+                                 title="Day ${wire.wireNumber}">
+                                <span class="box-icon">${icon}</span>
+                                <span class="box-day">D${wire.wireNumber}</span>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function renderMysteryBox(unlocked, stats) {
+    return `
+        <div class="card defuse-mystery-card ${unlocked ? 'unlocked' : ''}">
+            <div class="card-body">
+                <div class="mystery-content">
+                    <div class="mystery-icon-wrapper ${unlocked ? 'glow' : ''}">
+                        <span class="mystery-icon">${unlocked ? '🎁' : '🔐'}</span>
+                    </div>
+                    <div class="mystery-info">
+                        <h3 class="mystery-title">${unlocked ? '✨ Mystery Unlocked!' : 'Final Reward'}</h3>
+                        <p class="mystery-desc">
+                            ${unlocked 
+                                ? 'Congratulations! You defused all wires!' 
+                                : `Defuse all ${stats.totalWires} wires to unlock`}
+                        </p>
+                        ${!unlocked ? `
+                            <div class="mystery-progress">
+                                <div class="mystery-bar">
+                                    <div class="mystery-fill" style="width:${stats.percentComplete}%"></div>
+                                </div>
+                                <span class="mystery-count">${stats.wiresDefused}/${stats.totalWires}</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// =============================================
+// INTERACTIONS
+// =============================================
+
+function showWireInfo(date, codename, albums) {
+    showToast(`${codename}: ${albums}`, 'info');
 }
 
 async function claimDefuseReward(date) {
@@ -15442,8 +15814,8 @@ async function claimDefuseReward(date) {
         loading(false);
         
         if (result.success) {
-            showBadgeEarnedPopup(result.badge, result.xpAwarded);
-            renderOperationDefuse(); // Refresh page
+            showDefuseBadgePopup(result.badge, result.xpAwarded);
+            setTimeout(() => renderOperationDefuse(), 600);
         } else {
             showToast(result.error || 'Could not claim reward', 'error');
         }
@@ -15453,438 +15825,1403 @@ async function claimDefuseReward(date) {
     }
 }
 
-function showBadgeEarnedPopup(badge, xp) {
+function showDefuseBadgePopup(badge, xp) {
     const popup = document.createElement('div');
-    popup.className = 'badge-popup-overlay';
+    popup.className = 'defuse-badge-modal';
     popup.innerHTML = `
-        <div class="badge-popup">
-            <div class="badge-popup-content">
-                <div class="badge-glow"></div>
-                <img src="${badge.imageUrl}" alt="${badge.name}" class="badge-image-large">
-                <h3 style="color:#ffd700;margin:15px 0 5px;">🎖️ Badge Earned!</h3>
-                <p style="color:#fff;font-weight:600;">${sanitize(badge.name)}</p>
-                <p style="color:#888;font-size:13px;">${sanitize(badge.description)}</p>
-                <div style="color:#00ff88;font-size:18px;font-weight:700;margin-top:15px;">+${xp} XP</div>
-                <button class="btn-primary" onclick="this.closest('.badge-popup-overlay').remove()" style="margin-top:20px;">
-                    Awesome! 🎉
-                </button>
+        <div class="modal-bg" onclick="this.parentElement.remove()"></div>
+        <div class="badge-reveal">
+            <div class="badge-sparkle">✨</div>
+            <div class="badge-img-wrap">
+                <img src="${badge.imageUrl}" alt="${badge.name}" class="badge-img">
             </div>
+            <h3>Badge Earned!</h3>
+            <p class="badge-name">${sanitize(badge.name)}</p>
+            <p class="badge-desc">${sanitize(badge.description)}</p>
+            <div class="badge-xp">+${xp} XP</div>
+            <button class="btn-primary" onclick="this.closest('.defuse-badge-modal').remove()">
+                Awesome! 💜
+            </button>
         </div>
     `;
     document.body.appendChild(popup);
-    setTimeout(() => popup.classList.add('show'), 10);
+    requestAnimationFrame(() => popup.classList.add('show'));
 }
 
 async function showDefuseLeaderboard() {
     try {
+        loading(true);
         const data = await api('getDefuseLeaderboard', { limit: 20 });
+        loading(false);
         
         const modal = document.createElement('div');
-        modal.className = 'defuse-modal-overlay';
+        modal.className = 'defuse-lb-modal';
         modal.innerHTML = `
-            <div class="defuse-modal">
-                <div class="defuse-modal-header">
-                    <h3>🏆 Defuse Leaderboard</h3>
-                    <button onclick="this.closest('.defuse-modal-overlay').remove()">✕</button>
+            <div class="modal-bg" onclick="this.parentElement.remove()"></div>
+            <div class="lb-panel">
+                <div class="lb-header">
+                    <h3>🏆 Defuse Champions</h3>
+                    <button onclick="this.closest('.defuse-lb-modal').remove()">✕</button>
                 </div>
-                <div class="defuse-modal-body">
+                <div class="lb-body">
                     ${data.leaderboard?.length > 0 ? data.leaderboard.map((agent, i) => `
-                        <div class="leaderboard-item" style="border-left:3px solid ${teamColor(agent.team)}">
-                            <span class="lb-rank">${i + 1}</span>
+                        <div class="lb-entry" style="--team-color:${teamColor(agent.team)}">
+                            <span class="lb-rank ${i < 3 ? 'top' + (i+1) : ''}">${i + 1}</span>
                             <div class="lb-info">
-                                <div class="lb-name">${sanitize(agent.name)}</div>
-                                <div class="lb-team" style="color:${teamColor(agent.team)}">${agent.team}</div>
+                                <span class="lb-name">${sanitize(agent.name)}</span>
+                                <span class="lb-team">${agent.team}</span>
                             </div>
                             <div class="lb-stats">
-                                <div style="color:#00ff88;font-weight:600;">${agent.wiresDefused} wires</div>
-                                <div style="color:#888;font-size:11px;">${agent.xpEarned} XP</div>
+                                <span class="lb-wires">${agent.wiresDefused} 🔌</span>
+                                <span class="lb-xp">${agent.xpEarned} XP</span>
                             </div>
                         </div>
-                    `).join('') : '<p style="text-align:center;color:#888;padding:30px;">No data yet</p>'}
+                    `).join('') : `
+                        <div class="lb-empty">
+                            <span>🔮</span>
+                            <p>No defusers yet. Be the first!</p>
+                        </div>
+                    `}
                 </div>
             </div>
         `;
         document.body.appendChild(modal);
-        setTimeout(() => modal.classList.add('show'), 10);
+        requestAnimationFrame(() => modal.classList.add('show'));
     } catch (e) {
+        loading(false);
         showToast('Could not load leaderboard', 'error');
     }
 }
 
-function showWireDetails(date) {
-    // Could show a modal with wire details
-    console.log('Wire details for:', date);
+// =============================================
+// HOME WIDGET
+// =============================================
+
+function renderDefuseHomeWidget() {
+    if (!CONFIG.OPERATION_DEFUSE?.ENABLED) return '';
+    
+    return `
+        <div class="defuse-widget" onclick="loadPage('operation-defuse')">
+            <div class="widget-bomb">
+                <div class="widget-sphere">
+                    <span>⟭⟬</span>
+                </div>
+                <div class="widget-handle"></div>
+            </div>
+            <div class="widget-info">
+                <div class="widget-header">
+                    <span class="widget-title">OPERATION DEFUSE</span>
+                    <span class="widget-live"></span>
+                </div>
+                <div class="widget-sub">Daily streaming mission active</div>
+            </div>
+            <span class="widget-arrow">→</span>
+        </div>
+    `;
 }
 
-function addDefuseStyles() {
-    if (document.getElementById('defuse-styles')) return;
+// =============================================
+// STYLES - ARMY BOMB VISUAL
+// =============================================
+
+function addArmyBombStyles() {
+    if (document.getElementById('army-bomb-styles')) return;
     
     const style = document.createElement('style');
-    style.id = 'defuse-styles';
+    style.id = 'army-bomb-styles';
     style.textContent = `
-        .bomb-loading {
-            font-size: 60px;
-            animation: bomb-pulse 1s ease-in-out infinite;
+        /* ==================== LOADING ==================== */
+        .defuse-loading {
+            text-align: center;
+            padding: 60px 20px;
         }
         
-        @keyframes bomb-pulse {
-            0%, 100% { transform: scale(1); filter: drop-shadow(0 0 10px #ff4444); }
-            50% { transform: scale(1.1); filter: drop-shadow(0 0 30px #ff4444); }
+        .defuse-loading p {
+            color: #888;
+            font-size: 13px;
+            margin-top: 20px;
         }
         
-        .threat-indicator {
-            width: 10px;
-            height: 10px;
+        .loading-bomb {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .loading-sphere {
+            width: 60px;
+            height: 60px;
             border-radius: 50%;
-            animation: threat-blink 1s ease-in-out infinite;
+            background: linear-gradient(135deg, rgba(147,51,234,0.3), rgba(168,85,247,0.1));
+            border: 2px solid rgba(147,51,234,0.4);
+            animation: loading-pulse 2s ease-in-out infinite;
         }
         
-        @keyframes threat-blink {
+        .loading-handle {
+            width: 20px;
+            height: 30px;
+            background: linear-gradient(180deg, #333, #1a1a1a);
+            border-radius: 0 0 6px 6px;
+            margin-top: -5px;
+        }
+        
+        @keyframes loading-pulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(147,51,234,0.3); }
+            50% { transform: scale(1.05); box-shadow: 0 0 40px rgba(147,51,234,0.5); }
+        }
+        
+        /* ==================== MINI ARMY BOMB ==================== */
+        .mini-army-bomb {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .mini-sphere {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(147,51,234,0.2), rgba(168,85,247,0.05));
+            border: 2px solid rgba(147,51,234,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .mini-sphere span {
+            font-size: 24px;
+            color: #9333ea;
+        }
+        
+        .mini-handle {
+            width: 24px;
+            height: 35px;
+            background: linear-gradient(180deg, #2a2a2a, #1a1a1a);
+            border-radius: 0 0 8px 8px;
+            margin-top: -8px;
+        }
+        
+        .mini-army-bomb.inactive .mini-sphere {
+            border-color: #333;
+            opacity: 0.5;
+        }
+        
+        .mini-army-bomb.error .mini-sphere {
+            border-color: rgba(239,68,68,0.4);
+            background: linear-gradient(135deg, rgba(239,68,68,0.1), transparent);
+        }
+        
+        /* ==================== GUIDE CARD ==================== */
+        .defuse-guide {
+            background: rgba(147,51,234,0.05);
+            border: 1px solid rgba(147,51,234,0.15);
+            border-left: 3px solid #9333ea;
+        }
+        
+        .guide-content {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+        
+        .guide-icon { font-size: 22px; }
+        
+        .guide-text strong {
+            color: #a855f7;
+            font-size: 13px;
+            display: block;
+            margin-bottom: 4px;
+        }
+        
+        .guide-text p {
+            color: #888;
+            font-size: 12px;
+            margin: 0;
+            line-height: 1.5;
+        }
+        
+        .guide-text .highlight {
+            color: #fbbf24;
+            font-weight: 600;
+        }
+        
+        /* ==================== BRIEFING CARD ==================== */
+        .defuse-briefing {
+            background: linear-gradient(135deg, rgba(15,15,25,1), rgba(20,20,35,1));
+            border: 1px solid rgba(147,51,234,0.2);
+        }
+        
+        .briefing-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .briefing-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(147,51,234,0.15);
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+        
+        .badge-icon { font-size: 12px; }
+        .badge-text { font-size: 10px; color: #a855f7; font-weight: 600; letter-spacing: 1px; }
+        
+        .briefing-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        
+        .status-indicator {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            animation: blink 2s ease-in-out infinite;
+        }
+        
+        @keyframes blink {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.3; }
         }
         
-        .bomb-container {
-            position: relative;
-            padding: 20px;
+        .status-active { background: rgba(147,51,234,0.15); color: #a855f7; }
+        .status-active .status-indicator { background: #a855f7; }
+        
+        .status-warning { background: rgba(251,191,36,0.15); color: #fbbf24; }
+        .status-warning .status-indicator { background: #fbbf24; }
+        
+        .status-critical { background: rgba(239,68,68,0.15); color: #ef4444; }
+        .status-critical .status-indicator { background: #ef4444; animation: blink 0.5s ease-in-out infinite; }
+        
+        .status-success { background: rgba(34,197,94,0.15); color: #22c55e; }
+        .status-success .status-indicator { background: #22c55e; animation: none; }
+        
+        .status-ended { background: rgba(100,100,100,0.15); color: #888; }
+        .status-ended .status-indicator { background: #666; animation: none; }
+        
+        .briefing-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #fff;
+            margin: 0;
+            letter-spacing: 2px;
         }
         
-        .army-bomb {
-            font-size: 80px;
-            margin-bottom: 20px;
-            filter: drop-shadow(0 0 20px #9c27b0);
-            animation: bomb-breathe 2s ease-in-out infinite;
+        .briefing-subtitle {
+            color: #666;
+            font-size: 12px;
+            margin: 5px 0 20px;
         }
         
-        .army-bomb.active {
-            filter: drop-shadow(0 0 30px #ff4444);
-            animation: bomb-danger 0.5s ease-in-out infinite;
-        }
-        
-        .army-bomb.defused {
-            filter: drop-shadow(0 0 30px #00ff88);
-            animation: none;
-        }
-        
-        .army-bomb.detonated {
-            filter: grayscale(1) drop-shadow(0 0 10px #333);
-            animation: none;
-            opacity: 0.5;
-        }
-        
-        @keyframes bomb-breathe {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.02); }
-        }
-        
-        @keyframes bomb-danger {
-            0%, 100% { transform: scale(1); filter: drop-shadow(0 0 20px #ff4444); }
-            50% { transform: scale(1.05); filter: drop-shadow(0 0 40px #ff4444); }
-        }
-        
-        .wires-grid {
+        /* Stats Grid */
+        .defuse-stats-grid {
             display: flex;
-            flex-wrap: wrap;
             justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-box {
+            text-align: center;
+            padding: 12px 20px;
+            background: rgba(255,255,255,0.02);
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        .stat-box .stat-icon { font-size: 16px; margin-bottom: 4px; }
+        .stat-box .stat-value { font-size: 24px; font-weight: 700; color: #a855f7; }
+        .stat-box .stat-label { font-size: 10px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        .stat-box.success .stat-value { color: #22c55e; }
+        .stat-box.warning .stat-value { color: #fbbf24; }
+        .stat-box.danger .stat-value { color: #ef4444; }
+        .stat-box.neutral .stat-value { color: #888; }
+        
+        /* Mission Progress */
+        .mission-progress {
+            text-align: center;
+        }
+        
+        .progress-track {
+            height: 6px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+        
+        .progress-active { background: linear-gradient(90deg, #7c3aed, #a855f7); }
+        .progress-warning { background: linear-gradient(90deg, #d97706, #fbbf24); }
+        .progress-critical { background: linear-gradient(90deg, #dc2626, #ef4444); }
+        .progress-success { background: linear-gradient(90deg, #16a34a, #22c55e); }
+        .progress-neutral { background: #555; }
+        
+        .progress-label {
+            font-size: 11px;
+            color: #666;
+            margin-top: 8px;
+        }
+        
+        /* ==================== ARMY BOMB CONSOLE ==================== */
+        .army-bomb-console {
+            background: #0a0a0f;
+            border: 1px solid #1a1a24;
+            overflow: hidden;
+        }
+        
+        .army-bomb-console.console-critical {
+            border-color: rgba(239,68,68,0.3);
+        }
+        
+        .army-bomb-console.console-warning {
+            border-color: rgba(251,191,36,0.2);
+        }
+        
+        .army-bomb-console.console-success {
+            border-color: rgba(34,197,94,0.3);
+        }
+        
+        .countdown-badge {
+            background: rgba(147,51,234,0.15);
+            color: #a855f7;
+            padding: 4px 10px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        
+        .countdown-badge.urgent {
+            background: rgba(239,68,68,0.15);
+            color: #ef4444;
+            animation: badge-blink 1s ease-in-out infinite;
+        }
+        
+        @keyframes badge-blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        
+        /* ==================== ARMY BOMB DISPLAY ==================== */
+        .army-bomb-display {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px 30px;
+        }
+        
+        /* Ambient Glow */
+        .ambient-glow {
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: 0.4;
+            top: 20px;
+            transition: all 0.5s ease;
+        }
+        
+        .glow-purple { background: #9333ea; }
+        .glow-orange { background: #f59e0b; }
+        .glow-red { background: #ef4444; animation: glow-pulse-red 1s ease-in-out infinite; }
+        .glow-green { background: #22c55e; }
+        .glow-neutral { background: #444; opacity: 0.2; }
+        
+        @keyframes glow-pulse-red {
+            0%, 100% { opacity: 0.4; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.1); }
+        }
+        
+        /* The Army Bomb */
+        .army-bomb {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 1;
+        }
+        
+        /* Detonator Button */
+        .detonator-button {
+            width: 20px;
+            height: 12px;
+            border-radius: 10px 10px 4px 4px;
+            position: relative;
+            margin-bottom: -4px;
+            z-index: 3;
+            transition: all 0.3s ease;
+        }
+        
+        .button-light {
+            position: absolute;
+            top: 3px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 8px;
+            height: 4px;
+            border-radius: 2px;
+        }
+        
+        .button-purple { background: linear-gradient(180deg, #6b21a8, #4c1d95); }
+        .button-purple .button-light { background: #a855f7; box-shadow: 0 0 8px #a855f7; }
+        
+        .button-orange { background: linear-gradient(180deg, #b45309, #92400e); }
+        .button-orange .button-light { background: #fbbf24; box-shadow: 0 0 8px #fbbf24; }
+        
+        .button-red { background: linear-gradient(180deg, #b91c1c, #991b1b); }
+        .button-red .button-light { background: #ef4444; box-shadow: 0 0 8px #ef4444; animation: button-blink 0.5s ease-in-out infinite; }
+        
+        .button-green { background: linear-gradient(180deg, #15803d, #166534); }
+        .button-green .button-light { background: #22c55e; box-shadow: 0 0 8px #22c55e; }
+        
+        .button-off { background: linear-gradient(180deg, #333, #222); }
+        .button-off .button-light { background: #444; box-shadow: none; }
+        
+        @keyframes button-blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        
+        /* Glass Sphere */
+        .bomb-sphere {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, 
+                rgba(255,255,255,0.08) 0%,
+                rgba(255,255,255,0.02) 50%,
+                rgba(0,0,0,0.2) 100%
+            );
+            border: 2px solid rgba(255,255,255,0.1);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 
+                inset 0 -20px 40px rgba(0,0,0,0.3),
+                inset 0 20px 40px rgba(255,255,255,0.05),
+                0 10px 30px rgba(0,0,0,0.5);
+        }
+        
+        /* Glass Reflections */
+        .sphere-reflection {
+            position: absolute;
+            top: 15px;
+            left: 20px;
+            width: 40px;
+            height: 20px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.2), transparent);
+            border-radius: 50%;
+            transform: rotate(-30deg);
+        }
+        
+        .sphere-reflection-2 {
+            position: absolute;
+            top: 25px;
+            right: 25px;
+            width: 15px;
+            height: 8px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 50%;
+        }
+        
+        /* Energy Rings */
+        .energy-ring {
+            position: absolute;
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            border: 1px solid transparent;
+            animation: ring-rotate 8s linear infinite;
+        }
+        
+        .energy-ring.inner {
+            width: 70px;
+            height: 70px;
+            animation-direction: reverse;
+            animation-duration: 6s;
+        }
+        
+        .ring-purple { border-color: rgba(147,51,234,0.4); }
+        .ring-orange { border-color: rgba(251,191,36,0.4); }
+        .ring-red { border-color: rgba(239,68,68,0.5); animation-duration: 2s; }
+        .ring-green { border-color: rgba(34,197,94,0.4); animation: none; }
+        .ring-neutral { border-color: rgba(100,100,100,0.2); animation: none; }
+        
+        @keyframes ring-rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* BTS Core Logo */
+        .bts-core {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            background: rgba(0,0,0,0.4);
+            transition: all 0.3s ease;
+        }
+        
+        .bts-logo {
+            font-size: 24px;
+            font-weight: 700;
+            transition: all 0.3s ease;
+        }
+        
+        .core-purple .bts-logo { color: #a855f7; text-shadow: 0 0 15px #a855f7; }
+        .core-orange .bts-logo { color: #fbbf24; text-shadow: 0 0 15px #fbbf24; }
+        .core-red .bts-logo { color: #ef4444; text-shadow: 0 0 20px #ef4444; animation: core-pulse-red 0.5s ease-in-out infinite; }
+        .core-green .bts-logo { color: #22c55e; text-shadow: 0 0 15px #22c55e; }
+        .core-neutral .bts-logo { color: #555; text-shadow: none; }
+        
+        @keyframes core-pulse-red {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        
+        /* Energy Particles */
+        .energy-particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .energy-particles span {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            animation: particle-float 3s ease-in-out infinite;
+        }
+        
+        .energy-particles span:nth-child(1) { top: 20%; left: 20%; animation-delay: 0s; }
+        .energy-particles span:nth-child(2) { top: 30%; right: 25%; animation-delay: 0.5s; }
+        .energy-particles span:nth-child(3) { bottom: 25%; left: 30%; animation-delay: 1s; }
+        .energy-particles span:nth-child(4) { bottom: 35%; right: 20%; animation-delay: 1.5s; }
+        .energy-particles span:nth-child(5) { top: 50%; left: 15%; animation-delay: 2s; }
+        .energy-particles span:nth-child(6) { top: 45%; right: 15%; animation-delay: 2.5s; }
+        
+        .particles-purple span { background: #a855f7; box-shadow: 0 0 6px #a855f7; }
+        .particles-orange span { background: #fbbf24; box-shadow: 0 0 6px #fbbf24; }
+        .particles-red span { background: #ef4444; box-shadow: 0 0 8px #ef4444; }
+        .particles-green span { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
+        .particles-off span { display: none; }
+        
+        @keyframes particle-float {
+            0%, 100% { transform: translateY(0) scale(1); opacity: 0.8; }
+            50% { transform: translateY(-8px) scale(1.2); opacity: 1; }
+        }
+        
+        /* Handle */
+        .bomb-handle {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: -8px;
+        }
+        
+        .handle-connector {
+            width: 30px;
+            height: 8px;
+            background: linear-gradient(180deg, #2a2a2a, #1a1a1a);
+            border-radius: 0 0 4px 4px;
+        }
+        
+        .handle-grip {
+            width: 26px;
+            height: 40px;
+            background: linear-gradient(90deg, #1a1a1a, #2a2a2a, #1a1a1a);
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 4px;
+            padding: 0 4px;
+        }
+        
+        .grip-line {
+            height: 2px;
+            background: #333;
+            border-radius: 1px;
+        }
+        
+        .handle-base {
+            width: 34px;
+            height: 8px;
+            background: linear-gradient(180deg, #222, #111);
+            border-radius: 0 0 6px 6px;
+        }
+        
+        /* Wire Connections */
+        .wire-connections {
+            display: flex;
             gap: 8px;
-            max-width: 320px;
+            margin-top: 8px;
+        }
+        
+        .wire-port {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            border: 2px solid #333;
+            background: #111;
+            transition: all 0.3s ease;
+        }
+        
+        .wire-port.port-active {
+            border-color: #22c55e;
+            background: rgba(34,197,94,0.3);
+            box-shadow: 0 0 8px rgba(34,197,94,0.5);
+        }
+        
+        /* Status Label */
+        .bomb-status-label {
+            margin-top: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+        
+        .label-active { color: #a855f7; }
+        .label-warning { color: #fbbf24; }
+        .label-critical { color: #ef4444; }
+        .label-success { color: #22c55e; }
+        .label-neutral { color: #666; }
+        
+        /* ==================== WIRE PANEL ==================== */
+        .wire-panel {
+            margin-top: 25px;
+            padding-top: 25px;
+            border-top: 1px solid #1a1a24;
+        }
+        
+        .panel-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+        
+        .panel-icon { font-size: 14px; }
+        .panel-title { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+        
+        .wire-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-width: 340px;
             margin: 0 auto;
         }
         
-        .wire {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
+        .wire-row {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+        
+        .wire-cell {
+            width: 30px;
+            height: 30px;
+            border-radius: 6px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
+            transition: all 0.2s ease;
+            gap: 1px;
         }
         
-        .wire-num {
-            font-size: 10px;
-            font-weight: 700;
-            color: #fff;
-        }
-        
-        .wire-icon {
-            font-size: 12px;
-        }
+        .wire-num { font-size: 9px; font-weight: 700; line-height: 1; }
+        .wire-icon { font-size: 9px; line-height: 1; }
         
         .wire-defused {
-            background: rgba(0, 255, 136, 0.2);
-            border: 2px solid #00ff88;
+            background: rgba(34,197,94,0.15);
+            border: 1px solid rgba(34,197,94,0.4);
         }
+        .wire-defused .wire-num, .wire-defused .wire-icon { color: #22c55e; }
         
         .wire-active {
-            background: rgba(255, 68, 68, 0.3);
-            border: 2px solid #ff4444;
-            animation: wire-pulse 1s ease-in-out infinite;
+            background: rgba(147,51,234,0.2);
+            border: 1px solid rgba(147,51,234,0.5);
+            animation: wire-active-pulse 2s ease-in-out infinite;
         }
-        
-        .wire-failed {
-            background: rgba(30, 30, 30, 0.8);
-            border: 2px solid #333;
-        }
+        .wire-active .wire-num, .wire-active .wire-icon { color: #a855f7; }
         
         .wire-locked {
-            background: rgba(50, 50, 50, 0.5);
-            border: 2px solid #444;
-            opacity: 0.6;
+            background: rgba(40,40,50,0.5);
+            border: 1px solid #2a2a35;
+        }
+        .wire-locked .wire-num, .wire-locked .wire-icon { color: #444; }
+        
+        .wire-failed {
+            background: rgba(239,68,68,0.1);
+            border: 1px solid rgba(239,68,68,0.3);
+        }
+        .wire-failed .wire-num, .wire-failed .wire-icon { color: #ef4444; }
+        
+        @keyframes wire-active-pulse {
+            0%, 100% { box-shadow: 0 0 0 rgba(147,51,234,0); }
+            50% { box-shadow: 0 0 10px rgba(147,51,234,0.4); }
         }
         
-        @keyframes wire-pulse {
-            0%, 100% { box-shadow: 0 0 10px #ff4444; }
-            50% { box-shadow: 0 0 25px #ff4444; }
-        }
-        
-        .rewards-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            justify-content: center;
-        }
-        
-        .reward-box {
-            width: 50px;
-            height: 50px;
-            border-radius: 10px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            transition: all 0.3s ease;
-        }
-        
-        .reward-day {
-            font-size: 9px;
-            color: #888;
-            margin-top: 2px;
-        }
-        
-        .reward-defused {
-            background: rgba(0, 255, 136, 0.1);
-            border: 1px solid #00ff88;
-        }
-        
-        .reward-defused:not(.claimed):hover {
+        .wire-cell:hover {
             transform: scale(1.1);
-            box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
         }
         
-        .reward-failed {
-            background: rgba(255, 68, 68, 0.1);
-            border: 1px solid #ff4444;
-            opacity: 0.5;
-        }
-        
-        .mystery-box {
-            background: linear-gradient(135deg, rgba(123, 44, 191, 0.1), rgba(255, 215, 0, 0.05));
-            border: 2px dashed #7b2cbf;
-        }
-        
-        .mystery-box.unlocked {
-            border: 2px solid #ffd700;
-            animation: mystery-glow 2s ease-in-out infinite;
-        }
-        
-        @keyframes mystery-glow {
-            0%, 100% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.3); }
-            50% { box-shadow: 0 0 40px rgba(255, 215, 0, 0.6); }
-        }
-        
-        .defuse-tracks {
+        /* Wire Legend */
+        .wire-legend {
             display: flex;
-            flex-direction: column;
-            gap: 6px;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 12px;
+            flex-wrap: wrap;
         }
         
-        .defuse-track {
+        .legend-item {
             display: flex;
             align-items: center;
-            padding: 10px 12px;
-            background: rgba(255, 255, 255, 0.02);
-            border-radius: 8px;
-            border-left: 3px solid #ff6b35;
+            gap: 4px;
+            font-size: 10px;
+            color: #555;
         }
         
-        .defuse-track.complete {
-            background: rgba(0, 255, 136, 0.05);
-            border-left-color: #00ff88;
-        }
-        
-        .track-num {
-            width: 24px;
-            height: 24px;
+        .legend-item .dot {
+            width: 6px;
+            height: 6px;
             border-radius: 50%;
-            background: #333;
-            color: #888;
+        }
+        
+        .dot.defused { background: #22c55e; }
+        .dot.active { background: #a855f7; }
+        .dot.locked { background: #444; }
+        .dot.failed { background: #ef4444; }
+        
+        /* ==================== REST CARD ==================== */
+        .defuse-rest-card {
+            background: linear-gradient(135deg, rgba(50,50,70,0.1), transparent);
+        }
+        
+        .rest-content {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 10px;
+        }
+        
+        .rest-icon { font-size: 36px; opacity: 0.6; }
+        .rest-text h3 { font-size: 14px; color: #888; margin: 0; }
+        .rest-text p { font-size: 12px; color: #555; margin: 4px 0 0; }
+        
+        /* ==================== MISSION CARD ==================== */
+        .defuse-mission-card {
+            border: 1px solid rgba(147,51,234,0.2);
+        }
+        
+        .defuse-mission-card.mission-complete {
+            border-color: rgba(34,197,94,0.3);
+            background: linear-gradient(135deg, rgba(34,197,94,0.03), transparent);
+        }
+        
+        .mission-header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .wire-badge {
+            font-size: 10px;
+            color: #a855f7;
+            background: rgba(147,51,234,0.1);
+            padding: 3px 8px;
+            border-radius: 10px;
+        }
+        
+        .complete-badge {
+            background: rgba(34,197,94,0.15);
+            color: #22c55e;
+            padding: 4px 10px;
+            border-radius: 10px;
             font-size: 11px;
+            font-weight: 600;
+        }
+        
+        .album-tag {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 12px;
+            background: rgba(255,255,255,0.02);
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .album-icon { font-size: 16px; }
+        .album-name { font-size: 12px; color: #aaa; }
+        
+        /* Progress Blocks */
+        .progress-block {
+            margin-bottom: 12px;
+        }
+        
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+        
+        .progress-title { font-size: 12px; color: #888; }
+        .progress-status { font-size: 12px; color: #a855f7; font-weight: 600; }
+        .progress-status.done { color: #22c55e; }
+        
+        .progress-bar {
+            height: 5px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .progress-fill.user { background: linear-gradient(90deg, #7c3aed, #a855f7); }
+        .progress-fill.team { background: linear-gradient(90deg, #6366f1, #818cf8); }
+        .progress-fill.complete { background: linear-gradient(90deg, #16a34a, #22c55e); }
+        
+        /* Track Checklist */
+        .track-checklist {
+            border-top: 1px solid rgba(255,255,255,0.05);
+            padding-top: 15px;
+            margin-top: 5px;
+        }
+        
+        .checklist-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 12px;
+            color: #888;
+        }
+        
+        .checklist-count { color: #a855f7; font-weight: 600; }
+        
+        .track-list {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            max-height: 180px;
+            overflow-y: auto;
+        }
+        
+        .track-row {
+            display: flex;
+            align-items: center;
+            padding: 8px 10px;
+            background: rgba(255,255,255,0.02);
+            border-radius: 6px;
+            border-left: 2px solid #333;
+        }
+        
+        .track-row.done {
+            background: rgba(34,197,94,0.05);
+            border-left-color: #22c55e;
+        }
+        
+        .track-idx {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #222;
+            color: #666;
+            font-size: 10px;
             font-weight: 600;
             display: flex;
             align-items: center;
             justify-content: center;
             margin-right: 10px;
+            flex-shrink: 0;
         }
         
-        .defuse-track.complete .track-num {
-            background: #00ff88;
+        .track-row.done .track-idx {
+            background: #22c55e;
             color: #000;
         }
         
         .track-name {
             flex: 1;
-            color: #fff;
-            font-size: 13px;
+            font-size: 12px;
+            color: #ccc;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
         
-        .track-status {
-            font-size: 12px;
+        .track-count {
+            font-size: 11px;
+            color: #666;
+            padding: 2px 8px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            margin-left: 8px;
+        }
+        
+        .track-count.complete {
+            color: #22c55e;
+            background: rgba(34,197,94,0.1);
+        }
+        
+        /* Qualification Box */
+        .qualification-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 12px;
+            margin-top: 15px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid #222;
+        }
+        
+        .qualification-box.qualified {
+            background: rgba(34,197,94,0.08);
+            border-color: rgba(34,197,94,0.2);
+        }
+        
+        .qual-icon { font-size: 18px; }
+        .qual-msg { font-size: 12px; color: #888; }
+        .qualification-box.qualified .qual-msg { color: #22c55e; }
+        
+        /* ==================== VAULT CARD ==================== */
+        .defuse-vault-card .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .unclaimed-count {
+            background: rgba(251,191,36,0.15);
+            color: #fbbf24;
+            padding: 3px 8px;
+            border-radius: 8px;
+            font-size: 10px;
             font-weight: 600;
-            color: #ff6b35;
-            padding: 4px 10px;
+        }
+        
+        .vault-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            justify-content: center;
+        }
+        
+        .vault-box {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        
+        .box-icon { font-size: 14px; }
+        .box-day { font-size: 8px; color: #666; margin-top: 2px; }
+        
+        .vault-box.locked {
+            background: rgba(40,40,50,0.3);
+            border: 1px dashed #2a2a35;
+        }
+        
+        .vault-box.claimed {
+            background: rgba(34,197,94,0.1);
+            border: 1px solid rgba(34,197,94,0.3);
+        }
+        
+        .vault-box.claimable {
+            background: rgba(251,191,36,0.15);
+            border: 1px solid rgba(251,191,36,0.4);
+            cursor: pointer;
+            animation: claimable-glow 2s ease-in-out infinite;
+        }
+        
+        .vault-box.claimable:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(251,191,36,0.3);
+        }
+        
+        .vault-box.missed {
+            background: rgba(239,68,68,0.08);
+            border: 1px solid rgba(239,68,68,0.2);
+            opacity: 0.6;
+        }
+        
+        .vault-box.active {
+            background: rgba(147,51,234,0.1);
+            border: 1px solid rgba(147,51,234,0.3);
+        }
+        
+        .vault-box.pending {
+            background: rgba(60,60,70,0.1);
+            border: 1px solid #2a2a35;
+        }
+        
+        @keyframes claimable-glow {
+            0%, 100% { box-shadow: 0 0 0 rgba(251,191,36,0); }
+            50% { box-shadow: 0 0 12px rgba(251,191,36,0.3); }
+        }
+        
+        /* ==================== MYSTERY CARD ==================== */
+        .defuse-mystery-card {
+            background: linear-gradient(135deg, rgba(147,51,234,0.05), rgba(168,85,247,0.02));
+            border: 1px dashed rgba(147,51,234,0.2);
+        }
+        
+        .defuse-mystery-card.unlocked {
+            border: 1px solid rgba(251,191,36,0.3);
+            animation: mystery-shine 3s ease-in-out infinite;
+        }
+        
+        @keyframes mystery-shine {
+            0%, 100% { box-shadow: 0 0 20px rgba(251,191,36,0.1); }
+            50% { box-shadow: 0 0 30px rgba(251,191,36,0.2); }
+        }
+        
+        .mystery-content {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .mystery-icon-wrapper { font-size: 36px; }
+        .mystery-icon-wrapper.glow { animation: icon-glow 2s ease-in-out infinite; }
+        
+        @keyframes icon-glow {
+            0%, 100% { filter: drop-shadow(0 0 5px rgba(251,191,36,0.3)); }
+            50% { filter: drop-shadow(0 0 15px rgba(251,191,36,0.6)); }
+        }
+        
+        .mystery-info { flex: 1; }
+        .mystery-title { font-size: 14px; font-weight: 600; color: #a855f7; margin: 0; }
+        .defuse-mystery-card.unlocked .mystery-title { color: #fbbf24; }
+        .mystery-desc { font-size: 12px; color: #666; margin: 4px 0 0; }
+        
+        .mystery-progress {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 8px;
+        }
+        
+        .mystery-bar {
+            flex: 1;
+            height: 4px;
+            background: rgba(255,255,255,0.1);
             border-radius: 10px;
-            background: rgba(255, 107, 53, 0.1);
+            overflow: hidden;
         }
         
-        .track-status.done {
-            color: #00ff88;
-            background: rgba(0, 255, 136, 0.1);
+        .mystery-fill {
+            height: 100%;
+            background: #7c3aed;
+            border-radius: 10px;
         }
         
-        .badge-popup-overlay {
+        .mystery-count { font-size: 11px; color: #666; }
+        
+        /* ==================== ACTION CARD ==================== */
+        .defuse-action-card {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .defuse-action-card:hover {
+            border-color: rgba(147,51,234,0.3);
+        }
+        
+        .action-content {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .action-icon { font-size: 22px; }
+        .action-text { flex: 1; }
+        .action-title { font-size: 13px; color: #fff; font-weight: 600; }
+        .action-subtitle { font-size: 11px; color: #666; }
+        .action-arrow { font-size: 18px; color: #555; }
+        
+        /* ==================== HOME WIDGET ==================== */
+        .defuse-widget {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 15px;
+            background: linear-gradient(135deg, rgba(147,51,234,0.08), rgba(168,85,247,0.03));
+            border: 1px solid rgba(147,51,234,0.2);
+            border-radius: 12px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .defuse-widget:hover {
+            border-color: rgba(147,51,234,0.4);
+            transform: translateY(-2px);
+        }
+        
+        .widget-bomb {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .widget-sphere {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(147,51,234,0.2), rgba(168,85,247,0.1));
+            border: 1px solid rgba(147,51,234,0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: widget-pulse 3s ease-in-out infinite;
+        }
+        
+        .widget-sphere span {
+            font-size: 14px;
+            color: #a855f7;
+        }
+        
+        .widget-handle {
+            width: 12px;
+            height: 16px;
+            background: linear-gradient(180deg, #2a2a2a, #1a1a1a);
+            border-radius: 0 0 4px 4px;
+            margin-top: -4px;
+        }
+        
+        @keyframes widget-pulse {
+            0%, 100% { box-shadow: 0 0 10px rgba(147,51,234,0.2); }
+            50% { box-shadow: 0 0 20px rgba(147,51,234,0.4); }
+        }
+        
+        .widget-info { flex: 1; }
+        
+        .widget-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .widget-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: #a855f7;
+            letter-spacing: 0.5px;
+        }
+        
+        .widget-live {
+            width: 6px;
+            height: 6px;
+            background: #22c55e;
+            border-radius: 50%;
+            animation: blink 2s ease-in-out infinite;
+        }
+        
+        .widget-sub {
+            font-size: 11px;
+            color: #666;
+            margin-top: 2px;
+        }
+        
+        .widget-arrow { font-size: 16px; color: #555; }
+        
+        /* ==================== BADGE POPUP ==================== */
+        .defuse-badge-modal {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.9);
+            z-index: 10000;
             display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 10000;
             opacity: 0;
             transition: opacity 0.3s ease;
         }
         
-        .badge-popup-overlay.show {
-            opacity: 1;
+        .defuse-badge-modal.show { opacity: 1; }
+        
+        .modal-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.85);
         }
         
-        .badge-popup {
+        .badge-reveal {
+            position: relative;
             text-align: center;
             padding: 30px;
-            max-width: 320px;
+            max-width: 280px;
         }
         
-        .badge-popup-content {
+        .badge-sparkle {
+            font-size: 24px;
+            margin-bottom: 10px;
+            animation: sparkle-spin 2s ease-in-out infinite;
+        }
+        
+        @keyframes sparkle-spin {
+            0%, 100% { transform: rotate(-5deg) scale(1); }
+            50% { transform: rotate(5deg) scale(1.1); }
+        }
+        
+        .badge-img-wrap {
             position: relative;
+            display: inline-block;
         }
         
-        .badge-glow {
+        .badge-img-wrap::before {
+            content: '';
             position: absolute;
-            width: 200px;
-            height: 200px;
-            background: radial-gradient(circle, rgba(255, 215, 0, 0.3), transparent 70%);
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            animation: badge-glow-pulse 2s ease-in-out infinite;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            background: radial-gradient(circle, rgba(251,191,36,0.4), transparent 70%);
+            animation: badge-glow 2s ease-in-out infinite;
         }
         
-        @keyframes badge-glow-pulse {
-            0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
-            50% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+        @keyframes badge-glow {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 1; }
         }
         
-        .badge-image-large {
-            width: 120px;
-            height: 120px;
+        .badge-img {
+            width: 90px;
+            height: 90px;
             border-radius: 50%;
-            border: 4px solid #ffd700;
+            border: 3px solid #fbbf24;
             object-fit: cover;
             position: relative;
-            z-index: 1;
         }
         
-        .defuse-modal-overlay {
+        .badge-reveal h3 {
+            color: #fbbf24;
+            font-size: 16px;
+            margin: 15px 0 5px;
+        }
+        
+        .badge-name { color: #fff; font-size: 13px; font-weight: 600; margin: 0; }
+        .badge-desc { color: #888; font-size: 11px; margin: 5px 0 0; }
+        .badge-xp { color: #22c55e; font-size: 18px; font-weight: 700; margin-top: 15px; }
+        
+        .badge-reveal .btn-primary {
+            margin-top: 20px;
+        }
+        
+        /* ==================== LEADERBOARD MODAL ==================== */
+        .defuse-lb-modal {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.85);
+            z-index: 9999;
             display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 9999;
             padding: 20px;
             opacity: 0;
             transition: opacity 0.3s ease;
         }
         
-        .defuse-modal-overlay.show {
-            opacity: 1;
-        }
+        .defuse-lb-modal.show { opacity: 1; }
         
-        .defuse-modal {
-            background: #1a1a2e;
+        .lb-panel {
+            position: relative;
+            background: #0f0f15;
             border-radius: 16px;
             width: 100%;
-            max-width: 400px;
-            max-height: 80vh;
+            max-width: 360px;
+            max-height: 70vh;
             overflow: hidden;
+            border: 1px solid #1a1a24;
         }
         
-        .defuse-modal-header {
+        .lb-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 15px 20px;
-            border-bottom: 1px solid #333;
+            border-bottom: 1px solid #1a1a24;
         }
         
-        .defuse-modal-header h3 {
+        .lb-header h3 {
             margin: 0;
+            font-size: 15px;
             color: #fff;
         }
         
-        .defuse-modal-header button {
+        .lb-header button {
             background: none;
             border: none;
-            color: #888;
-            font-size: 20px;
+            color: #666;
+            font-size: 18px;
             cursor: pointer;
+            padding: 5px;
         }
         
-        .defuse-modal-body {
-            padding: 15px;
-            max-height: 60vh;
+        .lb-body {
+            padding: 12px;
+            max-height: 55vh;
             overflow-y: auto;
         }
         
-        .leaderboard-item {
+        .lb-entry {
             display: flex;
             align-items: center;
-            padding: 12px;
-            background: rgba(255, 255, 255, 0.03);
+            padding: 10px 12px;
+            background: rgba(255,255,255,0.02);
             border-radius: 10px;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
+            border-left: 3px solid var(--team-color, #7b2cbf);
         }
         
         .lb-rank {
-            width: 30px;
-            height: 30px;
+            width: 26px;
+            height: 26px;
             border-radius: 50%;
-            background: #333;
-            color: #fff;
+            background: #1a1a24;
+            color: #888;
+            font-size: 11px;
             font-weight: 700;
             display: flex;
             align-items: center;
@@ -15892,150 +17229,107 @@ function addDefuseStyles() {
             margin-right: 12px;
         }
         
-        .lb-info {
-            flex: 1;
+        .lb-rank.top1 { background: #fbbf24; color: #000; }
+        .lb-rank.top2 { background: #94a3b8; color: #000; }
+        .lb-rank.top3 { background: #b45309; color: #fff; }
+        
+        .lb-info { flex: 1; }
+        .lb-name { font-size: 12px; color: #fff; font-weight: 600; }
+        .lb-team { font-size: 10px; color: var(--team-color, #888); }
+        
+        .lb-stats { text-align: right; }
+        .lb-wires { font-size: 11px; color: #22c55e; font-weight: 600; }
+        .lb-xp { font-size: 10px; color: #666; display: block; }
+        
+        .lb-empty {
+            text-align: center;
+            padding: 40px 20px;
+            color: #555;
         }
         
-        .lb-name {
-            color: #fff;
-            font-weight: 600;
-        }
-        
-        .lb-team {
-            font-size: 11px;
-        }
-        
-        .lb-stats {
-            text-align: right;
+        .lb-empty span {
+            font-size: 32px;
+            display: block;
+            margin-bottom: 10px;
         }
     `;
+    
     document.head.appendChild(style);
 }
-
 // =============================================
-// HOME PAGE WIDGET
+// HOBI HELP SYSTEM 🐿️
 // =============================================
 
-function renderDefuseHomeWidget() {
+function renderHobiHelpButton() {
     return `
-        <div class="card defuse-home-widget" onclick="loadPage('arirang-road')" style="cursor:pointer;background:linear-gradient(135deg, rgba(255,68,68,0.08), rgba(123,44,191,0.08));border:1px solid rgba(255,68,68,0.2);margin-bottom:15px;">
-            <div class="card-body" style="display:flex;align-items:center;gap:15px;padding:15px;">
-                <div class="defuse-widget-bomb" style="font-size:36px;animation:bomb-pulse 2s ease-in-out infinite;">💣</div>
-                <div style="flex:1;">
-                    <div style="display:flex;align-items:center;gap:8px;">
-                        <span style="color:#ff4444;font-weight:700;font-size:14px;">OPERATION DEFUSE</span>
-                        <span class="defuse-live-badge" style="background:#ff4444;color:#fff;font-size:9px;padding:2px 6px;border-radius:4px;animation:threat-blink 1s infinite;">LIVE</span>
-                    </div>
-                    <div style="color:#888;font-size:12px;margin-top:4px;">Tap to enter bomb defusal unit</div>
-                </div>
-                <span style="color:#888;font-size:18px;">→</span>
-            </div>
+        <div style="text-align: center; margin-bottom: 15px;">
+            <button class="btn-hobi-help" onclick="showHobiGuide()">
+                <span class="hobi-icon">🐿️</span>
+                <span>Feeling confused like Hobi? Tap for Help!</span>
+            </button>
         </div>
     `;
 }
-function generateWiresHTML(total, wiresData) {
-    let html = '';
-    const radius = 120; // How far the buttons are from the bomb
-    
-    // Position buttons in an arc from -150 degrees to -30 degrees
-    const startAngle = -150;
-    const endAngle = -30;
-    const step = (endAngle - startAngle) / (total - 1);
 
-    wiresData.forEach((wire, i) => {
-        const angle = startAngle + (step * i);
-        const x = Math.cos(angle * Math.PI / 180) * radius;
-        const y = Math.sin(angle * Math.PI / 180) * radius;
-        
-        // Calculate rotation for the wire line so it points at the center
-        const lineRotation = angle + 180;
-
-        html += `
-            <div class="wire-wrapper" style="transform: translate(${x}px, ${y}px);">
-                <div class="wire-line wire-line-${wire.state}" style="transform: rotate(${lineRotation}deg); width: ${radius}px;"></div>
-                <div class="wire wire-${wire.state}">
-                    <span class="wire-num">${wire.wireNumber}</span>
+function showHobiGuide() {
+    const modal = document.createElement('div');
+    modal.className = 'hobi-guide-modal';
+    modal.innerHTML = `
+        <div class="hobi-backdrop" onclick="this.parentElement.remove()"></div>
+        <div class="hobi-card">
+            <div class="hobi-header">
+                <div class="hobi-avatar">😖</div>
+                <div class="hobi-title-group">
+                    <h3>Wait... I'm confused!</h3>
+                    <p>Agent Hobi's Quick Guide</p>
+                </div>
+                <button class="hobi-close" onclick="this.closest('.hobi-guide-modal').remove()">✕</button>
+            </div>
+            
+            <div class="hobi-body">
+                <p class="hobi-intro">
+                    "Okay okay, listen up! Even I understand this now! Here is the plan!" 
+                </p>
+                
+                <div class="hobi-step">
+                    <div class="step-num">1</div>
+                    <div class="step-text">
+                        <strong>Check the Red Wire!</strong>
+                        <p>Look at the "Today's Wire" card. Stream those specific songs <span class="highlight">2 TIMES</span> each!</p>
+                    </div>
+                </div>
+                
+                <div class="hobi-step">
+                    <div class="step-num">2</div>
+                    <div class="step-text">
+                        <strong>Teamwork makes the dream work!</strong>
+                        <p>Even if YOU finish, we need the <em>whole team</em> to reach the total goal. Stream more to help!</p>
+                    </div>
+                </div>
+                
+                <div class="hobi-step">
+                    <div class="step-num">3</div>
+                    <div class="step-text">
+                        <strong>The Wire gets CUT! ✂️</strong>
+                        <p>If we all succeed, the wire turns GREEN and you get a shiny badge! Yay!</p>
+                    </div>
+                </div>
+                
+                <div class="hobi-footer-note">
+                    "Don't let the bomb explode! Fighting! 💜"
                 </div>
             </div>
-        `;
-    });
-    return html;
-}
-function addDefuseStyles() {
-    if (document.getElementById('defuse-styles')) return;
-    const s = document.createElement('style');
-    s.id = 'defuse-styles';
-    s.innerHTML = `
-        .bomb-container { position: relative; display: flex; justify-content: center; align-items: center; height: 100px; }
-        .bomb-loading { font-size: 50px; animation: bomb-pulse 1s infinite; }
-        .army-bomb { font-size: 80px; z-index: 10; position: relative; animation: bomb-pulse 2s infinite; }
-        .wire-wrapper { position: absolute; display: flex; align-items: center; justify-content: center; z-index: 5; }
-        .wire-line { position: absolute; height: 2px; background: #333; transform-origin: left center; z-index: 1; }
-        .wire-line-active { background: #ff4444; box-shadow: 0 0 10px #ff4444; height: 3px; }
-        .wire-line-defused { background: #00ff88; opacity: 0.5; }
-        .wire { width: 34px; height: 34px; border-radius: 50%; background: #111; border: 2px solid #333; display: flex; align-items: center; justify-content: center; z-index: 5; }
-        .wire-active { border-color: #ff4444; box-shadow: 0 0 15px #ff4444; background: #2a0000; }
-        .wire-defused { border-color: #00ff88; background: rgba(0, 255, 136, 0.1); }
-        .wire-num { font-size: 10px; font-weight: bold; color: #fff; }
-        .rewards-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
-        .reward-box { aspect-ratio: 1; background: #1a1a2e; border: 1px solid #333; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 20px; transition: 0.3s; }
-        .reward-box.qualified { border-color: #ffd700; background: rgba(255,215,0,0.15); cursor: pointer; animation: mystery-glow 2s infinite; }
-        .reward-day { font-size: 8px; color: #666; margin-top: 2px; }
-        @keyframes bomb-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
-        @keyframes threat-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+            
+            <button class="btn-hobi-confirm" onclick="this.closest('.hobi-guide-modal').remove()">
+                Okay, I get it now! 🐿️
+            </button>
+        </div>
     `;
-    document.head.appendChild(s);
-}
-
-function renderTodayDefuseMission(c, config) {
-    const teamPct = Math.min(100, Math.round((c.collectiveStreams / c.targetStreams) * 100));
-    const userPct = c.totalTracks > 0 ? Math.round((c.completedTracks / c.totalTracks) * 100) : 0;
     
-    return `
-        <div class="card today-mission" style="border:2px solid #ff6b35; margin-top:20px;">
-            <div class="card-header" style="background:rgba(255,107,53,0.1);">
-                <h3 style="margin:0;color:#ff6b35;">🔴 TODAY'S WIRE: ${c.codename}</h3>
-                <p style="margin:5px 0 0; font-size:12px; color:#888;">${c.albums.join(' + ')}</p>
-            </div>
-            <div class="card-body">
-                <div style="margin-bottom:15px;">
-                    <div style="display:flex;justify-content:space-between;font-size:12px;color:#888;margin-bottom:5px;">
-                        <span>Team Goal</span><span>${fmt(c.collectiveStreams)}/${fmt(c.targetStreams)}</span>
-                    </div>
-                    <div class="progress-bar"><div class="progress-fill" style="width:${teamPct}%;background:${c.teamGoalMet ? '#00ff88' : '#7b2cbf'};"></div></div>
-                </div>
-                <div style="margin-bottom:20px;">
-                    <div style="display:flex;justify-content:space-between;font-size:12px;color:#888;margin-bottom:5px;">
-                        <span>Your 2X Progress</span><span>${c.completedTracks}/${c.totalTracks}</span>
-                    </div>
-                    <div class="progress-bar"><div class="progress-fill" style="width:${userPct}%;background:${c.passed2x ? '#00ff88' : '#ff6b35'};"></div></div>
-                </div>
-                <div class="defuse-tracks" style="display:flex; flex-direction:column; gap:5px;">
-                    ${c.tracks.map(t => `<div class="contrib-item" style="background:rgba(0,0,0,0.2); padding:8px 12px; border-radius:6px; display:flex; justify-content:space-between;">
-                        <span style="font-size:13px;">${t.passed ? '✅' : '⬜'} ${sanitize(t.name)}</span>
-                        <span style="font-family:monospace; color:${t.passed ? '#00ff88' : '#888'};">${t.count}/${config.requiredStreams}</span>
-                    </div>`).join('')}
-                </div>
-            </div>
-        </div>`;
+    document.body.appendChild(modal);
+    requestAnimationFrame(() => modal.classList.add('show'));
 }
 
-async function claimDefuseReward(date) {
-    try {
-        loading(true);
-        const result = await api('claimDefuseReward', { date });
-        loading(false);
-        if (result.success) {
-            showToast(result.message, 'success');
-            renderOperationDefuse(); // Refresh
-        } else {
-            showToast(result.error, 'error');
-        }
-    } catch (e) {
-        loading(false);
-        showToast('Claim failed', 'error');
-    }
-}
 // ==================== EXPORTS & INIT ====================
 document.addEventListener('DOMContentLoaded', initApp);
 
@@ -16110,7 +17404,5 @@ window.renderSummary = renderSummary;
 window.renderWeekConfirmation = renderWeekConfirmation;
 window.updateTeamStatus = updateTeamStatus;
 window.toggleResultsRelease = toggleResultsRelease;
-window.claimDefuseReward = claimDefuseReward;
-window.renderOperationDefuse = renderOperationDefuse;
 
 console.log('🎮 hopetracker v6.0 Loaded with Voting System 🗳️💜');
