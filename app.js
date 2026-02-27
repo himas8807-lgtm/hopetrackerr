@@ -16234,15 +16234,15 @@ function addArirangStyles() {
         .guide-text strong { color:#a855f7; font-size:13px; display:block; margin-bottom:4px; }
         .guide-text p { color:#888; font-size:12px; margin:3px 0; line-height:1.5; }
         .guide-text .highlight { color:#fbbf24; font-weight:600; }
-        
+
         /* ===== HEADER CARD ===== */
-        .arirang-header-card { background:linear-gradient(135deg,rgba(15,15,25,1),rgba(20,20,35,1)); border:1px solid rgba(147,51,234,0.2); }
-        .arirang-header-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; }
-        .arirang-badge-pill { display:flex; align-items:center; gap:6px; background:rgba(147,51,234,0.15); padding:4px 10px; border-radius:20px; }
-        .arirang-badge-pill .badge-icon { font-size:12px; }
-        .arirang-badge-pill .badge-text { font-size:10px; color:#a855f7; font-weight:600; letter-spacing:1px; }
-        .arirang-title { font-size:20px; font-weight:700; color:#fff; margin:0; letter-spacing:2px; }
-        .arirang-subtitle { color:#666; font-size:12px; margin:5px 0 20px; }
+       .arirang-header-card { background: linear-gradient(135deg, #0f0f1a, #161625); border: 1px solid rgba(147, 51, 234, 0.3); border-radius: 16px; padding: 20px; }
+       .arirang-header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+       .arirang-badge-pill { display: inline-flex; align-items: center; gap: 8px; background: rgba(147, 51, 234, 0.1); padding: 4px 12px 4px 4px; border-radius: 30px; border: 1px solid rgba(147, 51, 234, 0.3); }
+       .arirang-badge-pill .badge-icon { width: 24px; height: 24px; background: #9333ea; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+      .arirang-badge-pill .badge-text { font-size: 10px; color: #c084fc; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; }
+      .arirang-title { font-size: 22px; font-weight: 900; color: #fff; margin: 0; letter-spacing: 1.5px; }
+      .arirang-subtitle { color: #888; font-size: 12px; margin: 6px 0 0 0; display: flex; align-items: center; gap: 8px; }
         
         /* Power level badge */
         .power-level-badge { display:flex; align-items:center; gap:6px; padding:4px 10px; border-radius:20px; font-size:10px; font-weight:600; letter-spacing:0.5px; }
