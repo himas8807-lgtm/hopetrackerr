@@ -15362,7 +15362,7 @@ async function renderArirangProtocol() {
                 <div class="card-body">
                     <div class="arirang-header-top">
                         <div class="arirang-badge-pill">
-                            <span class="badge-icon">🎯</span>
+                        
                             <span class="badge-text">SPECIAL OPS</span>
                         </div>
                         <div class="power-level-badge power-${bombPower.tier}">
@@ -16238,9 +16238,8 @@ function addArirangStyles() {
         /* ===== HEADER CARD ===== */
         .arirang-header-card { background: linear-gradient(135deg, #0f0f1a, #161625); border: 1px solid rgba(147, 51, 234, 0.3); border-radius: 16px; padding: 20px; }
         .arirang-header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .arirang-badge-pill { display: inline-flex; align-items: center; gap: 4px; background: rgba(147,51,234,0.15); padding: 4px 10px; border-radius: 20px; }
-        .arirang-badge-pill .badge-icon { font-size: 11px; line-height: 1; }
-        .arirang-badge-pill .badge-text { font-size: 9px; color: #a855f7; font-weight: 600; letter-spacing: 1px; }
+        .arirang-badge-pill { display: inline-flex; align-items: center; background: rgba(147,51,234,0.15); padding: 5px 12px; border-radius: 20px; border: 1px solid rgba(147,51,234,0.25); }
+        .arirang-badge-pill .badge-text { font-size: 9px; color: #a855f7; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; }
         .arirang-title { font-size: 22px; font-weight: 900; color: #fff; margin: 0; letter-spacing: 1.5px; }
         .arirang-subtitle { color: #888; font-size: 12px; margin: 6px 0 0 0; display: flex; align-items: center; gap: 8px; }
         
