@@ -6228,7 +6228,7 @@ async function renderHome() {
     }
 
     const btsCountdownHtml = (typeof renderBTSCountdown === 'function') ? renderBTSCountdown() : '';
-    const defuseWidget = CONFIG.OPERATION_DEFUSE?.ENABLED ? renderDefuseHomeWidget() : '';
+    const defuseWidget = ${CONFIG.OPERATION_DEFUSE?.ENABLED ? renderDefuseHomeWidget() : ''}
     
     const refreshNotice = `
         <div style="
@@ -16065,5 +16065,10 @@ window.renderSummary = renderSummary;
 window.renderWeekConfirmation = renderWeekConfirmation;
 window.updateTeamStatus = updateTeamStatus;
 window.toggleResultsRelease = toggleResultsRelease;
+window.renderOperationDefuse = renderOperationDefuse;
+window.claimDefuseReward = claimDefuseReward;
+window.showDefuseLeaderboard = showDefuseLeaderboard;
+window.showWireInfo = showWireInfo;
+window.showHobiGuide = showHobiGuide; 
 
 console.log('🎮 hopetracker v6.0 Loaded with Voting System 🗳️💜');
