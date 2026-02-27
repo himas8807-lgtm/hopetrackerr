@@ -25,94 +25,6 @@ const CONFIG = {
         'Week 15': '2026-03-15',
         'Week 16': '2026-03-22'
 },
-    // ==================== ROAD TO ARIRANG (COUNTDOWN EVENT) ====================
-    ROAD_TO_ARIRANG: {
-        ENABLED: true,
-        START_DATE: '2026-02-25',
-        END_DATE: '2026-03-19',
-        DAILY_TARGET: 1000,      // global community goal (streams)
-        REQUIRED_STREAMS: 2,     // per-track 2X requirement
-        XP_PER_DAY: 2,
-
-        // Date → albums + tracklists (fill/adjust to match your Last.fm naming)
-        SCHEDULE: {
-            '2026-02-26': {
-                  combined: false,
-                  albums: [{
-                    name: 'Testing: Proof',
-                    tracks: ['Run BTS', 'Yet To Come', 'For Youth']
-               }]
-            },
-            '2026-03-01': {
-                combined: false,
-                albums: [{
-                    name: '2 Cool 4 Skool',
-                    tracks: [
-                        'Intro: 2 Cool 4 Skool',
-                        'We are bulletproof Pt.2',
-                        'Skit: Circle Room Talk',
-                        'No More Dream',
-                        'Interlude',
-                        'Like',
-                        'Outro: Circle Room Cypher'
-                    ]
-                }]
-            },
-            '2026-03-02': {
-                combined: false,
-                albums: [{
-                    name: 'O!RUL8,2?',
-                    tracks: []
-                }]
-            },
-            '2026-03-03': {
-                combined: false,
-                albums: [{
-                    name: 'Skool Luv Affair',
-                    tracks: [
-                        'Intro: Skool Luv Affair',
-                        'Boy In Luv',
-                        'Skit: Soulmate',
-                        'Where You From',
-                        'Just One Day',
-                        'Tomorrow',
-                        'BTS Cypher Pt.2: Triptych',
-                        'Spine Breaker',
-                        'Jump',
-                        'Outro: Propose'
-                    ]
-                }]
-            },
-            '2026-03-04': {
-                combined: false,
-                albums: [{
-                    name: 'Dark & Wild',
-                    tracks: []
-                }]
-            },
-            '2026-03-05': {
-                combined: false,
-                albums: [{
-                    name: 'Wake Up',
-                    tracks: []
-                }]
-            },
-            '2026-03-06': { combined: false, albums: [{ name: 'HYYH pt.1', tracks: [] }] },
-            '2026-03-07': { combined: false, albums: [{ name: 'HYYH pt.2', tracks: [] }] },
-            '2026-03-08': { combined: false, albums: [{ name: 'HYYH: Young Forever', tracks: [] }] },
-            '2026-03-09': { combined: false, albums: [{ name: 'Youth', tracks: [] }] },
-            '2026-03-10': { combined: false, albums: [{ name: 'WINGS', tracks: [] }] },
-            '2026-03-11': { combined: false, albums: [{ name: 'You Never Walk Alone', tracks: [] }] },
-            '2026-03-12': { combined: false, albums: [{ name: 'Love Yourself: Her', tracks: [] }] },
-            '2026-03-13': { combined: false, albums: [{ name: 'Face Yourself', tracks: [] }] },
-            '2026-03-14': { combined: false, albums: [{ name: 'Love Yourself: Tear', tracks: [] }] },
-            '2026-03-15': { combined: false, albums: [{ name: 'Love Yourself: Answer', tracks: [] }] },
-            '2026-03-16': { combined: false, albums: [{ name: 'Map of the Soul: Persona', tracks: [] }] },
-            '2026-03-17': { combined: false, albums: [{ name: 'Map of the Soul: 7', tracks: [] }] },
-            '2026-03-18': { combined: true, albums: [{ name: 'MOTS: 7 ~The Journey~', tracks: [] }] },
-            '2026-03-19': { combined: true, albums: [{ name: 'BE', tracks: [] }, { name: 'Proof', tracks: [] }] }
-        }
-    },
 
     // ==================== BADGE SYSTEM ====================
     BADGE_REPO_URL: 'https://raw.githubusercontent.com/hbot7875-gif/btscomebackmission/main/lvl1badges/',
@@ -462,17 +374,7 @@ const STATE = {
     dismissedPopups: {},            // Track dismissed popup keys
     shownPopupsThisSession: {},     // Track shown popups THIS session only
     hasShownPopupThisSession: false,
-    isCheckingNotifications: false,
-
-    // ===== ROAD TO ARIRANG STATE =====
-    roadToArirang: {
-        currentDay: null,
-        currentDayTracks: [],
-        userProgress: {},          // { 'YYYY-MM-DD': { trackCounts: {}, passed2x: bool } }
-        collectiveProgress: {},    // { 'YYYY-MM-DD': number }
-        unlockedBoxes: [],         // claimed dates
-        badges: []                 // optional cache of earned badge URLs
-    }
+    isCheckingNotifications: false
 };
 // ==================== HELPERS ====================
 const $ = id => document.getElementById(id);
@@ -499,6 +401,17 @@ function loading(show) {
     STATE.isLoading = show;
     const el = $('loading');
     if (el) el.classList.toggle('active', show);
+
+    // NUCLEAR SAFETY: If it's still loading after 10 seconds, force hide it.
+    if (show) {
+        if (window.loadingTimeout) clearTimeout(window.loadingTimeout);
+        window.loadingTimeout = setTimeout(() => {
+            console.warn("Safety timeout hit: Force hiding loader");
+            const loader = $('loading');
+            if (loader) loader.classList.remove('active');
+            STATE.isLoading = false;
+        }, 10000); 
+    }
 }
 
 function fmt(n) { return Number(n || 0).toLocaleString(); }
@@ -774,13 +687,18 @@ function renderGuide(pageName) {
 
 // ==================== API ====================
 async function api(action, params = {}) {
-    console.log('📡 Supabase Request:', action, params);
+    console.log('📡 Request:', action);
+    // 1. Start a safety timer. If the API doesn't answer in 10s, kill the loader.
+    const safetyTimer = setTimeout(() => {
+        loading(false); 
+    }, 10000);
 
     try {
         const res = await fetch(CONFIG.API_URL, { 
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'apikey': CONFIG.SUPABASE_KEY, // Ensure this matches your setup
                 'Authorization': `Bearer ${CONFIG.SUPABASE_KEY}`
             },
             body: JSON.stringify({
@@ -791,19 +709,21 @@ async function api(action, params = {}) {
             })
         });
         
-        const data = await res.json();
-        
-        if (data.error) throw new Error(data.error);
+        clearTimeout(safetyTimer); // Request finished, stop the safety timer
 
-        // Keep your timestamp logic
-        if (data.lastUpdated) { 
-            STATE.lastUpdated = data.lastUpdated; 
-            updateTime(); 
+        if (!res.ok) {
+            // This is where cached 502/429 errors land
+            throw new Error(`Server Error: ${res.status}`);
         }
+
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
         
         return data;
     } catch (e) {
-        console.error('API Network Error:', e);
+        clearTimeout(safetyTimer);
+        loading(false); // 2. CRITICAL: Hide the spinner if an error happens!
+        console.error('API Error:', e);
         throw e;
     }
 }
@@ -5647,7 +5567,7 @@ async function renderPageByRoute(pageName) {
         'secret-missions', 'announcements', 'drawer', 'goals', 'rankings', 
         'team-level', 'summary', 'comparison', 'album2x', 'profile', 'namjoon', 
         'streaming-tips', 'guide', 'attendance',
-        'arirang-road', 'arirang-hype', 'arirang-vault'
+        'arirang-hype', 'arirang-vault'
     ];
 
     dynamicPages.forEach(pName => {
@@ -5696,7 +5616,6 @@ async function renderPageByRoute(pageName) {
             case 'namjoon': await renderNamjoonBrain(); break;
             case 'guide': await renderGuidePage(); break; 
             case 'attendance': await renderAttendance(); break; 
-            case 'arirang-road': await renderArirangRoad(); break;
             case 'arirang-hype': await renderArirangHype(); break;
             case 'arirang-vault': await renderArirangVault(); break;
         }
@@ -6307,21 +6226,10 @@ async function renderHome() {
     `;
 
     try {
-        const todayKST = getKSTDateString();
-        const rtaCfg = CONFIG.ROAD_TO_ARIRANG;
-        const todayPlan = (rtaCfg?.SCHEDULE && todayKST) ? rtaCfg.SCHEDULE[todayKST] : null;
-        const todayTracks = (todayPlan?.albums || []).flatMap(a => Array.isArray(a.tracks) ? a.tracks : []);
-
-        const [summary, rankings, goals, rtaStatus] = await Promise.all([
+        const [summary, rankings, goals] = await Promise.all([
             api('getWeeklySummary', { week: selectedWeek }), 
             api('getRankings', { week: selectedWeek, limit: 5 }), 
-            api('getGoalsProgress', { week: selectedWeek }),
-            (rtaCfg?.ENABLED ? 
-             api('getRoadToArirangStatus', { date: todayKST, tracks: todayTracks }).catch(err => {
-                 console.log("RTA not active for this date yet");
-                 return null;
-             }) : 
-             Promise.resolve(null))
+            api('getGoalsProgress', { week: selectedWeek })
         ]);
          if (summary.lastUpdated) { 
             const teamTime = new Date(summary.lastUpdated).getTime();
@@ -6343,13 +6251,12 @@ async function renderHome() {
         const agentName = STATE.data?.profile?.name || 'Agent';
         
         const quickStatsEl = document.querySelector('.quick-stats-section');
-        const rtaHtml = renderRoadToArirang(rtaStatus);
+        
         if (quickStatsEl) {
             quickStatsEl.innerHTML = `
                 ${btsCountdownHtml}
                 ${refreshNotice}
                 <div id="streak-widget-container"></div>
-                ${rtaHtml}
                 <div class="card quick-stats-card" style="border-color:${teamColor(team)}40;background:linear-gradient(135deg, ${teamColor(team)}11, var(--bg-card));">
                     <div class="card-body">
                         <div class="quick-header">
@@ -10895,7 +10802,7 @@ async function submitJournalistNews() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${CONFIG.SUPABASE_KEY}`
+                'apikey': CONFIG.SUPABASE_KEY
             },
             body: JSON.stringify({
                 action: 'addAnnouncement',
@@ -15300,271 +15207,6 @@ async function renderArirangVault() {
 }
 
 window.renderArirangVault = renderArirangVault;
-function renderRoadToArirang(status) {
-    const cfg = CONFIG.ROAD_TO_ARIRANG;
-    if (!cfg?.ENABLED) return '';
-
-    const g = status?.global;
-    const total = Number(g?.eventTotalStreams || 0);
-    const target = Number(g?.eventTargetStreams || 0);
-    const pct = target > 0 ? Math.min(100, (total / target) * 100) : 0;
-    const dates = getRoadToArirangDateList();
-    const claimed = Array.isArray(status?.user?.claimedDates) ? status.user.claimedDates : [];
-    const claimedCount = dates.length ? claimed.filter(d => dates.includes(d)).length : claimed.length;
-
-    return `
-        <div class="rta-home card">
-            <div class="rta-home-head">
-                <div class="rta-home-title">Road to Arirang</div>
-                <div class="rta-home-sub">Global Progress • Day ${Math.min(dates.length || 0, (dates.indexOf(getKSTDateString()) + 1) || 0)}/${dates.length || 0}</div>
-            </div>
-            <div class="rta-home-bar">
-                <div class="rta-home-fill" style="width:${pct}%;"></div>
-            </div>
-            <div class="rta-home-meta">
-                <span>${claimedCount}/${dates.length || 0} boxes • ${fmt(total)} / ${fmt(target || (cfg.DAILY_TARGET || 0))}</span>
-                <span>${Math.round(pct)}%</span>
-            </div>
-            <button type="button" class="rta-home-link" onclick="loadPage('arirang-road')">View Road to Arirang →</button>
-        </div>
-    `;
-}
-// ==================== ROAD TO ARIRANG PAGE ====================
-
-function getRoadToArirangDateList() {
-    const cfg = CONFIG.ROAD_TO_ARIRANG;
-    if (!cfg?.START_DATE || !cfg?.END_DATE) return [];
-    const out = [];
-    const start = new Date(`${cfg.START_DATE}T00:00:00Z`);
-    const end = new Date(`${cfg.END_DATE}T00:00:00Z`);
-    for (let d = new Date(start); d <= end; d.setUTCDate(d.getUTCDate() + 1)) {
-        out.push(d.toISOString().slice(0, 10));
-    }
-    return out;
-}
-
-function getRtaPlanForDate(dateStr) {
-    const cfg = CONFIG.ROAD_TO_ARIRANG;
-    const plan = cfg?.SCHEDULE?.[dateStr] || null;
-    const albums = Array.isArray(plan?.albums) ? plan.albums : [];
-    const tracks = albums.flatMap(a => Array.isArray(a?.tracks) ? a.tracks : []);
-    return { plan, albums, tracks };
-}
-
-function getSeededIndex(seed, mod) {
-    let h = 2166136261;
-    const s = String(seed);
-    for (let i = 0; i < s.length; i++) {
-        h ^= s.charCodeAt(i);
-        h = Math.imul(h, 16777619);
-    }
-    h = (h >>> 0);
-    return mod > 0 ? (h % mod) : 0;
-}
-
-function getRtaBadgeForDate(dateStr) {
-    const pool = CONFIG.BADGE_POOL || [];
-    const idx = getSeededIndex(`${STATE.agentNo || ''}|RTA|${dateStr}`, pool.length);
-    return pool[idx] || '';
-}
-
-function compute2xProgress(trackList, trackCounts, requiredStreams) {
-    const total = trackList.length;
-    if (total === 0) return { total: 0, done: 0, pct: 0, passed: false };
-    let done = 0;
-    trackList.forEach(t => {
-        const c = Number(trackCounts?.[t] || 0);
-        if (c >= requiredStreams) done++;
-    });
-    const pct = Math.round((done / total) * 100);
-    return { total, done, pct, passed: done === total };
-}
-
-async function claimRoadToArirangBox(dateStr) {
-    const badgeUrl = getRtaBadgeForDate(dateStr);
-    const tracks = Array.isArray(STATE.roadToArirang?.currentDayTracks) ? STATE.roadToArirang.currentDayTracks : [];
-    const res = await api('claimRoadToArirangBox', {
-        date: dateStr,
-        tracks,
-        badgeUrl,
-        badgeName: 'Road to Arirang',
-        badgeDescription: `Qualified • ${dateStr}`,
-        xpAward: CONFIG.ROAD_TO_ARIRANG?.XP_PER_DAY || 2
-    });
-    return res;
-}
-
-async function renderArirangRoad() {
-    const container = document.getElementById('arirang-road-content');
-    if (!container) return;
-
-    const cfg = CONFIG.ROAD_TO_ARIRANG;
-    if (!cfg?.ENABLED) {
-        container.innerHTML = `<div class="card"><div class="card-body" style="color:#aaa;">Road to Arirang is disabled.</div></div>`;
-        return;
-    }
-
-    const today = getKSTDateString();
-    const { albums: todayAlbums, tracks: todayTracks } = getRtaPlanForDate(today);
-
-    STATE.roadToArirang.currentDay = today;
-    STATE.roadToArirang.currentDayTracks = todayTracks;
-
-    container.innerHTML = `<div style="text-align:center; padding:30px; color:#888;">🎁 Loading Road Map...</div>`;
-
-    let status = null;
-    try {
-        status = await api('getRoadToArirangStatus', { date: today, tracks: todayTracks, includeRange: true });
-    } catch (e) {
-        console.error(e);
-    }
-
-    const claimed = new Set(status?.user?.claimedDates || []);
-    const dailyTotals = status?.range?.dailyTotals || {};
-
-    const dates = getRoadToArirangDateList();
-    const required = cfg.REQUIRED_STREAMS || 2;
-    const trackCounts = status?.user?.trackCounts || {};
-    const p2x = compute2xProgress(todayTracks, trackCounts, required);
-    const globalToday = Number(status?.global?.streams || 0);
-    const globalMet = globalToday >= (cfg.DAILY_TARGET || 0);
-    const qualifiedToday = p2x.passed && globalMet;
-    const claimedToday = claimed.has(today);
-
-    const todayAlbumLabel = todayAlbums.length ? todayAlbums.map(a => a.name).join(' + ') : 'Today';
-
-    try {
-        const notifKey = `rta_qualified_${STATE.agentNo || 'agent'}_${today}`;
-        if (qualifiedToday && !claimedToday && !localStorage.getItem(notifKey)) {
-            showToast('🎁 Road to Arirang: Qualified! Claim today’s box on the map.', 'success');
-            localStorage.setItem(notifKey, '1');
-        }
-    } catch (_e) {}
-
-    container.innerHTML = `
-        <div class="page-header">
-            <div>
-                <h1>🎁 Road to Arirang</h1>
-                <p class="page-subtitle">Countdown mission • Daily album focus • 2X + community goal</p>
-            </div>
-            <div class="page-actions">
-                <button type="button" class="refresh-btn" onclick="loadPage('arirang-road')" title="Refresh">🔄</button>
-            </div>
-        </div>
-
-        <div class="rta-map card">
-            <div class="card-header"><h3>🗺️ Mission Map</h3></div>
-            <div class="card-body">
-                <div class="rta-map-track">
-                    ${dates.map(d => {
-                        const isPast = d < today;
-                        const isToday = d === today;
-                        const isFuture = d > today;
-                        const opened = claimed.has(d);
-                        const total = Number(dailyTotals?.[d] || 0);
-                        const dayGlobalMet = total >= (cfg.DAILY_TARGET || 0);
-                        const state = isFuture ? 'locked' : (opened ? 'opened' : (isToday && qualifiedToday ? 'unlockable' : (isPast && dayGlobalMet ? 'missed' : (isToday ? 'today' : 'past'))));
-                        const icon = state === 'locked' ? '🔒'
-                            : state === 'opened' ? '✅'
-                            : state === 'unlockable' ? '🎁'
-                            : state === 'missed' ? '❌'
-                            : (isToday ? '🎁' : '🔓');
-                        const click = state === 'unlockable'
-                            ? `onclick="(async()=>{ try { const r = await claimRoadToArirangBox('${d}'); if (r?.claimed || r?.alreadyClaimed) { showToast('Box claimed!', 'success'); loadPage('arirang-road'); } else { showToast(r?.error || 'Not claimable yet', 'error'); } } catch(e){ showToast('Claim failed', 'error'); } })()"`
-                            : '';
-                        return `<button class="rta-box ${state}" type="button" ${click} title="${d}">
-                            <span class="rta-box-ico">${icon}</span>
-                        </button>`;
-                    }).join('')}
-                    <div class="rta-bigbox" title="???">
-                        <div class="rta-bigbox-ico">🎁✨</div>
-                        <div class="rta-bigbox-text">???</div>
-                    </div>
-                </div>
-                <div class="rta-map-legend">
-                    <span><span class="rta-leg-ico">🔒</span> Locked</span>
-                    <span><span class="rta-leg-ico">🎁</span> Today / Unlockable</span>
-                    <span><span class="rta-leg-ico">✅</span> Opened</span>
-                    <span><span class="rta-leg-ico">❌</span> Missed</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="rta-cal card">
-            <div class="card-header"><h3>📅 Calendar</h3></div>
-            <div class="card-body">
-                <div class="rta-cal-grid">
-                    ${dates.map(d => {
-                        const { albums } = getRtaPlanForDate(d);
-                        const label = albums.length ? albums.map(a => a.name).join(' + ') : 'TBA';
-                        const isToday = d === today;
-                        const opened = claimed.has(d);
-                        const total = Number(dailyTotals?.[d] || 0);
-                        const dayGlobalMet = total >= (cfg.DAILY_TARGET || 0);
-                        const tag = opened ? '✅' : (d < today && dayGlobalMet ? '❌' : (d > today ? '🔒' : '🎁'));
-                        return `
-                            <div class="rta-cal-day ${isToday ? 'today' : ''} ${opened ? 'opened' : ''}">
-                                <div class="rta-cal-date">${d.slice(5)}</div>
-                                <div class="rta-cal-album">${sanitize(label)}</div>
-                                <div class="rta-cal-tag">${tag}</div>
-                            </div>
-                        `;
-                    }).join('')}
-                </div>
-            </div>
-        </div>
-
-        <div class="rta-focus card">
-            <div class="card-header">
-                <h3>🎯 Today's Focus</h3>
-                <span class="rta-focus-badges">
-                    <span class="rta-pill ${globalMet ? 'ok' : 'warn'}">Community: ${fmt(globalToday)} / ${fmt(cfg.DAILY_TARGET || 0)}</span>
-                    <span class="rta-pill ${p2x.passed ? 'ok' : 'warn'}">Your 2X: ${p2x.done}/${p2x.total || 0}</span>
-                </span>
-            </div>
-            <div class="card-body">
-                <div class="rta-focus-title">${sanitize(todayAlbumLabel)}</div>
-                <div class="rta-focus-bar">
-                    <div class="rta-focus-fill" style="width:${p2x.pct}%;"></div>
-                </div>
-
-                ${todayTracks.length === 0 ? `
-                    <div class="rta-empty">
-                        Track list not configured for <strong>${today}</strong>. Add tracks in <code>CONFIG.ROAD_TO_ARIRANG.SCHEDULE</code>.
-                    </div>
-                ` : `
-                    <div class="rta-tracklist">
-                        ${todayTracks.map((t, i) => {
-                            const c = Number(trackCounts?.[t] || 0);
-                            const pass = c >= required;
-                            return `
-                                <div class="rta-track ${pass ? 'passed' : ''}">
-                                    <div class="rta-track-idx">${i + 1}</div>
-                                    <div class="rta-track-name">${sanitize(t)}</div>
-                                    <div class="rta-track-count">${c}/${required} ${pass ? '✓' : ''}</div>
-                                </div>
-                            `;
-                        }).join('')}
-                    </div>
-                `}
-
-                <div class="rta-qual">
-                    <div class="rta-qual-title">Qualification Rules</div>
-                    <ul class="rta-qual-list">
-                        <li class="${p2x.passed ? 'ok' : ''}">✅ You complete 2X for <strong>every</strong> track in today’s album</li>
-                        <li class="${globalMet ? 'ok' : ''}">✅ Community hits the <strong>daily goal</strong> by midnight KST</li>
-                    </ul>
-                    <div class="rta-qual-result ${qualifiedToday ? 'ok' : ''}">
-                        ${claimedToday ? '✅ Box already claimed for today.' : (qualifiedToday ? '🎁 Qualified! Claim today’s box on the map.' : '🔒 Not qualified yet — keep streaming.' )}
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-window.renderArirangRoad = renderArirangRoad;
-window.claimRoadToArirangBox = claimRoadToArirangBox;
 
 // ==================== EXPORTS & INIT ====================
 document.addEventListener('DOMContentLoaded', initApp);
