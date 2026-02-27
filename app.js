@@ -24,7 +24,7 @@ const CONFIG = {
         'Week 14': '2026-03-08',
         'Week 15': '2026-03-15',
         'Week 16': '2026-03-22'
-},
+    },
 
     // ==================== BADGE SYSTEM ====================
     BADGE_REPO_URL: 'https://raw.githubusercontent.com/hbot7875-gif/btscomebackmission/main/lvl1badges/',
@@ -40,25 +40,26 @@ const CONFIG = {
         }
         return pool;
     },
-// ==================== ROYAL/SPECIAL BADGES ===================
-ROYAL_BADGE_REPO_URL: 'https://raw.githubusercontent.com/hbot7875-gif/btscomebackmission/2dbbd3fd9f3ef65a80236784f7db5b7a1e3c20c4/Spl%20badges/',
 
-TOTAL_ROYAL_BADGES: 49, 
-get ROYAL_BADGE_POOL() {
-    const pool = [];
-    for (let i = 1; i <= this.TOTAL_ROYAL_BADGES; i++) {
-        // Filenames in that folder are "splbadge(1).jpg", "splbadge(2).jpg", etc.
-        pool.push(`${this.ROYAL_BADGE_REPO_URL}splbadge(${i}).jpg`);
-    }
-    return pool;
-},
+    // ==================== ROYAL/SPECIAL BADGES ===================
+    ROYAL_BADGE_REPO_URL: 'https://raw.githubusercontent.com/hbot7875-gif/btscomebackmission/2dbbd3fd9f3ef65a80236784f7db5b7a1e3c20c4/Spl%20badges/',
+    TOTAL_ROYAL_BADGES: 49, 
 
-ROYAL_BADGES: {
-    TOP_N: 50,
-    STYLE: 'spotlight',
-    BADGE_NAME: 'Royal Collection',
-    DESCRIPTION: 'Awarded to Top 50 Elite Agents'
-},
+    get ROYAL_BADGE_POOL() {
+        const pool = [];
+        for (let i = 1; i <= this.TOTAL_ROYAL_BADGES; i++) {
+            pool.push(`${this.ROYAL_BADGE_REPO_URL}splbadge(${i}).jpg`);
+        }
+        return pool;
+    },
+
+    ROYAL_BADGES: {
+        TOP_N: 50,
+        STYLE: 'spotlight',
+        BADGE_NAME: 'Royal Collection',
+        DESCRIPTION: 'Awarded to Top 50 Elite Agents'
+    },
+
     // ==================== ALBUM CHALLENGE ====================
     ALBUM_CHALLENGE: {
         REQUIRED_STREAMS: 2,
@@ -139,24 +140,24 @@ ROYAL_BADGES: {
         BTS_LOGO: "https://raw.githubusercontent.com/hbot7875-gif/btscomebackmission/4f6fef44395ff9ca1609131af105a19db01e4e19/team%20pfps/cover.png",
         ALBUM_COVER: "https://raw.githubusercontent.com/hbot7875-gif/btscomebackmission/4f6fef44395ff9ca1609131af105a19db01e4e19/team%20pfps/cover.png"
     },
+
     // =============================================
-// OPERATION DEFUSE: ARIRANG BOMB - FRONTEND
-// =============================================
-
-// Add to CONFIG
-CONFIG.OPERATION_DEFUSE = {
-    ENABLED: true,
-    THEME: {
-        DANGER_COLOR: '#ff4444',
-        SAFE_COLOR: '#00ff88',
-        LOCKED_COLOR: '#444',
-        FAILED_COLOR: '#1a1a1a',
-        ACTIVE_COLOR: '#ff6b35',
-        GLOW_COLOR: '#9c27b0'
+    // OPERATION DEFUSE: ARIRANG BOMB - FRONTEND
+    // =============================================
+    OPERATION_DEFUSE: {
+        ENABLED: true,
+        THEME: {
+            DANGER_COLOR: '#ff4444',
+            SAFE_COLOR: '#00ff88',
+            LOCKED_COLOR: '#444',
+            FAILED_COLOR: '#1a1a1a',
+            ACTIVE_COLOR: '#ff6b35',
+            GLOW_COLOR: '#9c27b0'
+        }
     }
-};
+};  
 
-
+// ==================== STREAK CONFIG (SEPARATE) ====================
 const STREAK_CONFIG = {
     // Activity requirement
     ACTIVITY_THRESHOLD: 10, 
