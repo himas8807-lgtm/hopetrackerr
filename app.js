@@ -5635,7 +5635,7 @@ async function renderPageByRoute(pageName) {
             case 'attendance': await renderAttendance(); break; 
             case 'arirang-hype': await renderArirangHype(); break;
             case 'arirang-vault': await renderArirangVault(); break;
-            case 'operation-defuse': await renderOperationDefuse(); break;
+            case 'operation-defuse': await renderArirangProtocol(); break;
         }
     } catch (e) {
         console.error('Page render error:', e);
@@ -6231,7 +6231,12 @@ async function renderHome() {
     const btsCountdownHtml = (typeof renderBTSCountdown === 'function') ? renderBTSCountdown() : '';
     
     // ✅ FIXED: Removed invalid ${} wrapper - use plain ternary expression
-    const defuseWidget = CONFIG.OPERATION_DEFUSE?.ENABLED ? renderDefuseHomeWidget() : '';
+    let arirangWidgetData = null;
+    try {
+        arirangWidgetData = await api('getDefuseStatus', { agentNo: STATE.agentNo });
+    } catch (_e) { /* show static widget */ }
+
+    const widgetHTML = renderArirangHomeWidget(arirangWidgetData);
     
     const refreshNotice = `
         <div style="
@@ -15236,20 +15241,21 @@ async function renderArirangVault() {
 
 window.renderArirangVault = renderArirangVault;
 // =============================================
-// OPERATION DEFUSE: BTS ARMY BOMB VISUAL
+// OPERATION: ARIRANG PROTOCOL
+// Army Bomb Charging Interface
 // =============================================
 
-async function renderOperationDefuse() {
-    const container = $('operation-defuse-content');
+async function renderArirangProtocol() {
+    const container = $('operation-defuse-content') || $('arirang-protocol-content');
     if (!container) return;
     
     container.innerHTML = `
-        <div class="defuse-loading">
-            <div class="loading-bomb">
-                <div class="loading-sphere"></div>
-                <div class="loading-handle"></div>
+        <div class="arirang-loading">
+            <div class="loading-bomb-charge">
+                <div class="loading-sphere-charge"></div>
+                <div class="loading-handle-charge"></div>
             </div>
-            <p>Establishing secure connection...</p>
+            <p>Initializing ARIRANG Protocol...</p>
         </div>
     `;
     
@@ -15263,172 +15269,95 @@ async function renderOperationDefuse() {
                         <div class="mini-sphere"><span>⟭⟬</span></div>
                         <div class="mini-handle"></div>
                     </div>
-                    <h3 style="color:#7b2cbf;margin-top:20px;">Operation Classified</h3>
-                    <p style="color:#888;font-size:13px;">${data.error || 'Mission will commence soon. Stand by, Agent.'}</p>
+                    <h3 style="color:#7b2cbf;margin-top:20px;">Protocol Classified</h3>
+                    <p style="color:#888;font-size:13px;">${data.error || 'ARIRANG Protocol will commence soon. Stand by, Agent.'}</p>
                 </div>
             `;
             return;
         }
         
-        const { stats, wires, todayChallenge, bombStatus, timeRemaining, config } = data;
-        
-        // Determine bomb status for visual
-        const bombVisualStatus = getBombVisualStatus(stats, bombStatus);
+        const { stats, phases, eras, todayChallenge, bombStatus, bombPower, timeRemaining, config, currentEra, fullyCharged, nextPhase } = data;
         
         container.innerHTML = `
-            ${renderHobiHelpButton()} 
-            ${renderDefuseGuide()}
+            ${renderArirangHelpButton()}
+            ${renderArirangGuide()}
             
-            <!-- MISSION BRIEFING HEADER -->
-            <div class="card defuse-briefing">
+            <!-- MISSION HEADER -->
+            <div class="card arirang-header-card">
                 <div class="card-body">
-                    <div class="briefing-header">
-                        <div class="briefing-badge">
+                    <div class="arirang-header-top">
+                        <div class="arirang-badge-pill">
                             <span class="badge-icon">🎯</span>
-                            <span class="badge-text">CLASSIFIED</span>
+                            <span class="badge-text">SPECIAL OPS</span>
                         </div>
-                        <div class="briefing-status ${bombVisualStatus.statusClass}">
-                            <span class="status-indicator"></span>
-                            <span class="status-text">${bombVisualStatus.statusLabel}</span>
-                        </div>
-                    </div>
-                    
-                    <h2 class="briefing-title">OPERATION DEFUSE</h2>
-                    <p class="briefing-subtitle">Arirang Countdown • Day ${getTodayWireNumber(wires)} of ${stats.totalWires}</p>
-                    
-                    <!-- Stats Grid -->
-                    <div class="defuse-stats-grid">
-                        <div class="stat-box success">
-                            <div class="stat-icon">✂️</div>
-                            <div class="stat-value">${stats.wiresDefused}</div>
-                            <div class="stat-label">Defused</div>
-                        </div>
-                        <div class="stat-box warning">
-                            <div class="stat-icon">⏳</div>
-                            <div class="stat-value">${stats.totalWires - stats.wiresDefused - stats.wiresFailed}</div>
-                            <div class="stat-label">Remaining</div>
-                        </div>
-                        <div class="stat-box ${stats.wiresFailed > 0 ? 'danger' : 'neutral'}">
-                            <div class="stat-icon">${stats.wiresFailed > 0 ? '💔' : '✓'}</div>
-                            <div class="stat-value">${stats.wiresFailed}</div>
-                            <div class="stat-label">Missed</div>
+                        <div class="power-level-badge power-${bombPower.tier}">
+                            <span class="power-dot"></span>
+                            <span>${bombPower.tierName}</span>
                         </div>
                     </div>
                     
-                    <!-- Progress Bar -->
-                    <div class="mission-progress">
-                        <div class="progress-track">
-                            <div class="progress-fill ${bombVisualStatus.progressClass}" style="width:${stats.percentComplete}%"></div>
+                    <h2 class="arirang-title">OPERATION: ARIRANG</h2>
+                    <p class="arirang-subtitle">Global Album Preparation Protocol • Phase ${getTodayPhaseNumber(phases)} of ${stats.totalPhases}</p>
+                    
+                    <!-- Power Stats -->
+                    <div class="power-stats-grid">
+                        <div class="power-stat charged">
+                            <div class="power-stat-icon">⚡</div>
+                            <div class="power-stat-value">${stats.phasesCharged}</div>
+                            <div class="power-stat-label">Charged</div>
                         </div>
-                        <div class="progress-label">${stats.percentComplete}% Complete</div>
+                        <div class="power-stat remaining">
+                            <div class="power-stat-icon">◐</div>
+                            <div class="power-stat-value">${stats.totalPhases - stats.phasesCharged - stats.phasesMissed}</div>
+                            <div class="power-stat-label">Remaining</div>
+                        </div>
+                        <div class="power-stat ${stats.phasesMissed > 0 ? 'missed' : 'clean'}">
+                            <div class="power-stat-icon">${stats.phasesMissed > 0 ? '○' : '✓'}</div>
+                            <div class="power-stat-value">${stats.phasesMissed}</div>
+                            <div class="power-stat-label">Missed</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Power Bar -->
+                    <div class="power-bar-section">
+                        <div class="power-bar-track">
+                            <div class="power-bar-fill power-fill-${bombPower.tier}" style="width:${stats.percentComplete}%">
+                                <div class="power-bar-shimmer"></div>
+                            </div>
+                        </div>
+                        <div class="power-bar-label">${stats.percentComplete}% Power</div>
                     </div>
                 </div>
             </div>
             
-            <!-- THE ARMY BOMB CONSOLE -->
-            <div class="card army-bomb-console ${bombVisualStatus.consoleClass}">
+            <!-- ARMY BOMB CHARGING CORE -->
+            <div class="card arirang-bomb-core">
                 <div class="card-header">
-                    <h3><span class="header-icon">💎</span> Defusal Core</h3>
-                    ${todayChallenge ? `<span class="countdown-badge ${bombVisualStatus.urgentClass}">⏱ ${timeRemaining}</span>` : ''}
+                    <h3><span class="header-icon">💎</span> Charging Core</h3>
+                    ${todayChallenge ? `<span class="time-badge">⏱ ${timeRemaining}</span>` : ''}
                 </div>
                 <div class="card-body">
-                    
-                    <!-- ARMY BOMB 3D VISUAL -->
-                    <div class="army-bomb-display">
-                        <!-- Ambient Glow -->
-                        <div class="ambient-glow ${bombVisualStatus.glowClass}"></div>
-                        
-                        <!-- The Army Bomb -->
-                        <div class="army-bomb ${bombVisualStatus.bombClass}">
-                            <!-- Top Detonator Button -->
-                            <div class="detonator-button ${bombVisualStatus.buttonClass}">
-                                <div class="button-light"></div>
-                            </div>
-                            
-                            <!-- Glass Sphere -->
-                            <div class="bomb-sphere">
-                                <!-- Glass Reflection -->
-                                <div class="sphere-reflection"></div>
-                                <div class="sphere-reflection-2"></div>
-                                
-                                <!-- Inner Energy Ring -->
-                                <div class="energy-ring ${bombVisualStatus.ringClass}"></div>
-                                <div class="energy-ring inner ${bombVisualStatus.ringClass}"></div>
-                                
-                                <!-- BTS Logo Core -->
-                                <div class="bts-core ${bombVisualStatus.coreClass}">
-                                    <span class="bts-logo">⟭⟬</span>
-                                </div>
-                                
-                                <!-- Energy Particles -->
-                                <div class="energy-particles ${bombVisualStatus.particleClass}">
-                                    <span></span><span></span><span></span>
-                                    <span></span><span></span><span></span>
-                                </div>
-                            </div>
-                            
-                            <!-- Handle/Base -->
-                            <div class="bomb-handle">
-                                <div class="handle-connector"></div>
-                                <div class="handle-grip">
-                                    <div class="grip-line"></div>
-                                    <div class="grip-line"></div>
-                                    <div class="grip-line"></div>
-                                </div>
-                                <div class="handle-base"></div>
-                            </div>
-                            
-                            <!-- Wire Connections (at base) -->
-                            <div class="wire-connections">
-                                <div class="wire-port left ${getWirePortStatus(wires, 'left')}"></div>
-                                <div class="wire-port center ${getWirePortStatus(wires, 'center')}"></div>
-                                <div class="wire-port right ${getWirePortStatus(wires, 'right')}"></div>
-                            </div>
-                        </div>
-                        
-                        <!-- Status Label -->
-                        <div class="bomb-status-label ${bombVisualStatus.labelClass}">
-                            ${bombVisualStatus.statusMessage}
-                        </div>
-                    </div>
-                    
-                    <!-- WIRE PANEL -->
-                    <div class="wire-panel">
-                        <div class="panel-header">
-                            <span class="panel-icon">🔌</span>
-                            <span class="panel-title">Wire Status Panel</span>
-                        </div>
-                        
-                        <div class="wire-grid">
-                            ${renderWireGrid(wires)}
-                        </div>
-                        
-                        <div class="wire-legend">
-                            <div class="legend-item"><span class="dot defused"></span>Defused</div>
-                            <div class="legend-item"><span class="dot active"></span>Active</div>
-                            <div class="legend-item"><span class="dot locked"></span>Locked</div>
-                            <div class="legend-item"><span class="dot failed"></span>Missed</div>
-                        </div>
-                    </div>
+                    ${renderChargingBomb(bombPower, stats, fullyCharged)}
+                    ${renderEraTimeline(phases, eras, currentEra)}
                 </div>
             </div>
             
-            <!-- TODAY'S MISSION -->
-            ${todayChallenge ? renderTodayDefuseMission(todayChallenge, config) : renderNoMissionCard(wires)}
+            <!-- TODAY'S PHASE -->
+            ${todayChallenge ? renderTodayPhase(todayChallenge, config) : renderNoPhaseCard(phases)}
             
             <!-- REWARDS VAULT -->
-            ${renderRewardsVault(wires, stats)}
+            ${renderArirangVault(phases, stats)}
             
-            <!-- MYSTERY BOX -->
-            ${renderMysteryBox(data.mysteryBoxUnlocked, stats)}
+            <!-- FULL ACTIVATION -->
+            ${renderFullActivation(fullyCharged, stats)}
             
             <!-- LEADERBOARD -->
-            <div class="card defuse-action-card" onclick="showDefuseLeaderboard()">
+            <div class="card arirang-action-card" onclick="showArirangLeaderboard()">
                 <div class="card-body">
                     <div class="action-content">
                         <span class="action-icon">🏆</span>
                         <div class="action-text">
-                            <span class="action-title">Defuse Leaderboard</span>
+                            <span class="action-title">Charging Champions</span>
                             <span class="action-subtitle">See top agents</span>
                         </div>
                         <span class="action-arrow">→</span>
@@ -15437,10 +15366,10 @@ async function renderOperationDefuse() {
             </div>
         `;
         
-        addArmyBombStyles();
+        addArirangStyles();
         
     } catch (e) {
-        console.error('Error loading Operation Defuse:', e);
+        console.error('Error loading ARIRANG Protocol:', e);
         container.innerHTML = `
             <div class="card" style="text-align:center;padding:40px;">
                 <div class="mini-army-bomb error">
@@ -15449,7 +15378,7 @@ async function renderOperationDefuse() {
                 </div>
                 <h3 style="color:#ef4444;margin-top:20px;">Connection Lost</h3>
                 <p style="color:#888;font-size:13px;">Could not reach HQ servers</p>
-                <button class="btn-primary" onclick="renderOperationDefuse()" style="margin-top:15px;">
+                <button class="btn-primary" onclick="renderArirangProtocol()" style="margin-top:15px;">
                     Reconnect
                 </button>
             </div>
@@ -15458,435 +15387,298 @@ async function renderOperationDefuse() {
 }
 
 // =============================================
-// HELPER FUNCTIONS
+// CHARGING ARMY BOMB VISUAL
 // =============================================
 
-function getBombVisualStatus(stats, bombStatus) {
-    const remaining = stats.totalWires - stats.wiresDefused - stats.wiresFailed;
+function renderChargingBomb(bombPower, stats, fullyCharged) {
     const pct = stats.percentComplete;
+    const tier = bombPower.tier;
     
-    if (bombStatus === 'DEFUSED') {
-        return {
-            statusClass: 'status-success',
-            statusLabel: 'STABILIZED',
-            statusMessage: '✨ Core Stabilized',
-            consoleClass: 'console-success',
-            bombClass: 'stabilized',
-            glowClass: 'glow-green',
-            buttonClass: 'button-green',
-            ringClass: 'ring-green',
-            coreClass: 'core-green',
-            particleClass: 'particles-green',
-            labelClass: 'label-success',
-            progressClass: 'progress-success',
-            urgentClass: ''
-        };
-    }
-    
-    if (bombStatus === 'DETONATED') {
-        return {
-            statusClass: 'status-ended',
-            statusLabel: 'MISSION ENDED',
-            statusMessage: '💫 Mission Complete',
-            consoleClass: 'console-neutral',
-            bombClass: 'ended',
-            glowClass: 'glow-neutral',
-            buttonClass: 'button-off',
-            ringClass: 'ring-neutral',
-            coreClass: 'core-neutral',
-            particleClass: 'particles-off',
-            labelClass: 'label-neutral',
-            progressClass: 'progress-neutral',
-            urgentClass: ''
-        };
-    }
-    
-    // Active states based on progress
-    if (pct < 30 || stats.wiresFailed > 2) {
-        return {
-            statusClass: 'status-critical',
-            statusLabel: 'CRITICAL',
-            statusMessage: '⚠️ Unstable Energy Detected',
-            consoleClass: 'console-critical',
-            bombClass: 'critical',
-            glowClass: 'glow-red',
-            buttonClass: 'button-red',
-            ringClass: 'ring-red',
-            coreClass: 'core-red',
-            particleClass: 'particles-red',
-            labelClass: 'label-critical',
-            progressClass: 'progress-critical',
-            urgentClass: 'urgent'
-        };
-    }
-    
-    if (pct < 60) {
-        return {
-            statusClass: 'status-warning',
-            statusLabel: 'ELEVATED',
-            statusMessage: '⚡ Energy Fluctuating',
-            consoleClass: 'console-warning',
-            bombClass: 'elevated',
-            glowClass: 'glow-orange',
-            buttonClass: 'button-orange',
-            ringClass: 'ring-orange',
-            coreClass: 'core-orange',
-            particleClass: 'particles-orange',
-            labelClass: 'label-warning',
-            progressClass: 'progress-warning',
-            urgentClass: ''
-        };
-    }
-    
-    return {
-        statusClass: 'status-active',
-        statusLabel: 'ACTIVE',
-        statusMessage: '💜 Defusal In Progress',
-        consoleClass: 'console-active',
-        bombClass: 'active',
-        glowClass: 'glow-purple',
-        buttonClass: 'button-purple',
-        ringClass: 'ring-purple',
-        coreClass: 'core-purple',
-        particleClass: 'particles-purple',
-        labelClass: 'label-active',
-        progressClass: 'progress-active',
-        urgentClass: ''
-    };
-}
-
-function getTodayWireNumber(wires) {
-    const today = wires.find(w => w.state === 'active');
-    return today ? today.wireNumber : wires.length;
-}
-
-function getWirePortStatus(wires, position) {
-    const defused = wires.filter(w => w.state === 'defused').length;
-    const total = wires.length;
-    const pct = (defused / total) * 100;
-    
-    if (position === 'left') return pct > 33 ? 'port-active' : 'port-inactive';
-    if (position === 'center') return pct > 66 ? 'port-active' : 'port-inactive';
-    if (position === 'right') return pct === 100 ? 'port-active' : 'port-inactive';
-    return 'port-inactive';
-}
-
-function renderDefuseGuide() {
     return `
-        <div class="card defuse-guide">
-            <div class="card-body">
-                <div class="guide-content">
-                    <span class="guide-icon">🕵️</span>
-                    <div class="guide-text">
-                        <strong>Daily Defusal Protocol</strong>
-                        <p>Stream each track <span class="highlight">2X</span> daily. When the whole team hits the collective goal, you qualify for that day's badge + XP!</p>
+        <div class="charging-bomb-display">
+            <!-- Ambient glow scales with power -->
+            <div class="charge-ambient-glow glow-${tier}" style="opacity:${bombPower.glowIntensity}"></div>
+            
+            <!-- The Army Bomb -->
+            <div class="army-bomb bomb-${tier}">
+                <!-- Top Button -->
+                <div class="charge-button btn-${tier}">
+                    <div class="btn-light"></div>
+                </div>
+                
+                <!-- Glass Sphere -->
+                <div class="charge-sphere">
+                    <div class="sphere-reflection"></div>
+                    <div class="sphere-reflection-2"></div>
+                    
+                    <!-- Energy fill level -->
+                    <div class="energy-fill-level" style="height:${pct}%">
+                        <div class="energy-fill-gradient fill-${tier}"></div>
+                        <div class="energy-fill-surface"></div>
                     </div>
+                    
+                    <!-- Energy rings -->
+                    ${pct >= 20 ? `<div class="charge-ring ring-${tier}"></div>` : ''}
+                    ${pct >= 50 ? `<div class="charge-ring inner ring-${tier}"></div>` : ''}
+                    
+                    <!-- BTS Logo -->
+                    <div class="charge-core core-${tier}">
+                        <span class="bts-logo">⟭⟬</span>
+                    </div>
+                    
+                    <!-- Particles based on power -->
+                    ${pct >= 30 ? `
+                        <div class="charge-particles particles-${tier}">
+                            <span></span><span></span><span></span>
+                            ${pct >= 60 ? '<span></span><span></span><span></span>' : ''}
+                        </div>
+                    ` : ''}
                 </div>
-            </div>
-        </div>
-    `;
-}
-
-function renderWireGrid(wires) {
-    // Split into 2 rows
-    const half = Math.ceil(wires.length / 2);
-    const row1 = wires.slice(0, half);
-    const row2 = wires.slice(half);
-    
-    return `
-        <div class="wire-row">
-            ${row1.map(w => renderWireCell(w)).join('')}
-        </div>
-        <div class="wire-row">
-            ${row2.map(w => renderWireCell(w)).join('')}
-        </div>
-    `;
-}
-
-function renderWireCell(wire) {
-    const stateClass = `wire-${wire.state}`;
-    const icons = {
-        'defused': '✓',
-        'active': '●',
-        'failed': '✗',
-        'locked': '○'
-    };
-    
-    // Determine sub-indicator states for past/active wires
-    const showSubDots = wire.state !== 'locked';
-    
-    return `
-        <div class="wire-cell ${stateClass}" 
-             onclick="showWireDetail(${JSON.stringify({
-                 date: wire.date,
-                 codename: wire.codename,
-                 albums: wire.albums,
-                 state: wire.state,
-                 userPassed2x: wire.userPassed2x || false,
-                 teamGoalMet: wire.teamGoalMet || false,
-                 spotifyLinks: wire.spotifyLinks || []
-             }).replace(/"/g, '&quot;')})"
-             title="${wire.codename}: ${wire.albums.join(', ')}">
-            <span class="wire-num">${wire.wireNumber}</span>
-            ${showSubDots ? `
-                <div class="wire-sub-dots">
-                    <span class="sub-dot ${wire.userPassed2x ? 'sub-done' : (wire.state === 'failed' ? 'sub-fail' : 'sub-pending')}" 
-                          title="Your 2X"></span>
-                    <span class="sub-dot ${wire.teamGoalMet ? 'sub-done' : (wire.state === 'failed' ? 'sub-fail' : 'sub-pending')}" 
-                          title="Team Goal"></span>
+                
+                <!-- Handle -->
+                <div class="bomb-handle">
+                    <div class="handle-connector"></div>
+                    <div class="handle-grip">
+                        <div class="grip-line"></div>
+                        <div class="grip-line"></div>
+                        <div class="grip-line"></div>
+                    </div>
+                    <div class="handle-base"></div>
                 </div>
-            ` : `
-                <span class="wire-icon">${icons[wire.state] || '○'}</span>
-            `}
-        </div>
-    `;
-}
-function showWireDetail(wire) {
-    // wire is the parsed JSON object from onclick
-    const stateLabels = {
-        'defused': { text: 'DEFUSED ✓', cls: 'state-defused' },
-        'active': { text: 'ACTIVE NOW', cls: 'state-active' },
-        'failed': { text: 'MISSED', cls: 'state-failed' },
-        'locked': { text: 'LOCKED', cls: 'state-locked' }
-    };
-    const stateInfo = stateLabels[wire.state] || stateLabels.locked;
-    
-    const modal = document.createElement('div');
-    modal.className = 'wire-detail-modal';
-    modal.innerHTML = `
-        <div class="modal-bg" onclick="this.parentElement.remove()"></div>
-        <div class="wire-detail-card">
-            <div class="wire-detail-header">
-                <div>
-                    <h3>${wire.codename}</h3>
-                    <span class="wire-detail-date">${wire.date}</span>
-                </div>
-                <span class="wire-state-badge ${stateInfo.cls}">${stateInfo.text}</span>
             </div>
             
-            <div class="wire-detail-albums">
-                ${wire.albums.map((album, i) => `
-                    <div class="wire-album-row">
-                        <span class="album-disc">💿</span>
-                        <span class="album-label">${sanitize(album)}</span>
-                        ${wire.spotifyLinks?.[i]?.url ? `
-                            <a href="${wire.spotifyLinks[i].url}" target="_blank" rel="noopener" 
-                               class="spotify-pill" onclick="event.stopPropagation()">
-                                <span class="spotify-icon">▶</span> Spotify
-                            </a>
-                        ` : ''}
-                    </div>
-                `).join('')}
-            </div>
-            
-            ${wire.state !== 'locked' ? `
-                <div class="wire-detail-conditions">
-                    <div class="condition-row ${wire.userPassed2x ? 'met' : 'unmet'}">
-                        <span class="condition-icon">${wire.userPassed2x ? '✂️' : '🔌'}</span>
-                        <span>Wire A: Your 2X</span>
-                        <span class="condition-badge">${wire.userPassed2x ? 'CUT' : 'INTACT'}</span>
-                    </div>
-                    <div class="condition-row ${wire.teamGoalMet ? 'met' : 'unmet'}">
-                        <span class="condition-icon">${wire.teamGoalMet ? '✂️' : '🔌'}</span>
-                        <span>Wire B: Team Goal</span>
-                        <span class="condition-badge">${wire.teamGoalMet ? 'CUT' : 'INTACT'}</span>
-                    </div>
-                </div>
-            ` : ''}
-            
-            <button class="btn-close-wire-detail" onclick="this.closest('.wire-detail-modal').remove()">
-                Close
-            </button>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
-    requestAnimationFrame(() => modal.classList.add('show'));
-}
-function renderNoMissionCard(wires) {
-    const nextWire = (wires || []).find(w => w.state === 'locked');
-    const allDone = (wires || []).every(w => w.state === 'defused' || w.state === 'failed');
-    
-    return `
-        <div class="card defuse-rest-card">
-            <div class="card-body">
-                <div class="rest-content">
-                    <div class="rest-icon">${allDone ? '🎖️' : '🌙'}</div>
-                    <div class="rest-text">
-                        <h3>${allDone ? 'All Wires Addressed' : 'No Active Wire Today'}</h3>
-                        <p>${allDone 
-                            ? 'Every wire has been handled. Check the mystery box!' 
-                            : nextWire 
-                                ? `Next wire: Day ${nextWire.wireNumber} — ${nextWire.codename} (${nextWire.date})`
-                                : 'Stand by for further instructions, Agent.'
-                        }</p>
-                    </div>
-                </div>
+            <!-- Power label -->
+            <div class="bomb-power-label label-${tier}">
+                ${fullyCharged ? '💜 FULLY CHARGED' : `⚡ ${pct}% Power`}
             </div>
         </div>
     `;
 }
 
-function renderTodayDefuseMission(challenge, config) {
-    // Data is now correctly shaped from updated backend:
-    // challenge.tracks = [{name, count, required, passed}, ...]
-    // challenge.completedTracks = number
-    // challenge.totalTracks = number
-    // challenge.spotifyLinks = [{album, url}, ...]
-    
+// =============================================
+// ERA TIMELINE
+// =============================================
+
+function renderEraTimeline(phases, eras, currentEra) {
+    return `
+        <div class="era-timeline">
+            <div class="timeline-header">
+                <span class="timeline-icon">📀</span>
+                <span class="timeline-title">Era Timeline</span>
+                <span class="timeline-current">${currentEra}</span>
+            </div>
+            
+            <div class="era-grid">
+                ${Object.entries(eras || {}).map(([eraName, era]) => {
+                    const eraData = era as any;
+                    const isActive = eraName === currentEra;
+                    const isComplete = eraData.complete;
+                    
+                    let stateClass = 'era-locked';
+                    if (isComplete) stateClass = 'era-complete';
+                    else if (isActive) stateClass = 'era-active';
+                    else {
+                        const eraPhases = (eraData.phases || []);
+                        const anyPast = phases.some((p: any) => eraPhases.includes(p.phase) && (p.state === 'charged' || p.state === 'missed' || p.state === 'active'));
+                        if (anyPast) stateClass = 'era-partial';
+                    }
+                    
+                    return `
+                        <div class="era-cell ${stateClass}" 
+                             style="--era-color:${eraData.color}"
+                             onclick="showEraDetail('${eraName}', ${JSON.stringify(eraData).replace(/'/g, "\\'")})"
+                             title="${eraName}: ${eraData.charged}/${eraData.total}">
+                            <span class="era-icon">${eraData.icon}</span>
+                            <span class="era-name">${eraName}</span>
+                            <span class="era-progress">${eraData.charged}/${eraData.total}</span>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+            
+            <!-- Phase dots -->
+            <div class="phase-dot-grid">
+                ${(phases || []).map(p => {
+                    const dotClass = p.state === 'charged' ? 'dot-charged' :
+                                     p.state === 'active' ? 'dot-active' :
+                                     p.state === 'missed' ? 'dot-missed' : 'dot-locked';
+                    return `
+                        <div class="phase-dot ${dotClass}" 
+                             onclick="showPhaseInfo(${JSON.stringify({
+                                 date: p.date,
+                                 codename: p.codename,
+                                 albums: p.albums,
+                                 state: p.state,
+                                 era: p.era,
+                                 userPassed2x: p.userPassed2x || false,
+                                 teamGoalMet: p.teamGoalMet || false,
+                                 spotifyLinks: p.spotifyLinks || []
+                             }).replace(/"/g, '&quot;')})"
+                             title="Phase ${p.phase}: ${p.codename}">
+                            <span>${p.phase}</span>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+            
+            <div class="phase-legend">
+                <div class="legend-item"><span class="dot charged"></span>Charged</div>
+                <div class="legend-item"><span class="dot active"></span>Active</div>
+                <div class="legend-item"><span class="dot locked"></span>Locked</div>
+                <div class="legend-item"><span class="dot missed"></span>Missed</div>
+            </div>
+        </div>
+    `;
+}
+
+// =============================================
+// TODAY'S PHASE — DUAL CHARGE VISUAL
+// =============================================
+
+function renderTodayPhase(challenge, config) {
     const completedTracks = challenge.completedTracks || 0;
     const totalTracks = challenge.totalTracks || 0;
     const userPct = totalTracks > 0 ? Math.round((completedTracks / totalTracks) * 100) : 0;
     const teamPct = Math.min(100, Math.round((challenge.collectiveStreams / challenge.targetStreams) * 100));
     
-    // Wire A = personal 2x, Wire B = team goal
-    const wireACut = challenge.passed2x;
-    const wireBCut = challenge.teamGoalMet;
-    const bothCut = wireACut && wireBCut;
+    const chargeA = challenge.passed2x;
+    const chargeB = challenge.teamGoalMet;
+    const bothCharged = chargeA && chargeB;
     
     return `
-        <div class="card defuse-mission-card ${bothCut ? 'mission-complete' : ''}">
+        <div class="card arirang-phase-card ${bothCharged ? 'phase-charged' : ''}">
             <div class="card-header">
-                <div class="mission-header-left">
-                    <h3><span class="header-icon">🎯</span> Today's Wire</h3>
-                    <span class="wire-badge">${challenge.codename}</span>
+                <div class="phase-header-left">
+                    <h3><span class="header-icon">⚡</span> Today's Phase</h3>
+                    <span class="phase-codename-badge">${challenge.codename}</span>
+                    ${challenge.era ? `<span class="era-tag">${challenge.era}</span>` : ''}
                 </div>
-                ${bothCut ? '<span class="complete-badge">✓ DEFUSED</span>' : ''}
+                ${bothCharged ? '<span class="charged-badge">⚡ CHARGED</span>' : ''}
             </div>
             <div class="card-body">
                 
-                <!-- Album + Spotify Links -->
-                <div class="album-tag-row">
+                <!-- Album + Spotify -->
+                <div class="album-spotify-row">
                     ${(challenge.spotifyLinks || []).map(link => `
-                        <div class="album-tag-with-link">
-                            <div class="album-tag-info">
-                                <span class="album-icon">💿</span>
-                                <span class="album-name">${sanitize(link.album)}</span>
+                        <div class="album-spotify-item">
+                            <div class="album-info">
+                                <span class="album-disc">💿</span>
+                                <span class="album-title">${sanitize(link.album)}</span>
                             </div>
                             <a href="${link.url}" target="_blank" rel="noopener" class="spotify-btn">
-                                <svg class="spotify-svg" viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
                                     <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
                                 </svg>
-                                <span>Stream on Spotify</span>
+                                <span>Stream</span>
                             </a>
                         </div>
                     `).join('')}
                 </div>
                 
-                <!-- ===================== -->
-                <!-- DUAL WIRE VISUAL      -->
-                <!-- ===================== -->
-                <div class="dual-wire-section">
+                <!-- DUAL CHARGE VISUAL -->
+                <div class="dual-charge-section">
                     
-                    <!-- WIRE A: Personal 2X -->
-                    <div class="wire-unit ${wireACut ? 'wire-is-cut' : 'wire-is-live'}">
-                        <div class="wire-unit-header">
-                            <div class="wire-letter-badge ${wireACut ? 'cut' : ''}">A</div>
-                            <span class="wire-unit-label">Your 2X Challenge</span>
-                            <span class="wire-cut-status ${wireACut ? 'status-cut' : 'status-live'}">
-                                ${wireACut ? '✂️ CUT' : '🔴 LIVE'}
+                    <!-- CHARGE A: Personal 2X -->
+                    <div class="charge-unit ${chargeA ? 'unit-charged' : 'unit-live'}">
+                        <div class="charge-unit-header">
+                            <div class="charge-letter ${chargeA ? 'letter-charged' : ''}">A</div>
+                            <span class="charge-unit-label">Your 2X Charge</span>
+                            <span class="charge-status ${chargeA ? 'cs-charged' : 'cs-live'}">
+                                ${chargeA ? '⚡ CHARGED' : '○ CHARGING'}
                             </span>
                         </div>
                         
-                        <!-- The Wire Line -->
-                        <div class="defuse-wire-container">
-                            <div class="defuse-wire-line ${wireACut ? 'cut' : 'live'}" 
-                                 style="--wire-color: ${wireACut ? '#22c55e' : '#a855f7'}; --wire-glow: ${wireACut ? 'rgba(34,197,94,0.4)' : 'rgba(168,85,247,0.4)'}">
-                                <div class="wire-segment left"></div>
-                                ${wireACut ? `
-                                    <div class="wire-cut-point">
-                                        <span class="cut-scissors">✂️</span>
-                                        <div class="cut-sparks">
-                                            <span></span><span></span><span></span>
-                                        </div>
+                        <div class="charge-wire-container">
+                            <div class="charge-wire ${chargeA ? 'wire-charged' : 'wire-live'}"
+                                 style="--charge-color:${chargeA ? '#22c55e' : '#a855f7'}">
+                                ${chargeA ? `
+                                    <div class="wire-segment left"></div>
+                                    <div class="charge-point">
+                                        <span class="charge-bolt">⚡</span>
+                                        <div class="charge-sparks"><span></span><span></span><span></span></div>
                                     </div>
+                                    <div class="wire-segment right"></div>
                                 ` : `
-                                    <div class="wire-energy-flow"></div>
+                                    <div class="wire-flow"></div>
                                 `}
-                                <div class="wire-segment right"></div>
                             </div>
                         </div>
                         
-                        <div class="wire-unit-progress">
-                            ${wireACut 
-                                ? `<span class="wire-done-text">✓ All ${totalTracks} tracks streamed ${config.requiredStreams}X</span>`
-                                : `<span class="wire-pending-text">${completedTracks}/${totalTracks} tracks complete</span>`
+                        <div class="charge-unit-status">
+                            ${chargeA
+                                ? `<span class="status-done">✓ All ${totalTracks} tracks streamed ${config.requiredStreams}X</span>`
+                                : `<span class="status-pending">${completedTracks}/${totalTracks} tracks complete</span>`
                             }
                         </div>
                     </div>
                     
-                    <!-- Connector between wires -->
-                    <div class="wire-connector">
-                        <div class="connector-line"></div>
-                        <span class="connector-label">${bothCut ? '💥 BOTH CUT' : 'Both must be cut'}</span>
-                        <div class="connector-line"></div>
+                    <!-- Connector -->
+                    <div class="charge-connector">
+                        <div class="conn-line"></div>
+                        <span class="conn-label">${bothCharged ? '⚡ BOTH CHARGED' : 'Both needed to charge phase'}</span>
+                        <div class="conn-line"></div>
                     </div>
                     
-                    <!-- WIRE B: Team Goal -->
-                    <div class="wire-unit ${wireBCut ? 'wire-is-cut' : 'wire-is-live'}">
-                        <div class="wire-unit-header">
-                            <div class="wire-letter-badge ${wireBCut ? 'cut' : ''}">B</div>
-                            <span class="wire-unit-label">Team Collective Goal</span>
-                            <span class="wire-cut-status ${wireBCut ? 'status-cut' : 'status-live'}">
-                                ${wireBCut ? '✂️ CUT' : '🔴 LIVE'}
+                    <!-- CHARGE B: Team Goal -->
+                    <div class="charge-unit ${chargeB ? 'unit-charged' : 'unit-live'}">
+                        <div class="charge-unit-header">
+                            <div class="charge-letter ${chargeB ? 'letter-charged' : ''}">B</div>
+                            <span class="charge-unit-label">Team Power Goal</span>
+                            <span class="charge-status ${chargeB ? 'cs-charged' : 'cs-live'}">
+                                ${chargeB ? '⚡ CHARGED' : '○ CHARGING'}
                             </span>
                         </div>
                         
-                        <!-- The Wire Line -->
-                        <div class="defuse-wire-container">
-                            <div class="defuse-wire-line ${wireBCut ? 'cut' : 'live'}"
-                                 style="--wire-color: ${wireBCut ? '#22c55e' : '#6366f1'}; --wire-glow: ${wireBCut ? 'rgba(34,197,94,0.4)' : 'rgba(99,102,241,0.4)'}">
-                                <div class="wire-segment left"></div>
-                                ${wireBCut ? `
-                                    <div class="wire-cut-point">
-                                        <span class="cut-scissors">✂️</span>
-                                        <div class="cut-sparks">
-                                            <span></span><span></span><span></span>
-                                        </div>
+                        <div class="charge-wire-container">
+                            <div class="charge-wire ${chargeB ? 'wire-charged' : 'wire-live'}"
+                                 style="--charge-color:${chargeB ? '#22c55e' : '#6366f1'}">
+                                ${chargeB ? `
+                                    <div class="wire-segment left"></div>
+                                    <div class="charge-point">
+                                        <span class="charge-bolt">⚡</span>
+                                        <div class="charge-sparks"><span></span><span></span><span></span></div>
                                     </div>
+                                    <div class="wire-segment right"></div>
                                 ` : `
-                                    <div class="wire-energy-flow"></div>
+                                    <div class="wire-flow"></div>
                                 `}
-                                <div class="wire-segment right"></div>
                             </div>
                         </div>
                         
-                        <!-- Team progress bar -->
-                        <div class="wire-team-progress">
-                            <div class="team-bar">
-                                <div class="team-bar-fill ${wireBCut ? 'complete' : ''}" style="width:${teamPct}%"></div>
+                        <div class="team-charge-bar">
+                            <div class="tcb-track">
+                                <div class="tcb-fill ${chargeB ? 'tcb-complete' : ''}" style="width:${teamPct}%"></div>
                             </div>
-                            <span class="wire-unit-progress">
-                                ${wireBCut 
-                                    ? `<span class="wire-done-text">✓ Goal reached</span>`
-                                    : `<span class="wire-pending-text">${fmt(challenge.collectiveStreams)} / ${fmt(challenge.targetStreams)} streams</span>`
+                            <span class="charge-unit-status">
+                                ${chargeB
+                                    ? `<span class="status-done">✓ Goal reached</span>`
+                                    : `<span class="status-pending">${fmt(challenge.collectiveStreams)} / ${fmt(challenge.targetStreams)}</span>`
                                 }
                             </span>
                         </div>
                     </div>
-                    
                 </div>
                 
-                <!-- Qualification status -->
-                <div class="qualification-box ${bothCut ? 'qualified' : ''}">
-                    ${bothCut ? `
-                        <span class="qual-icon">🎉</span>
-                        <span class="qual-msg">Wire Defused! Claim your reward in the vault below.</span>
+                <!-- Qualification -->
+                <div class="phase-result-box ${bothCharged ? 'result-charged' : ''}">
+                    ${bothCharged ? `
+                        <span class="result-icon">⚡</span>
+                        <span class="result-msg">Phase Charged! Claim your reward in the vault below.</span>
                     ` : `
-                        <span class="qual-icon">💜</span>
-                        <span class="qual-msg">
-                            ${!wireACut && !wireBCut ? 'Cut both wires: Complete 2X + Help team reach goal' :
-                              !wireACut ? 'Wire A still live — Complete all tracks 2X' :
-                              'Wire B still live — Help team reach the stream goal'}
+                        <span class="result-icon">💜</span>
+                        <span class="result-msg">
+                            ${!chargeA && !chargeB ? 'Complete both charges: Stream 2X + Help team reach goal' :
+                              !chargeA ? 'Charge A incomplete — Stream all tracks 2X' :
+                              'Charge B incomplete — Help team reach the stream goal'}
                         </span>
                     `}
                 </div>
                 
-                <!-- Track Checklist (collapsible) -->
-                <details class="track-checklist-details" ${!wireACut ? 'open' : ''}>
+                <!-- Track Checklist -->
+                <details class="track-checklist-details" ${!chargeA ? 'open' : ''}>
                     <summary class="checklist-summary">
                         <span>📋 Track Checklist</span>
-                        <span class="checklist-count ${wireACut ? 'all-done' : ''}">${completedTracks}/${totalTracks}</span>
+                        <span class="checklist-count ${chargeA ? 'all-done' : ''}">${completedTracks}/${totalTracks}</span>
                     </summary>
                     <div class="track-list">
                         ${(challenge.tracks || []).map((track, i) => {
@@ -15903,53 +15695,82 @@ function renderTodayDefuseMission(challenge, config) {
                         }).join('')}
                     </div>
                 </details>
-                
             </div>
         </div>
     `;
 }
 
-function renderRewardsVault(wires, stats) {
+// =============================================
+// OTHER RENDERERS
+// =============================================
+
+function renderNoPhaseCard(phases) {
+    const nextPhase = (phases || []).find(p => p.state === 'locked');
+    const allDone = (phases || []).every(p => p.state === 'charged' || p.state === 'missed');
+    
     return `
-        <div class="card defuse-vault-card">
+        <div class="card arirang-rest-card">
+            <div class="card-body">
+                <div class="rest-content">
+                    <div class="rest-icon">${allDone ? '💜' : '🌙'}</div>
+                    <div class="rest-text">
+                        <h3>${allDone ? 'All Phases Complete' : 'No Active Phase Today'}</h3>
+                        <p>${allDone
+                            ? 'Every phase has been addressed. Check if your Army Bomb is fully charged!'
+                            : nextPhase
+                                ? `Next phase: ${nextPhase.codename} — ${nextPhase.albums?.join(' + ')} (${nextPhase.date})`
+                                : 'Stand by for further instructions, Agent.'
+                        }</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function renderArirangVault(phases, stats) {
+    return `
+        <div class="card arirang-vault-card">
             <div class="card-header">
-                <h3><span class="header-icon">🎁</span> Rewards Vault</h3>
+                <h3><span class="header-icon">🎁</span> Power Vault</h3>
                 ${stats.unclaimedRewards > 0 ? `<span class="unclaimed-count">${stats.unclaimedRewards} to claim</span>` : ''}
             </div>
             <div class="card-body">
                 <div class="vault-grid">
-                    ${wires.map(wire => {
+                    ${(phases || []).map(phase => {
                         let boxClass = 'vault-box';
                         let icon = '🔒';
                         let clickable = false;
                         
-                        if (wire.state === 'locked') {
+                        if (phase.state === 'locked') {
                             boxClass += ' locked';
-                            icon = '🔒';
-                        } else if (wire.claimed) {
+                        } else if (phase.claimed) {
                             boxClass += ' claimed';
-                            icon = '✅';
-                        } else if (wire.qualified) {
+                            icon = '⚡';
+                        } else if (phase.qualified) {
                             boxClass += ' claimable';
                             icon = '🎁';
                             clickable = true;
-                        } else if (wire.state === 'failed') {
+                        } else if (phase.state === 'missed') {
                             boxClass += ' missed';
-                            icon = '💔';
-                        } else if (wire.state === 'active') {
+                            icon = '○';
+                        } else if (phase.state === 'active') {
                             boxClass += ' active';
-                            icon = '⏳';
+                            icon = '◐';
+                        } else if (phase.state === 'charged') {
+                            boxClass += ' claimed';
+                            icon = '⚡';
                         } else {
                             boxClass += ' pending';
                             icon = '○';
                         }
                         
                         return `
-                            <div class="${boxClass}" 
-                                 ${clickable ? `onclick="claimDefuseReward('${wire.date}')"` : ''}
-                                 title="Day ${wire.wireNumber}">
+                            <div class="${boxClass}"
+                                 ${clickable ? `onclick="claimArirangReward('${phase.date}')"` : ''}
+                                 title="Phase ${phase.phase}: ${phase.codename}">
                                 <span class="box-icon">${icon}</span>
-                                <span class="box-day">D${wire.wireNumber}</span>
+                                <span class="box-day">P${phase.phase}</span>
                             </div>
                         `;
                     }).join('')}
@@ -15959,27 +15780,27 @@ function renderRewardsVault(wires, stats) {
     `;
 }
 
-function renderMysteryBox(unlocked, stats) {
+function renderFullActivation(fullyCharged, stats) {
     return `
-        <div class="card defuse-mystery-card ${unlocked ? 'unlocked' : ''}">
+        <div class="card arirang-activation-card ${fullyCharged ? 'activated' : ''}">
             <div class="card-body">
-                <div class="mystery-content">
-                    <div class="mystery-icon-wrapper ${unlocked ? 'glow' : ''}">
-                        <span class="mystery-icon">${unlocked ? '🎁' : '🔐'}</span>
+                <div class="activation-content">
+                    <div class="activation-icon-wrap ${fullyCharged ? 'glow' : ''}">
+                        <span class="activation-icon">${fullyCharged ? '💜' : '🔮'}</span>
                     </div>
-                    <div class="mystery-info">
-                        <h3 class="mystery-title">${unlocked ? '✨ Mystery Unlocked!' : 'Final Reward'}</h3>
-                        <p class="mystery-desc">
-                            ${unlocked 
-                                ? 'Congratulations! You defused all wires!' 
-                                : `Defuse all ${stats.totalWires} wires to unlock`}
+                    <div class="activation-info">
+                        <h3 class="activation-title">${fullyCharged ? '💜 ARMY BOMB ACTIVATED' : 'Full Activation'}</h3>
+                        <p class="activation-desc">
+                            ${fullyCharged
+                                ? 'Congratulations! Your Army Bomb is at full power! Ready for ARIRANG! 💜'
+                                : `Charge all ${stats.totalPhases} phases to fully activate`}
                         </p>
-                        ${!unlocked ? `
-                            <div class="mystery-progress">
-                                <div class="mystery-bar">
-                                    <div class="mystery-fill" style="width:${stats.percentComplete}%"></div>
+                        ${!fullyCharged ? `
+                            <div class="activation-progress">
+                                <div class="activation-bar">
+                                    <div class="activation-fill" style="width:${stats.percentComplete}%"></div>
                                 </div>
-                                <span class="mystery-count">${stats.wiresDefused}/${stats.totalWires}</span>
+                                <span class="activation-count">${stats.phasesCharged}/${stats.totalPhases}</span>
                             </div>
                         ` : ''}
                     </div>
@@ -15989,21 +15810,87 @@ function renderMysteryBox(unlocked, stats) {
     `;
 }
 
+function getTodayPhaseNumber(phases) {
+    const today = (phases || []).find(p => p.state === 'active');
+    return today ? today.phase : (phases || []).length;
+}
+
 // =============================================
 // INTERACTIONS
 // =============================================
 
-function showWireInfo(date, codename, albums) {
-    showToast(`${codename}: ${albums}`, 'info');
+function showEraDetail(eraName, eraData) {
+    showToast(`${eraData.icon} ${eraName}: ${eraData.charged}/${eraData.total} phases charged`, 'info');
 }
 
-let _claimingDefuseReward = false;
-
-async function claimDefuseReward(date) {
-    if (_claimingDefuseReward) return;
-    _claimingDefuseReward = true;
+function showPhaseInfo(phase) {
+    const stateLabels = {
+        'charged': { text: 'CHARGED ⚡', cls: 'state-charged' },
+        'active': { text: 'ACTIVE NOW', cls: 'state-active' },
+        'missed': { text: 'MISSED', cls: 'state-missed' },
+        'locked': { text: 'LOCKED', cls: 'state-locked' }
+    };
+    const stateInfo = stateLabels[phase.state] || stateLabels.locked;
     
-    const container = $('operation-defuse-content');
+    const modal = document.createElement('div');
+    modal.className = 'phase-detail-modal';
+    modal.innerHTML = `
+        <div class="modal-bg" onclick="this.parentElement.remove()"></div>
+        <div class="phase-detail-card">
+            <div class="phase-detail-header">
+                <div>
+                    <h3>${phase.codename}</h3>
+                    <span class="phase-detail-era">${phase.era || ''}</span>
+                    <span class="phase-detail-date">${phase.date}</span>
+                </div>
+                <span class="phase-state-badge ${stateInfo.cls}">${stateInfo.text}</span>
+            </div>
+            
+            <div class="phase-detail-albums">
+                ${phase.albums.map((album, i) => `
+                    <div class="phase-album-row">
+                        <span class="album-disc">💿</span>
+                        <span class="album-label">${sanitize(album)}</span>
+                        ${phase.spotifyLinks?.[i]?.url ? `
+                            <a href="${phase.spotifyLinks[i].url}" target="_blank" rel="noopener"
+                               class="spotify-pill" onclick="event.stopPropagation()">
+                                ▶ Spotify
+                            </a>
+                        ` : ''}
+                    </div>
+                `).join('')}
+            </div>
+            
+            ${phase.state !== 'locked' ? `
+                <div class="phase-detail-charges">
+                    <div class="charge-row ${phase.userPassed2x ? 'met' : 'unmet'}">
+                        <span>${phase.userPassed2x ? '⚡' : '○'}</span>
+                        <span>Charge A: Your 2X</span>
+                        <span class="charge-badge">${phase.userPassed2x ? 'CHARGED' : 'UNCHARGED'}</span>
+                    </div>
+                    <div class="charge-row ${phase.teamGoalMet ? 'met' : 'unmet'}">
+                        <span>${phase.teamGoalMet ? '⚡' : '○'}</span>
+                        <span>Charge B: Team Goal</span>
+                        <span class="charge-badge">${phase.teamGoalMet ? 'CHARGED' : 'UNCHARGED'}</span>
+                    </div>
+                </div>
+            ` : ''}
+            
+            <button class="btn-close-phase" onclick="this.closest('.phase-detail-modal').remove()">Close</button>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    requestAnimationFrame(() => modal.classList.add('show'));
+}
+
+let _claimingArirang = false;
+
+async function claimArirangReward(date) {
+    if (_claimingArirang) return;
+    _claimingArirang = true;
+    
+    const container = $('operation-defuse-content') || $('arirang-protocol-content');
     const scrollPos = container?.parentElement?.scrollTop || window.scrollY;
     
     try {
@@ -16012,15 +15899,12 @@ async function claimDefuseReward(date) {
         loading(false);
         
         if (result.success) {
-            showDefuseBadgePopup(result.badge, result.xpAwarded);
+            showArirangBadgePopup(result.badge, result.xpAwarded);
             setTimeout(() => {
-                renderOperationDefuse();
+                renderArirangProtocol();
                 requestAnimationFrame(() => {
-                    if (container?.parentElement) {
-                        container.parentElement.scrollTop = scrollPos;
-                    } else {
-                        window.scrollTo(0, scrollPos);
-                    }
+                    if (container?.parentElement) container.parentElement.scrollTop = scrollPos;
+                    else window.scrollTo(0, scrollPos);
                 });
             }, 600);
         } else {
@@ -16030,26 +15914,28 @@ async function claimDefuseReward(date) {
         loading(false);
         showToast('Error claiming reward', 'error');
     } finally {
-        _claimingDefuseReward = false;
+        _claimingArirang = false;
     }
 }
-function showDefuseBadgePopup(badge, xp) {
+
+function showArirangBadgePopup(badge, xp) {
     const popup = document.createElement('div');
-    popup.className = 'defuse-badge-modal';
+    popup.className = 'arirang-badge-modal';
     popup.innerHTML = `
         <div class="modal-bg" onclick="this.parentElement.remove()"></div>
         <div class="badge-reveal">
-            <div class="badge-sparkle">✨</div>
+            <div class="badge-sparkle">⚡</div>
             <div class="badge-img-wrap">
                 <img src="${badge.imageUrl}" alt="${badge.name}" class="badge-img"
                      onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%237c3aed%22/><text x=%2250%22 y=%2258%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2230%22>⟭⟬</text></svg>'">
             </div>
-            <h3>Badge Earned!</h3>
+            <h3>Phase Charged!</h3>
             <p class="badge-name">${sanitize(badge.name)}</p>
             <p class="badge-desc">${sanitize(badge.description)}</p>
+            ${badge.era ? `<p class="badge-era">${badge.era}</p>` : ''}
             <div class="badge-xp">+${xp} XP</div>
-            <button class="btn-primary" onclick="this.closest('.defuse-badge-modal').remove()">
-                Awesome! 💜
+            <button class="btn-primary" onclick="this.closest('.arirang-badge-modal').remove()">
+                Let's Go! ⚡
             </button>
         </div>
     `;
@@ -16057,20 +15943,20 @@ function showDefuseBadgePopup(badge, xp) {
     requestAnimationFrame(() => popup.classList.add('show'));
 }
 
-async function showDefuseLeaderboard() {
+async function showArirangLeaderboard() {
     try {
         loading(true);
         const data = await api('getDefuseLeaderboard', { limit: 20 });
         loading(false);
         
         const modal = document.createElement('div');
-        modal.className = 'defuse-lb-modal';
+        modal.className = 'arirang-lb-modal';
         modal.innerHTML = `
             <div class="modal-bg" onclick="this.parentElement.remove()"></div>
             <div class="lb-panel">
                 <div class="lb-header">
-                    <h3>🏆 Defuse Champions</h3>
-                    <button onclick="this.closest('.defuse-lb-modal').remove()">✕</button>
+                    <h3>🏆 Charging Champions</h3>
+                    <button onclick="this.closest('.arirang-lb-modal').remove()">✕</button>
                 </div>
                 <div class="lb-body">
                     ${data.leaderboard?.length > 0 ? data.leaderboard.map((agent, i) => `
@@ -16081,14 +15967,14 @@ async function showDefuseLeaderboard() {
                                 <span class="lb-team">${agent.team}</span>
                             </div>
                             <div class="lb-stats">
-                                <span class="lb-wires">${agent.wiresDefused} 🔌</span>
+                                <span class="lb-phases">${agent.phasesCharged} ⚡</span>
                                 <span class="lb-xp">${agent.xpEarned} XP</span>
                             </div>
                         </div>
                     `).join('') : `
                         <div class="lb-empty">
                             <span>🔮</span>
-                            <p>No defusers yet. Be the first!</p>
+                            <p>No agents charging yet. Be the first!</p>
                         </div>
                     `}
                 </div>
@@ -16103,2009 +15989,40 @@ async function showDefuseLeaderboard() {
 }
 
 // =============================================
-// HOME WIDGET
+// GUIDE + HELP
 // =============================================
 
-function renderDefuseHomeWidget() {
-    if (!CONFIG.OPERATION_DEFUSE?.ENABLED) return '';
-    
+function renderArirangGuide() {
     return `
-        <div class="defuse-widget" onclick="loadPage('operation-defuse')">
-            <div class="widget-bomb">
-                <div class="widget-sphere">
-                    <span>⟭⟬</span>
+        <div class="card arirang-guide">
+            <div class="card-body">
+                <div class="guide-content">
+                    <span class="guide-icon">⚡</span>
+                    <div class="guide-text">
+                        <strong>Daily Charging Protocol</strong>
+                        <p>Each day has <span class="highlight">2 charges</span> to complete:</p>
+                        <p><strong>Charge A</strong> — Stream every track <span class="highlight">2X</span> on Last.fm</p>
+                        <p><strong>Charge B</strong> — Help the team reach the collective stream goal</p>
+                        <p style="margin-top:4px;">Both charges complete = phase powered → claim badge + XP!</p>
+                    </div>
                 </div>
-                <div class="widget-handle"></div>
             </div>
-            <div class="widget-info">
-                <div class="widget-header">
-                    <span class="widget-title">OPERATION DEFUSE</span>
-                    <span class="widget-live"></span>
-                </div>
-                <div class="widget-sub">Daily streaming mission active</div>
-            </div>
-            <span class="widget-arrow">→</span>
         </div>
     `;
 }
 
-// =============================================
-// STYLES - ARMY BOMB VISUAL
-// =============================================
-
-function addArmyBombStyles() {
-    if (document.getElementById('army-bomb-styles')) return;
-    
-    const style = document.createElement('style');
-    style.id = 'army-bomb-styles';
-    style.textContent = `
-        /* ==================== LOADING ==================== */
-        .defuse-loading {
-            text-align: center;
-            padding: 60px 20px;
-        }
-        
-        .defuse-loading p {
-            color: #888;
-            font-size: 13px;
-            margin-top: 20px;
-        }
-        
-        .loading-bomb {
-            display: inline-flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        
-        .loading-sphere {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, rgba(147,51,234,0.3), rgba(168,85,247,0.1));
-            border: 2px solid rgba(147,51,234,0.4);
-            animation: loading-pulse 2s ease-in-out infinite;
-        }
-        
-        .loading-handle {
-            width: 20px;
-            height: 30px;
-            background: linear-gradient(180deg, #333, #1a1a1a);
-            border-radius: 0 0 6px 6px;
-            margin-top: -5px;
-        }
-        
-        @keyframes loading-pulse {
-            0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(147,51,234,0.3); }
-            50% { transform: scale(1.05); box-shadow: 0 0 40px rgba(147,51,234,0.5); }
-        }
-        
-        /* ==================== MINI ARMY BOMB ==================== */
-        .mini-army-bomb {
-            display: inline-flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        
-        .mini-sphere {
-            width: 70px;
-            height: 70px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, rgba(147,51,234,0.2), rgba(168,85,247,0.05));
-            border: 2px solid rgba(147,51,234,0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .mini-sphere span {
-            font-size: 24px;
-            color: #9333ea;
-        }
-        
-        .mini-handle {
-            width: 24px;
-            height: 35px;
-            background: linear-gradient(180deg, #2a2a2a, #1a1a1a);
-            border-radius: 0 0 8px 8px;
-            margin-top: -8px;
-        }
-        
-        .mini-army-bomb.inactive .mini-sphere {
-            border-color: #333;
-            opacity: 0.5;
-        }
-        
-        .mini-army-bomb.error .mini-sphere {
-            border-color: rgba(239,68,68,0.4);
-            background: linear-gradient(135deg, rgba(239,68,68,0.1), transparent);
-        }
-        
-        /* ==================== GUIDE CARD ==================== */
-        .defuse-guide {
-            background: rgba(147,51,234,0.05);
-            border: 1px solid rgba(147,51,234,0.15);
-            border-left: 3px solid #9333ea;
-        }
-        
-        .guide-content {
-            display: flex;
-            gap: 12px;
-            align-items: flex-start;
-        }
-        
-        .guide-icon { font-size: 22px; }
-        
-        .guide-text strong {
-            color: #a855f7;
-            font-size: 13px;
-            display: block;
-            margin-bottom: 4px;
-        }
-        
-        .guide-text p {
-            color: #888;
-            font-size: 12px;
-            margin: 0;
-            line-height: 1.5;
-        }
-        
-        .guide-text .highlight {
-            color: #fbbf24;
-            font-weight: 600;
-        }
-        
-        /* ==================== BRIEFING CARD ==================== */
-        .defuse-briefing {
-            background: linear-gradient(135deg, rgba(15,15,25,1), rgba(20,20,35,1));
-            border: 1px solid rgba(147,51,234,0.2);
-        }
-        
-        .briefing-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        
-        .briefing-badge {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            background: rgba(147,51,234,0.15);
-            padding: 4px 10px;
-            border-radius: 20px;
-        }
-        
-        .badge-icon { font-size: 12px; }
-        .badge-text { font-size: 10px; color: #a855f7; font-weight: 600; letter-spacing: 1px; }
-        
-        .briefing-status {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 10px;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-        }
-        
-        .status-indicator {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            animation: blink 2s ease-in-out infinite;
-        }
-        
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
-        }
-        
-        .status-active { background: rgba(147,51,234,0.15); color: #a855f7; }
-        .status-active .status-indicator { background: #a855f7; }
-        
-        .status-warning { background: rgba(251,191,36,0.15); color: #fbbf24; }
-        .status-warning .status-indicator { background: #fbbf24; }
-        
-        .status-critical { background: rgba(239,68,68,0.15); color: #ef4444; }
-        .status-critical .status-indicator { background: #ef4444; animation: blink 0.5s ease-in-out infinite; }
-        
-        .status-success { background: rgba(34,197,94,0.15); color: #22c55e; }
-        .status-success .status-indicator { background: #22c55e; animation: none; }
-        
-        .status-ended { background: rgba(100,100,100,0.15); color: #888; }
-        .status-ended .status-indicator { background: #666; animation: none; }
-        
-        .briefing-title {
-            font-size: 20px;
-            font-weight: 700;
-            color: #fff;
-            margin: 0;
-            letter-spacing: 2px;
-        }
-        
-        .briefing-subtitle {
-            color: #666;
-            font-size: 12px;
-            margin: 5px 0 20px;
-        }
-        
-        /* Stats Grid */
-        .defuse-stats-grid {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-        
-        .stat-box {
-            text-align: center;
-            padding: 12px 20px;
-            background: rgba(255,255,255,0.02);
-            border-radius: 12px;
-            border: 1px solid rgba(255,255,255,0.05);
-        }
-        
-        .stat-box .stat-icon { font-size: 16px; margin-bottom: 4px; }
-        .stat-box .stat-value { font-size: 24px; font-weight: 700; color: #a855f7; }
-        .stat-box .stat-label { font-size: 10px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; }
-        
-        .stat-box.success .stat-value { color: #22c55e; }
-        .stat-box.warning .stat-value { color: #fbbf24; }
-        .stat-box.danger .stat-value { color: #ef4444; }
-        .stat-box.neutral .stat-value { color: #888; }
-        
-        /* Mission Progress */
-        .mission-progress {
-            text-align: center;
-        }
-        
-        .progress-track {
-            height: 6px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 10px;
-            overflow: hidden;
-        }
-        
-        .progress-fill {
-            height: 100%;
-            border-radius: 10px;
-            transition: width 0.5s ease;
-        }
-        
-        .progress-active { background: linear-gradient(90deg, #7c3aed, #a855f7); }
-        .progress-warning { background: linear-gradient(90deg, #d97706, #fbbf24); }
-        .progress-critical { background: linear-gradient(90deg, #dc2626, #ef4444); }
-        .progress-success { background: linear-gradient(90deg, #16a34a, #22c55e); }
-        .progress-neutral { background: #555; }
-        
-        .progress-label {
-            font-size: 11px;
-            color: #666;
-            margin-top: 8px;
-        }
-        
-        /* ==================== ARMY BOMB CONSOLE ==================== */
-        .army-bomb-console {
-            background: #0a0a0f;
-            border: 1px solid #1a1a24;
-            overflow: hidden;
-        }
-        
-        .army-bomb-console.console-critical {
-            border-color: rgba(239,68,68,0.3);
-        }
-        
-        .army-bomb-console.console-warning {
-            border-color: rgba(251,191,36,0.2);
-        }
-        
-        .army-bomb-console.console-success {
-            border-color: rgba(34,197,94,0.3);
-        }
-        
-        .countdown-badge {
-            background: rgba(147,51,234,0.15);
-            color: #a855f7;
-            padding: 4px 10px;
-            border-radius: 10px;
-            font-size: 11px;
-            font-weight: 600;
-        }
-        
-        .countdown-badge.urgent {
-            background: rgba(239,68,68,0.15);
-            color: #ef4444;
-            animation: badge-blink 1s ease-in-out infinite;
-        }
-        
-        @keyframes badge-blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
-        }
-        
-        /* ==================== ARMY BOMB DISPLAY ==================== */
-        .army-bomb-display {
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 40px 20px 30px;
-        }
-        
-        /* Ambient Glow */
-        .ambient-glow {
-            position: absolute;
-            width: 200px;
-            height: 200px;
-            border-radius: 50%;
-            filter: blur(60px);
-            opacity: 0.4;
-            top: 20px;
-            transition: all 0.5s ease;
-        }
-        
-        .glow-purple { background: #9333ea; }
-        .glow-orange { background: #f59e0b; }
-        .glow-red { background: #ef4444; animation: glow-pulse-red 1s ease-in-out infinite; }
-        .glow-green { background: #22c55e; }
-        .glow-neutral { background: #444; opacity: 0.2; }
-        
-        @keyframes glow-pulse-red {
-            0%, 100% { opacity: 0.4; transform: scale(1); }
-            50% { opacity: 0.6; transform: scale(1.1); }
-        }
-        
-        /* The Army Bomb */
-        .army-bomb {
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            z-index: 1;
-        }
-        
-        /* Detonator Button */
-        .detonator-button {
-            width: 20px;
-            height: 12px;
-            border-radius: 10px 10px 4px 4px;
-            position: relative;
-            margin-bottom: -4px;
-            z-index: 3;
-            transition: all 0.3s ease;
-        }
-        
-        .button-light {
-            position: absolute;
-            top: 3px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 8px;
-            height: 4px;
-            border-radius: 2px;
-        }
-        
-        .button-purple { background: linear-gradient(180deg, #6b21a8, #4c1d95); }
-        .button-purple .button-light { background: #a855f7; box-shadow: 0 0 8px #a855f7; }
-        
-        .button-orange { background: linear-gradient(180deg, #b45309, #92400e); }
-        .button-orange .button-light { background: #fbbf24; box-shadow: 0 0 8px #fbbf24; }
-        
-        .button-red { background: linear-gradient(180deg, #b91c1c, #991b1b); }
-        .button-red .button-light { background: #ef4444; box-shadow: 0 0 8px #ef4444; animation: button-blink 0.5s ease-in-out infinite; }
-        
-        .button-green { background: linear-gradient(180deg, #15803d, #166534); }
-        .button-green .button-light { background: #22c55e; box-shadow: 0 0 8px #22c55e; }
-        
-        .button-off { background: linear-gradient(180deg, #333, #222); }
-        .button-off .button-light { background: #444; box-shadow: none; }
-        
-        @keyframes button-blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.4; }
-        }
-        
-        /* Glass Sphere */
-        .bomb-sphere {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, 
-                rgba(255,255,255,0.08) 0%,
-                rgba(255,255,255,0.02) 50%,
-                rgba(0,0,0,0.2) 100%
-            );
-            border: 2px solid rgba(255,255,255,0.1);
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 
-                inset 0 -20px 40px rgba(0,0,0,0.3),
-                inset 0 20px 40px rgba(255,255,255,0.05),
-                0 10px 30px rgba(0,0,0,0.5);
-        }
-        
-        /* Glass Reflections */
-        .sphere-reflection {
-            position: absolute;
-            top: 15px;
-            left: 20px;
-            width: 40px;
-            height: 20px;
-            background: linear-gradient(180deg, rgba(255,255,255,0.2), transparent);
-            border-radius: 50%;
-            transform: rotate(-30deg);
-        }
-        
-        .sphere-reflection-2 {
-            position: absolute;
-            top: 25px;
-            right: 25px;
-            width: 15px;
-            height: 8px;
-            background: rgba(255,255,255,0.15);
-            border-radius: 50%;
-        }
-        
-        /* Energy Rings */
-        .energy-ring {
-            position: absolute;
-            width: 90px;
-            height: 90px;
-            border-radius: 50%;
-            border: 1px solid transparent;
-            animation: ring-rotate 8s linear infinite;
-        }
-        
-        .energy-ring.inner {
-            width: 70px;
-            height: 70px;
-            animation-direction: reverse;
-            animation-duration: 6s;
-        }
-        
-        .ring-purple { border-color: rgba(147,51,234,0.4); }
-        .ring-orange { border-color: rgba(251,191,36,0.4); }
-        .ring-red { border-color: rgba(239,68,68,0.5); animation-duration: 2s; }
-        .ring-green { border-color: rgba(34,197,94,0.4); animation: none; }
-        .ring-neutral { border-color: rgba(100,100,100,0.2); animation: none; }
-        
-        @keyframes ring-rotate {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        /* BTS Core Logo */
-        .bts-core {
-            position: relative;
-            z-index: 2;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 50px;
-            height: 50px;
-            border-radius: 8px;
-            background: rgba(0,0,0,0.4);
-            transition: all 0.3s ease;
-        }
-        
-        .bts-logo {
-            font-size: 24px;
-            font-weight: 700;
-            transition: all 0.3s ease;
-        }
-        
-        .core-purple .bts-logo { color: #a855f7; text-shadow: 0 0 15px #a855f7; }
-        .core-orange .bts-logo { color: #fbbf24; text-shadow: 0 0 15px #fbbf24; }
-        .core-red .bts-logo { color: #ef4444; text-shadow: 0 0 20px #ef4444; animation: core-pulse-red 0.5s ease-in-out infinite; }
-        .core-green .bts-logo { color: #22c55e; text-shadow: 0 0 15px #22c55e; }
-        .core-neutral .bts-logo { color: #555; text-shadow: none; }
-        
-        @keyframes core-pulse-red {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
-        }
-        
-        /* Energy Particles */
-        .energy-particles {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-        }
-        
-        .energy-particles span {
-            position: absolute;
-            width: 4px;
-            height: 4px;
-            border-radius: 50%;
-            animation: particle-float 3s ease-in-out infinite;
-        }
-        
-        .energy-particles span:nth-child(1) { top: 20%; left: 20%; animation-delay: 0s; }
-        .energy-particles span:nth-child(2) { top: 30%; right: 25%; animation-delay: 0.5s; }
-        .energy-particles span:nth-child(3) { bottom: 25%; left: 30%; animation-delay: 1s; }
-        .energy-particles span:nth-child(4) { bottom: 35%; right: 20%; animation-delay: 1.5s; }
-        .energy-particles span:nth-child(5) { top: 50%; left: 15%; animation-delay: 2s; }
-        .energy-particles span:nth-child(6) { top: 45%; right: 15%; animation-delay: 2.5s; }
-        
-        .particles-purple span { background: #a855f7; box-shadow: 0 0 6px #a855f7; }
-        .particles-orange span { background: #fbbf24; box-shadow: 0 0 6px #fbbf24; }
-        .particles-red span { background: #ef4444; box-shadow: 0 0 8px #ef4444; }
-        .particles-green span { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
-        .particles-off span { display: none; }
-        
-        @keyframes particle-float {
-            0%, 100% { transform: translateY(0) scale(1); opacity: 0.8; }
-            50% { transform: translateY(-8px) scale(1.2); opacity: 1; }
-        }
-        
-        /* Handle */
-        .bomb-handle {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-top: -8px;
-        }
-        
-        .handle-connector {
-            width: 30px;
-            height: 8px;
-            background: linear-gradient(180deg, #2a2a2a, #1a1a1a);
-            border-radius: 0 0 4px 4px;
-        }
-        
-        .handle-grip {
-            width: 26px;
-            height: 40px;
-            background: linear-gradient(90deg, #1a1a1a, #2a2a2a, #1a1a1a);
-            border-radius: 4px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            gap: 4px;
-            padding: 0 4px;
-        }
-        
-        .grip-line {
-            height: 2px;
-            background: #333;
-            border-radius: 1px;
-        }
-        
-        .handle-base {
-            width: 34px;
-            height: 8px;
-            background: linear-gradient(180deg, #222, #111);
-            border-radius: 0 0 6px 6px;
-        }
-        
-        /* Wire Connections */
-        .wire-connections {
-            display: flex;
-            gap: 8px;
-            margin-top: 8px;
-        }
-        
-        .wire-port {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            border: 2px solid #333;
-            background: #111;
-            transition: all 0.3s ease;
-        }
-        
-        .wire-port.port-active {
-            border-color: #22c55e;
-            background: rgba(34,197,94,0.3);
-            box-shadow: 0 0 8px rgba(34,197,94,0.5);
-        }
-        
-        /* Status Label */
-        .bomb-status-label {
-            margin-top: 20px;
-            font-size: 12px;
-            font-weight: 500;
-            letter-spacing: 0.5px;
-        }
-        
-        .label-active { color: #a855f7; }
-        .label-warning { color: #fbbf24; }
-        .label-critical { color: #ef4444; }
-        .label-success { color: #22c55e; }
-        .label-neutral { color: #666; }
-        
-        /* ==================== WIRE PANEL ==================== */
-        .wire-panel {
-            margin-top: 25px;
-            padding-top: 25px;
-            border-top: 1px solid #1a1a24;
-        }
-        
-        .panel-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            justify-content: center;
-            margin-bottom: 15px;
-        }
-        
-        .panel-icon { font-size: 14px; }
-        .panel-title { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
-        
-        .wire-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            max-width: 340px;
-            margin: 0 auto;
-        }
-        
-        .wire-row {
-            display: flex;
-            justify-content: center;
-            gap: 5px;
-            flex-wrap: wrap;
-        }
-        
-        .wire-cell {
-            width: 30px;
-            height: 30px;
-            border-radius: 6px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            gap: 1px;
-        }
-        
-        .wire-num { font-size: 9px; font-weight: 700; line-height: 1; }
-        .wire-icon { font-size: 9px; line-height: 1; }
-        
-        .wire-defused {
-            background: rgba(34,197,94,0.15);
-            border: 1px solid rgba(34,197,94,0.4);
-        }
-        .wire-defused .wire-num, .wire-defused .wire-icon { color: #22c55e; }
-        
-        .wire-active {
-            background: rgba(147,51,234,0.2);
-            border: 1px solid rgba(147,51,234,0.5);
-            animation: wire-active-pulse 2s ease-in-out infinite;
-        }
-        .wire-active .wire-num, .wire-active .wire-icon { color: #a855f7; }
-        
-        .wire-locked {
-            background: rgba(40,40,50,0.5);
-            border: 1px solid #2a2a35;
-        }
-        .wire-locked .wire-num, .wire-locked .wire-icon { color: #444; }
-        
-        .wire-failed {
-            background: rgba(239,68,68,0.1);
-            border: 1px solid rgba(239,68,68,0.3);
-        }
-        .wire-failed .wire-num, .wire-failed .wire-icon { color: #ef4444; }
-        
-        @keyframes wire-active-pulse {
-            0%, 100% { box-shadow: 0 0 0 rgba(147,51,234,0); }
-            50% { box-shadow: 0 0 10px rgba(147,51,234,0.4); }
-        }
-        
-        .wire-cell:hover {
-            transform: scale(1.1);
-        }
-        
-        /* Wire Legend */
-        .wire-legend {
-            display: flex;
-            justify-content: center;
-            gap: 12px;
-            margin-top: 12px;
-            flex-wrap: wrap;
-        }
-        
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 10px;
-            color: #555;
-        }
-        
-        .legend-item .dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-        }
-        
-        .dot.defused { background: #22c55e; }
-        .dot.active { background: #a855f7; }
-        .dot.locked { background: #444; }
-        .dot.failed { background: #ef4444; }
-        
-        /* ==================== REST CARD ==================== */
-        .defuse-rest-card {
-            background: linear-gradient(135deg, rgba(50,50,70,0.1), transparent);
-        }
-        
-        .rest-content {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 10px;
-        }
-        
-        .rest-icon { font-size: 36px; opacity: 0.6; }
-        .rest-text h3 { font-size: 14px; color: #888; margin: 0; }
-        .rest-text p { font-size: 12px; color: #555; margin: 4px 0 0; }
-        
-        /* ==================== MISSION CARD ==================== */
-        .defuse-mission-card {
-            border: 1px solid rgba(147,51,234,0.2);
-        }
-        
-        .defuse-mission-card.mission-complete {
-            border-color: rgba(34,197,94,0.3);
-            background: linear-gradient(135deg, rgba(34,197,94,0.03), transparent);
-        }
-        
-        .mission-header-left {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .wire-badge {
-            font-size: 10px;
-            color: #a855f7;
-            background: rgba(147,51,234,0.1);
-            padding: 3px 8px;
-            border-radius: 10px;
-        }
-        
-        .complete-badge {
-            background: rgba(34,197,94,0.15);
-            color: #22c55e;
-            padding: 4px 10px;
-            border-radius: 10px;
-            font-size: 11px;
-            font-weight: 600;
-        }
-        
-        .album-tag {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 12px;
-            background: rgba(255,255,255,0.02);
-            border-radius: 8px;
-            margin-bottom: 15px;
-        }
-        
-        .album-icon { font-size: 16px; }
-        .album-name { font-size: 12px; color: #aaa; }
-        
-        /* Progress Blocks */
-        .progress-block {
-            margin-bottom: 12px;
-        }
-        
-        .progress-info {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 6px;
-        }
-        
-        .progress-title { font-size: 12px; color: #888; }
-        .progress-status { font-size: 12px; color: #a855f7; font-weight: 600; }
-        .progress-status.done { color: #22c55e; }
-        
-        .progress-bar {
-            height: 5px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 10px;
-            overflow: hidden;
-        }
-        
-        .progress-fill.user { background: linear-gradient(90deg, #7c3aed, #a855f7); }
-        .progress-fill.team { background: linear-gradient(90deg, #6366f1, #818cf8); }
-        .progress-fill.complete { background: linear-gradient(90deg, #16a34a, #22c55e); }
-        
-        /* Track Checklist */
-        .track-checklist {
-            border-top: 1px solid rgba(255,255,255,0.05);
-            padding-top: 15px;
-            margin-top: 5px;
-        }
-        
-        .checklist-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-            font-size: 12px;
-            color: #888;
-        }
-        
-        .checklist-count { color: #a855f7; font-weight: 600; }
-        
-        .track-list {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-            max-height: 180px;
-            overflow-y: auto;
-        }
-        
-        .track-row {
-            display: flex;
-            align-items: center;
-            padding: 8px 10px;
-            background: rgba(255,255,255,0.02);
-            border-radius: 6px;
-            border-left: 2px solid #333;
-        }
-        
-        .track-row.done {
-            background: rgba(34,197,94,0.05);
-            border-left-color: #22c55e;
-        }
-        
-        .track-idx {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: #222;
-            color: #666;
-            font-size: 10px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 10px;
-            flex-shrink: 0;
-        }
-        
-        .track-row.done .track-idx {
-            background: #22c55e;
-            color: #000;
-        }
-        
-        .track-name {
-            flex: 1;
-            font-size: 12px;
-            color: #ccc;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        
-        .track-count {
-            font-size: 11px;
-            color: #666;
-            padding: 2px 8px;
-            background: rgba(255,255,255,0.05);
-            border-radius: 8px;
-            margin-left: 8px;
-        }
-        
-        .track-count.complete {
-            color: #22c55e;
-            background: rgba(34,197,94,0.1);
-        }
-        
-        /* Qualification Box */
-        .qualification-box {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            padding: 12px;
-            margin-top: 15px;
-            border-radius: 8px;
-            background: rgba(255,255,255,0.02);
-            border: 1px solid #222;
-        }
-        
-        .qualification-box.qualified {
-            background: rgba(34,197,94,0.08);
-            border-color: rgba(34,197,94,0.2);
-        }
-        
-        .qual-icon { font-size: 18px; }
-        .qual-msg { font-size: 12px; color: #888; }
-        .qualification-box.qualified .qual-msg { color: #22c55e; }
-        
-        /* ==================== VAULT CARD ==================== */
-        .defuse-vault-card .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .unclaimed-count {
-            background: rgba(251,191,36,0.15);
-            color: #fbbf24;
-            padding: 3px 8px;
-            border-radius: 8px;
-            font-size: 10px;
-            font-weight: 600;
-        }
-        
-        .vault-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            justify-content: center;
-        }
-        
-        .vault-box {
-            width: 40px;
-            height: 40px;
-            border-radius: 8px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s ease;
-        }
-        
-        .box-icon { font-size: 14px; }
-        .box-day { font-size: 8px; color: #666; margin-top: 2px; }
-        
-        .vault-box.locked {
-            background: rgba(40,40,50,0.3);
-            border: 1px dashed #2a2a35;
-        }
-        
-        .vault-box.claimed {
-            background: rgba(34,197,94,0.1);
-            border: 1px solid rgba(34,197,94,0.3);
-        }
-        
-        .vault-box.claimable {
-            background: rgba(251,191,36,0.15);
-            border: 1px solid rgba(251,191,36,0.4);
-            cursor: pointer;
-            animation: claimable-glow 2s ease-in-out infinite;
-        }
-        
-        .vault-box.claimable:hover {
-            transform: scale(1.1);
-            box-shadow: 0 0 15px rgba(251,191,36,0.3);
-        }
-        
-        .vault-box.missed {
-            background: rgba(239,68,68,0.08);
-            border: 1px solid rgba(239,68,68,0.2);
-            opacity: 0.6;
-        }
-        
-        .vault-box.active {
-            background: rgba(147,51,234,0.1);
-            border: 1px solid rgba(147,51,234,0.3);
-        }
-        
-        .vault-box.pending {
-            background: rgba(60,60,70,0.1);
-            border: 1px solid #2a2a35;
-        }
-        
-        @keyframes claimable-glow {
-            0%, 100% { box-shadow: 0 0 0 rgba(251,191,36,0); }
-            50% { box-shadow: 0 0 12px rgba(251,191,36,0.3); }
-        }
-        
-        /* ==================== MYSTERY CARD ==================== */
-        .defuse-mystery-card {
-            background: linear-gradient(135deg, rgba(147,51,234,0.05), rgba(168,85,247,0.02));
-            border: 1px dashed rgba(147,51,234,0.2);
-        }
-        
-        .defuse-mystery-card.unlocked {
-            border: 1px solid rgba(251,191,36,0.3);
-            animation: mystery-shine 3s ease-in-out infinite;
-        }
-        
-        @keyframes mystery-shine {
-            0%, 100% { box-shadow: 0 0 20px rgba(251,191,36,0.1); }
-            50% { box-shadow: 0 0 30px rgba(251,191,36,0.2); }
-        }
-        
-        .mystery-content {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        
-        .mystery-icon-wrapper { font-size: 36px; }
-        .mystery-icon-wrapper.glow { animation: icon-glow 2s ease-in-out infinite; }
-        
-        @keyframes icon-glow {
-            0%, 100% { filter: drop-shadow(0 0 5px rgba(251,191,36,0.3)); }
-            50% { filter: drop-shadow(0 0 15px rgba(251,191,36,0.6)); }
-        }
-        
-        .mystery-info { flex: 1; }
-        .mystery-title { font-size: 14px; font-weight: 600; color: #a855f7; margin: 0; }
-        .defuse-mystery-card.unlocked .mystery-title { color: #fbbf24; }
-        .mystery-desc { font-size: 12px; color: #666; margin: 4px 0 0; }
-        
-        .mystery-progress {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-top: 8px;
-        }
-        
-        .mystery-bar {
-            flex: 1;
-            height: 4px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 10px;
-            overflow: hidden;
-        }
-        
-        .mystery-fill {
-            height: 100%;
-            background: #7c3aed;
-            border-radius: 10px;
-        }
-        
-        .mystery-count { font-size: 11px; color: #666; }
-        
-        /* ==================== ACTION CARD ==================== */
-        .defuse-action-card {
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        
-        .defuse-action-card:hover {
-            border-color: rgba(147,51,234,0.3);
-        }
-        
-        .action-content {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        
-        .action-icon { font-size: 22px; }
-        .action-text { flex: 1; }
-        .action-title { font-size: 13px; color: #fff; font-weight: 600; }
-        .action-subtitle { font-size: 11px; color: #666; }
-        .action-arrow { font-size: 18px; color: #555; }
-        
-        /* ==================== HOME WIDGET ==================== */
-        .defuse-widget {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 15px;
-            background: linear-gradient(135deg, rgba(147,51,234,0.08), rgba(168,85,247,0.03));
-            border: 1px solid rgba(147,51,234,0.2);
-            border-radius: 12px;
-            margin-bottom: 15px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .defuse-widget:hover {
-            border-color: rgba(147,51,234,0.4);
-            transform: translateY(-2px);
-        }
-        
-        .widget-bomb {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        
-        .widget-sphere {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, rgba(147,51,234,0.2), rgba(168,85,247,0.1));
-            border: 1px solid rgba(147,51,234,0.4);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            animation: widget-pulse 3s ease-in-out infinite;
-        }
-        
-        .widget-sphere span {
-            font-size: 14px;
-            color: #a855f7;
-        }
-        
-        .widget-handle {
-            width: 12px;
-            height: 16px;
-            background: linear-gradient(180deg, #2a2a2a, #1a1a1a);
-            border-radius: 0 0 4px 4px;
-            margin-top: -4px;
-        }
-        
-        @keyframes widget-pulse {
-            0%, 100% { box-shadow: 0 0 10px rgba(147,51,234,0.2); }
-            50% { box-shadow: 0 0 20px rgba(147,51,234,0.4); }
-        }
-        
-        .widget-info { flex: 1; }
-        
-        .widget-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .widget-title {
-            font-size: 12px;
-            font-weight: 700;
-            color: #a855f7;
-            letter-spacing: 0.5px;
-        }
-        
-        .widget-live {
-            width: 6px;
-            height: 6px;
-            background: #22c55e;
-            border-radius: 50%;
-            animation: blink 2s ease-in-out infinite;
-        }
-        
-        .widget-sub {
-            font-size: 11px;
-            color: #666;
-            margin-top: 2px;
-        }
-        
-        .widget-arrow { font-size: 16px; color: #555; }
-        
-        /* ==================== BADGE POPUP ==================== */
-        .defuse-badge-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            z-index: 10000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-        
-        .defuse-badge-modal.show { opacity: 1; }
-        
-        .modal-bg {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.85);
-        }
-        
-        .badge-reveal {
-            position: relative;
-            text-align: center;
-            padding: 30px;
-            max-width: 280px;
-        }
-        
-        .badge-sparkle {
-            font-size: 24px;
-            margin-bottom: 10px;
-            animation: sparkle-spin 2s ease-in-out infinite;
-        }
-        
-        @keyframes sparkle-spin {
-            0%, 100% { transform: rotate(-5deg) scale(1); }
-            50% { transform: rotate(5deg) scale(1.1); }
-        }
-        
-        .badge-img-wrap {
-            position: relative;
-            display: inline-block;
-        }
-        
-        .badge-img-wrap::before {
-            content: '';
-            position: absolute;
-            top: -10px;
-            left: -10px;
-            right: -10px;
-            bottom: -10px;
-            background: radial-gradient(circle, rgba(251,191,36,0.4), transparent 70%);
-            animation: badge-glow 2s ease-in-out infinite;
-        }
-        
-        @keyframes badge-glow {
-            0%, 100% { transform: scale(1); opacity: 0.5; }
-            50% { transform: scale(1.1); opacity: 1; }
-        }
-        
-        .badge-img {
-            width: 90px;
-            height: 90px;
-            border-radius: 50%;
-            border: 3px solid #fbbf24;
-            object-fit: cover;
-            position: relative;
-        }
-        
-        .badge-reveal h3 {
-            color: #fbbf24;
-            font-size: 16px;
-            margin: 15px 0 5px;
-        }
-        
-        .badge-name { color: #fff; font-size: 13px; font-weight: 600; margin: 0; }
-        .badge-desc { color: #888; font-size: 11px; margin: 5px 0 0; }
-        .badge-xp { color: #22c55e; font-size: 18px; font-weight: 700; margin-top: 15px; }
-        
-        .badge-reveal .btn-primary {
-            margin-top: 20px;
-        }
-        
-        /* ==================== LEADERBOARD MODAL ==================== */
-        .defuse-lb-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            z-index: 9999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-        
-        .defuse-lb-modal.show { opacity: 1; }
-        
-        .lb-panel {
-            position: relative;
-            background: #0f0f15;
-            border-radius: 16px;
-            width: 100%;
-            max-width: 360px;
-            max-height: 70vh;
-            overflow: hidden;
-            border: 1px solid #1a1a24;
-        }
-        
-        .lb-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 20px;
-            border-bottom: 1px solid #1a1a24;
-        }
-        
-        .lb-header h3 {
-            margin: 0;
-            font-size: 15px;
-            color: #fff;
-        }
-        
-        .lb-header button {
-            background: none;
-            border: none;
-            color: #666;
-            font-size: 18px;
-            cursor: pointer;
-            padding: 5px;
-        }
-        
-        .lb-body {
-            padding: 12px;
-            max-height: 55vh;
-            overflow-y: auto;
-        }
-        
-        .lb-entry {
-            display: flex;
-            align-items: center;
-            padding: 10px 12px;
-            background: rgba(255,255,255,0.02);
-            border-radius: 10px;
-            margin-bottom: 6px;
-            border-left: 3px solid var(--team-color, #7b2cbf);
-        }
-        
-        .lb-rank {
-            width: 26px;
-            height: 26px;
-            border-radius: 50%;
-            background: #1a1a24;
-            color: #888;
-            font-size: 11px;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 12px;
-        }
-        
-        .lb-rank.top1 { background: #fbbf24; color: #000; }
-        .lb-rank.top2 { background: #94a3b8; color: #000; }
-        .lb-rank.top3 { background: #b45309; color: #fff; }
-        
-        .lb-info { flex: 1; }
-        .lb-name { font-size: 12px; color: #fff; font-weight: 600; }
-        .lb-team { font-size: 10px; color: var(--team-color, #888); }
-        
-        .lb-stats { text-align: right; }
-        .lb-wires { font-size: 11px; color: #22c55e; font-weight: 600; }
-        .lb-xp { font-size: 10px; color: #666; display: block; }
-        
-        .lb-empty {
-            text-align: center;
-            padding: 40px 20px;
-            color: #555;
-        }
-        
-        .lb-empty span {
-            font-size: 32px;
-            display: block;
-            margin-bottom: 10px;
-        }
-        /* ==================== DUAL WIRE SECTION ==================== */
-.dual-wire-section {
-    margin: 20px 0 15px;
-    padding: 16px;
-    background: rgba(0,0,0,0.3);
-    border-radius: 12px;
-    border: 1px solid rgba(255,255,255,0.05);
-}
-
-.wire-unit {
-    margin-bottom: 0;
-}
-
-.wire-unit-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 8px;
-}
-
-.wire-letter-badge {
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    background: rgba(147,51,234,0.2);
-    border: 1.5px solid rgba(147,51,234,0.5);
-    color: #a855f7;
-    font-size: 10px;
-    font-weight: 800;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.wire-letter-badge.cut {
-    background: rgba(34,197,94,0.2);
-    border-color: rgba(34,197,94,0.5);
-    color: #22c55e;
-}
-
-.wire-unit-label {
-    flex: 1;
-    font-size: 12px;
-    font-weight: 600;
-    color: #ccc;
-}
-
-.wire-cut-status {
-    font-size: 10px;
-    font-weight: 700;
-    padding: 3px 8px;
-    border-radius: 8px;
-    letter-spacing: 0.5px;
-}
-
-.wire-cut-status.status-live {
-    background: rgba(239,68,68,0.12);
-    color: #ef4444;
-    animation: status-blink 2s ease-in-out infinite;
-}
-
-.wire-cut-status.status-cut {
-    background: rgba(34,197,94,0.12);
-    color: #22c55e;
-}
-
-@keyframes status-blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
-}
-
-/* ==================== WIRE LINE VISUAL ==================== */
-.defuse-wire-container {
-    padding: 12px 0;
-    position: relative;
-}
-
-.defuse-wire-line {
-    position: relative;
-    height: 4px;
-    display: flex;
-    align-items: center;
-    border-radius: 2px;
-}
-
-/* --- LIVE WIRE --- */
-.defuse-wire-line.live {
-    background: var(--wire-color);
-    box-shadow: 0 0 10px var(--wire-glow), 0 0 20px var(--wire-glow);
-    animation: wire-live-pulse 2s ease-in-out infinite;
-}
-
-.defuse-wire-line.live .wire-segment { display: none; }
-
-.wire-energy-flow {
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 100%;
-    width: 40px;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-    border-radius: 2px;
-    animation: energy-slide 2s linear infinite;
-}
-
-@keyframes wire-live-pulse {
-    0%, 100% { box-shadow: 0 0 8px var(--wire-glow); }
-    50% { box-shadow: 0 0 16px var(--wire-glow), 0 0 24px var(--wire-glow); }
-}
-
-@keyframes energy-slide {
-    0% { left: -40px; }
-    100% { left: calc(100% + 40px); }
-}
-
-/* --- CUT WIRE --- */
-.defuse-wire-line.cut {
-    background: none;
-    box-shadow: none;
-    justify-content: center;
-    gap: 0;
-}
-
-.defuse-wire-line.cut .wire-segment {
-    height: 4px;
-    border-radius: 2px;
-    flex: 1;
-}
-
-.defuse-wire-line.cut .wire-segment.left {
-    background: linear-gradient(90deg, var(--wire-color), rgba(34,197,94,0.2));
-    transform-origin: right center;
-    transform: rotate(1.5deg);
-    margin-right: 0;
-}
-
-.defuse-wire-line.cut .wire-segment.right {
-    background: linear-gradient(270deg, var(--wire-color), rgba(34,197,94,0.2));
-    transform-origin: left center;
-    transform: rotate(-1.5deg);
-    margin-left: 0;
-}
-
-/* Cut Point */
-.wire-cut-point {
-    position: relative;
-    width: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-}
-
-.cut-scissors {
-    font-size: 16px;
-    z-index: 2;
-    filter: drop-shadow(0 0 4px rgba(34,197,94,0.6));
-    animation: scissors-snip 0.6s ease-out;
-}
-
-@keyframes scissors-snip {
-    0% { transform: scale(1.8) rotate(-20deg); opacity: 0; }
-    40% { transform: scale(1.2) rotate(5deg); opacity: 1; }
-    100% { transform: scale(1) rotate(0); opacity: 1; }
-}
-
-/* Sparks at cut point */
-.cut-sparks {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-}
-
-.cut-sparks span {
-    position: absolute;
-    width: 3px;
-    height: 3px;
-    background: #fbbf24;
-    border-radius: 50%;
-    box-shadow: 0 0 4px #fbbf24;
-}
-
-.cut-sparks span:nth-child(1) {
-    top: -8px; left: 6px;
-    animation: spark-fly 1.5s ease-out infinite;
-}
-
-.cut-sparks span:nth-child(2) {
-    top: -4px; right: 4px;
-    animation: spark-fly 1.5s ease-out 0.3s infinite;
-}
-
-.cut-sparks span:nth-child(3) {
-    bottom: -6px; left: 10px;
-    animation: spark-fly 1.5s ease-out 0.6s infinite;
-}
-
-@keyframes spark-fly {
-    0% { opacity: 1; transform: translate(0, 0) scale(1); }
-    50% { opacity: 0.8; }
-    100% { opacity: 0; transform: translate(var(--sx, 5px), var(--sy, -10px)) scale(0); }
-}
-
-.cut-sparks span:nth-child(1) { --sx: -8px; --sy: -12px; }
-.cut-sparks span:nth-child(2) { --sx: 10px; --sy: -8px; }
-.cut-sparks span:nth-child(3) { --sx: -5px; --sy: 10px; }
-
-/* Wire progress text */
-.wire-unit-progress,
-.wire-done-text,
-.wire-pending-text {
-    font-size: 11px;
-    margin-top: 4px;
-}
-
-.wire-done-text { color: #22c55e; font-weight: 600; }
-.wire-pending-text { color: #888; }
-
-/* Team progress bar under Wire B */
-.wire-team-progress {
-    margin-top: 6px;
-}
-
-.team-bar {
-    height: 4px;
-    background: rgba(255,255,255,0.1);
-    border-radius: 10px;
-    overflow: hidden;
-    margin-bottom: 6px;
-}
-
-.team-bar-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #4f46e5, #6366f1);
-    border-radius: 10px;
-    transition: width 0.5s ease;
-}
-
-.team-bar-fill.complete {
-    background: linear-gradient(90deg, #16a34a, #22c55e);
-}
-
-/* ==================== WIRE CONNECTOR ==================== */
-.wire-connector {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin: 14px 0;
-}
-
-.connector-line {
-    flex: 1;
-    height: 1px;
-    background: rgba(255,255,255,0.08);
-}
-
-.connector-label {
-    font-size: 9px;
-    color: #555;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    white-space: nowrap;
-}
-
-.wire-unit.wire-is-cut + .wire-connector .connector-label,
-.qualification-box.qualified ~ .wire-connector .connector-label {
-    color: #22c55e;
-}
-
-/* ==================== SPOTIFY BUTTON ==================== */
-.album-tag-row {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-bottom: 15px;
-}
-
-.album-tag-with-link {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 12px;
-    background: rgba(255,255,255,0.02);
-    border-radius: 10px;
-    border: 1px solid rgba(255,255,255,0.05);
-}
-
-.album-tag-info {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex: 1;
-    min-width: 0;
-}
-
-.album-icon { font-size: 16px; flex-shrink: 0; }
-
-.album-name {
-    font-size: 13px;
-    color: #ccc;
-    font-weight: 500;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    min-width: 0;
-}
-
-.spotify-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 6px 12px;
-    background: #1DB954;
-    color: #fff;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: 600;
-    text-decoration: none;
-    white-space: nowrap;
-    flex-shrink: 0;
-    transition: all 0.2s ease;
-}
-
-.spotify-btn:hover {
-    background: #1ed760;
-    transform: scale(1.03);
-}
-
-.spotify-svg { flex-shrink: 0; }
-
-/* Spotify pill for wire detail modal */
-.spotify-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 4px 10px;
-    background: rgba(29,185,84,0.15);
-    color: #1DB954;
-    border-radius: 12px;
-    font-size: 10px;
-    font-weight: 600;
-    text-decoration: none;
-    flex-shrink: 0;
-}
-
-.spotify-pill:hover {
-    background: rgba(29,185,84,0.25);
-}
-
-.spotify-icon { font-size: 10px; }
-
-/* ==================== WIRE CELL SUB-INDICATORS ==================== */
-.wire-sub-dots {
-    display: flex;
-    gap: 3px;
-    justify-content: center;
-}
-
-.sub-dot {
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    transition: all 0.2s ease;
-}
-
-.sub-dot.sub-done {
-    background: #22c55e;
-    box-shadow: 0 0 4px rgba(34,197,94,0.5);
-}
-
-.sub-dot.sub-pending {
-    background: #444;
-}
-
-.sub-dot.sub-fail {
-    background: #ef4444;
-    opacity: 0.6;
-}
-
-/* Override wire-cell size for better touch + fit sub-dots */
-.wire-cell {
-    width: 34px;
-    height: 34px;
-    min-width: 44px;   /* touch target */
-    min-height: 44px;
-    border-radius: 8px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    gap: 2px;
-}
-
-/* ==================== TRACK CHECKLIST AS DETAILS ==================== */
-.track-checklist-details {
-    border-top: 1px solid rgba(255,255,255,0.05);
-    margin-top: 10px;
-}
-
-.checklist-summary {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 0;
-    font-size: 12px;
-    color: #888;
-    cursor: pointer;
-    list-style: none;
-    user-select: none;
-}
-
-.checklist-summary::-webkit-details-marker { display: none; }
-
-.checklist-summary::before {
-    content: '▸';
-    margin-right: 6px;
-    transition: transform 0.2s;
-}
-
-details[open] .checklist-summary::before {
-    transform: rotate(90deg);
-}
-
-.checklist-count { color: #a855f7; font-weight: 600; }
-.checklist-count.all-done { color: #22c55e; }
-
-.track-name {
-    flex: 1;
-    min-width: 0;
-    font-size: 12px;
-    color: #ccc;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-/* ==================== WIRE DETAIL MODAL ==================== */
-.wire-detail-modal {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    z-index: 9999;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.wire-detail-modal.show { opacity: 1; }
-
-.wire-detail-card {
-    position: relative;
-    background: #0f0f18;
-    border-radius: 14px;
-    border: 1px solid #1a1a24;
-    padding: 20px;
-    max-width: 320px;
-    width: 100%;
-}
-
-.wire-detail-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 16px;
-}
-
-.wire-detail-header h3 {
-    font-size: 15px;
-    color: #fff;
-    margin: 0;
-}
-
-.wire-detail-date {
-    font-size: 11px;
-    color: #666;
-    display: block;
-    margin-top: 2px;
-}
-
-.wire-state-badge {
-    font-size: 10px;
-    font-weight: 700;
-    padding: 4px 10px;
-    border-radius: 8px;
-    white-space: nowrap;
-}
-
-.wire-state-badge.state-defused { background: rgba(34,197,94,0.15); color: #22c55e; }
-.wire-state-badge.state-active { background: rgba(147,51,234,0.15); color: #a855f7; }
-.wire-state-badge.state-failed { background: rgba(239,68,68,0.12); color: #ef4444; }
-.wire-state-badge.state-locked { background: rgba(100,100,100,0.12); color: #666; }
-
-.wire-detail-albums {
-    margin-bottom: 16px;
-}
-
-.wire-album-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 10px;
-    background: rgba(255,255,255,0.02);
-    border-radius: 8px;
-    margin-bottom: 6px;
-}
-
-.album-disc { font-size: 14px; }
-.album-label { flex: 1; font-size: 12px; color: #ccc; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-.wire-detail-conditions {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    margin-bottom: 16px;
-}
-
-.condition-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 10px;
-    border-radius: 8px;
-    font-size: 12px;
-    color: #888;
-}
-
-.condition-row.met {
-    background: rgba(34,197,94,0.06);
-    color: #22c55e;
-}
-
-.condition-row.unmet {
-    background: rgba(255,255,255,0.02);
-}
-
-.condition-icon { font-size: 14px; }
-
-.condition-badge {
-    margin-left: auto;
-    font-size: 10px;
-    font-weight: 700;
-    padding: 2px 8px;
-    border-radius: 6px;
-}
-
-.condition-row.met .condition-badge { background: rgba(34,197,94,0.15); color: #22c55e; }
-.condition-row.unmet .condition-badge { background: rgba(239,68,68,0.1); color: #ef4444; }
-
-.btn-close-wire-detail {
-    width: 100%;
-    padding: 10px;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 8px;
-    color: #888;
-    font-size: 12px;
-    cursor: pointer;
-}
-
-/* ==================== BADGE POPUP BACKGROUND FIX ==================== */
-.badge-reveal {
-    position: relative;
-    text-align: center;
-    padding: 30px;
-    max-width: 280px;
-    background: #0f0f18;
-    border-radius: 16px;
-    border: 1px solid rgba(251,191,36,0.2);
-}
-
-/* ==================== RESPONSIVE ==================== */
-@media (max-width: 360px) {
-    .bomb-sphere {
-        width: 90px;
-        height: 90px;
-    }
-    
-    .defuse-stats-grid {
-        gap: 8px;
-    }
-    
-    .stat-box {
-        padding: 8px 12px;
-    }
-    
-    .stat-box .stat-value {
-        font-size: 18px;
-    }
-    
-    .wire-cell {
-        min-width: 38px;
-        min-height: 38px;
-    }
-    
-    .vault-box {
-        width: 36px;
-        height: 36px;
-    }
-    
-    .spotify-btn span {
-        display: none; /* Icon only on tiny screens */
-    }
-    
-    .spotify-btn {
-        padding: 6px 8px;
-    }
-    
-    .dual-wire-section {
-        padding: 12px;
-    }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .wire-energy-flow { animation: none; display: none; }
-    .cut-sparks span { animation: none; display: none; }
-    .energy-ring { animation: none; }
-    .energy-particles span { animation: none; }
-    .ambient-glow { animation: none; }
-    .defuse-wire-line.live { animation: none; }
-}
-    `;
-    
-    document.head.appendChild(style);
-}
-// =============================================
-// HOBI HELP SYSTEM 🐿️
-// =============================================
-
-function renderHobiHelpButton() {
+function renderArirangHelpButton() {
     return `
         <div style="text-align: center; margin-bottom: 15px;">
-            <button class="btn-hobi-help" onclick="showHobiGuide()">
+            <button class="btn-hobi-help" onclick="showArirangHelp()">
                 <span class="hobi-icon">🐿️</span>
-                <span>Feeling confused like Hobi? Tap for Help!</span>
+                <span>Confused? Tap for help!</span>
             </button>
         </div>
     `;
 }
 
-function showHobiGuide() {
+function showArirangHelp() {
     const modal = document.createElement('div');
     modal.className = 'hobi-guide-modal';
     modal.innerHTML = `
@@ -18114,48 +16031,48 @@ function showHobiGuide() {
             <div class="hobi-header">
                 <div class="hobi-avatar">😖</div>
                 <div class="hobi-title-group">
-                    <h3>Wait... I'm confused!</h3>
-                    <p>Agent Hobi's Quick Guide</p>
+                    <h3>Wait... how does this work?!</h3>
+                    <p>Agent Hobi's ARIRANG Guide</p>
                 </div>
                 <button class="hobi-close" onclick="this.closest('.hobi-guide-modal').remove()">✕</button>
             </div>
             
             <div class="hobi-body">
                 <p class="hobi-intro">
-                    "Okay okay, listen up! Even I understand this now! Here is the plan!" 
+                    "We're CHARGING our Army Bombs! Every album adds power! Let me explain!" 
                 </p>
                 
                 <div class="hobi-step">
-                    <div class="step-num">1</div>
+                    <div class="step-num">A</div>
                     <div class="step-text">
-                        <strong>Check the Red Wire!</strong>
-                        <p>Look at the "Today's Wire" card. Stream those specific songs <span class="highlight">2 TIMES</span> each!</p>
+                        <strong>Charge A — Your 2X Power!</strong>
+                        <p>Tap the green <span class="highlight">Spotify</span> button, then stream EVERY track at least <span class="highlight">2 times</span>. The checklist shows your progress!</p>
                     </div>
                 </div>
                 
                 <div class="hobi-step">
-                    <div class="step-num">2</div>
+                    <div class="step-num">B</div>
                     <div class="step-text">
-                        <strong>Teamwork makes the dream work!</strong>
-                        <p>Even if YOU finish, we need the <em>whole team</em> to reach the total goal. Stream more to help!</p>
+                        <strong>Charge B — Team Power!</strong>
+                        <p>Everyone's streams add up. When the team bar fills up, Charge B completes! Keep streaming even after your 2X!</p>
                     </div>
                 </div>
                 
                 <div class="hobi-step">
-                    <div class="step-num">3</div>
+                    <div class="step-num">⚡</div>
                     <div class="step-text">
-                        <strong>The Wire gets CUT! ✂️</strong>
-                        <p>If we all succeed, the wire turns GREEN and you get a shiny badge! Yay!</p>
+                        <strong>Both charged? PHASE POWERED!</strong>
+                        <p>The Army Bomb gets brighter! Go to Power Vault to claim your badge. Each day = new album = more power!</p>
                     </div>
                 </div>
                 
                 <div class="hobi-footer-note">
-                    "Don't let the bomb explode! Fighting! 💜"
+                    "By ARIRANG day, our bomb will be at FULL POWER! 💜⚡"
                 </div>
             </div>
             
             <button class="btn-hobi-confirm" onclick="this.closest('.hobi-guide-modal').remove()">
-                Okay, I get it now! 🐿️
+                I'm ready to charge! ⚡
             </button>
         </div>
     `;
@@ -18164,6 +16081,515 @@ function showHobiGuide() {
     requestAnimationFrame(() => modal.classList.add('show'));
 }
 
+// =============================================
+// HOME WIDGET
+// =============================================
+
+function renderArirangHomeWidget(data) {
+    // data can be pre-fetched or we show a static widget
+    const pct = data?.stats?.percentComplete || 0;
+    const nextAlbum = data?.nextPhase?.albums?.[0] || 'Loading...';
+    const phasesCharged = data?.stats?.phasesCharged || 0;
+    const total = data?.stats?.totalPhases || 22;
+    
+    return `
+        <div class="arirang-home-widget" onclick="loadPage('operation-defuse')">
+            <div class="widget-bomb-charge">
+                <div class="widget-sphere-charge" style="--charge-pct:${pct}">
+                    <div class="widget-fill" style="height:${pct}%"></div>
+                    <span class="widget-logo">⟭⟬</span>
+                </div>
+                <div class="widget-handle-c"></div>
+            </div>
+            <div class="widget-info">
+                <div class="widget-header">
+                    <span class="widget-title">OPERATION: ARIRANG</span>
+                    <span class="widget-live-dot"></span>
+                </div>
+                <div class="widget-progress-bar">
+                    <div class="widget-progress-fill" style="width:${pct}%"></div>
+                </div>
+                <div class="widget-sub">${phasesCharged}/${total} phases • Next: ${nextAlbum}</div>
+            </div>
+            <span class="widget-arrow">→</span>
+        </div>
+    `;
+}
+function addArirangStyles() {
+    if (document.getElementById('arirang-styles')) return;
+    
+    const style = document.createElement('style');
+    style.id = 'arirang-styles';
+    style.textContent = `
+        /* ===== LOADING ===== */
+        .arirang-loading { text-align:center; padding:60px 20px; }
+        .arirang-loading p { color:#888; font-size:13px; margin-top:20px; }
+        .loading-bomb-charge { display:inline-flex; flex-direction:column; align-items:center; }
+        .loading-sphere-charge {
+            width:60px; height:60px; border-radius:50%;
+            background:linear-gradient(135deg,rgba(147,51,234,0.3),rgba(168,85,247,0.1));
+            border:2px solid rgba(147,51,234,0.4);
+            animation:loading-pulse 2s ease-in-out infinite;
+        }
+        .loading-handle-charge { width:20px; height:30px; background:linear-gradient(180deg,#333,#1a1a1a); border-radius:0 0 6px 6px; margin-top:-5px; }
+        @keyframes loading-pulse { 0%,100%{transform:scale(1);box-shadow:0 0 20px rgba(147,51,234,0.3)} 50%{transform:scale(1.05);box-shadow:0 0 40px rgba(147,51,234,0.5)} }
+        
+        /* Reuse existing mini-army-bomb styles */
+        
+        /* ===== GUIDE ===== */
+        .arirang-guide { background:rgba(147,51,234,0.05); border:1px solid rgba(147,51,234,0.15); border-left:3px solid #9333ea; }
+        .guide-content { display:flex; gap:12px; align-items:flex-start; }
+        .guide-icon { font-size:22px; }
+        .guide-text strong { color:#a855f7; font-size:13px; display:block; margin-bottom:4px; }
+        .guide-text p { color:#888; font-size:12px; margin:3px 0; line-height:1.5; }
+        .guide-text .highlight { color:#fbbf24; font-weight:600; }
+        
+        /* ===== HEADER CARD ===== */
+        .arirang-header-card { background:linear-gradient(135deg,rgba(15,15,25,1),rgba(20,20,35,1)); border:1px solid rgba(147,51,234,0.2); }
+        .arirang-header-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; }
+        .arirang-badge-pill { display:flex; align-items:center; gap:6px; background:rgba(147,51,234,0.15); padding:4px 10px; border-radius:20px; }
+        .arirang-badge-pill .badge-icon { font-size:12px; }
+        .arirang-badge-pill .badge-text { font-size:10px; color:#a855f7; font-weight:600; letter-spacing:1px; }
+        .arirang-title { font-size:20px; font-weight:700; color:#fff; margin:0; letter-spacing:2px; }
+        .arirang-subtitle { color:#666; font-size:12px; margin:5px 0 20px; }
+        
+        /* Power level badge */
+        .power-level-badge { display:flex; align-items:center; gap:6px; padding:4px 10px; border-radius:20px; font-size:10px; font-weight:600; letter-spacing:0.5px; }
+        .power-dot { width:6px; height:6px; border-radius:50%; animation:blink 2s ease-in-out infinite; }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+        .power-dark { background:rgba(30,27,75,0.3); color:#3730a3; }
+        .power-dark .power-dot { background:#3730a3; }
+        .power-dim { background:rgba(55,48,163,0.15); color:#4f46e5; }
+        .power-dim .power-dot { background:#4f46e5; }
+        .power-flickering { background:rgba(79,70,229,0.15); color:#6366f1; }
+        .power-flickering .power-dot { background:#6366f1; }
+        .power-warming { background:rgba(99,102,241,0.15); color:#818cf8; }
+        .power-warming .power-dot { background:#818cf8; }
+        .power-energized { background:rgba(129,140,248,0.15); color:#a855f7; }
+        .power-energized .power-dot { background:#a855f7; }
+        .power-blazing { background:rgba(168,85,247,0.15); color:#c084fc; }
+        .power-blazing .power-dot { background:#c084fc; animation:blink 1s ease-in-out infinite; }
+        .power-fully-charged { background:rgba(232,121,249,0.2); color:#e879f9; }
+        .power-fully-charged .power-dot { background:#e879f9; animation:none; }
+        
+        /* Power Stats */
+        .power-stats-grid { display:flex; justify-content:center; gap:20px; margin-bottom:20px; }
+        .power-stat { text-align:center; padding:12px 20px; background:rgba(255,255,255,0.02); border-radius:12px; border:1px solid rgba(255,255,255,0.05); }
+        .power-stat-icon { font-size:16px; margin-bottom:4px; }
+        .power-stat-value { font-size:24px; font-weight:700; }
+        .power-stat-label { font-size:10px; color:#666; text-transform:uppercase; letter-spacing:0.5px; }
+        .power-stat.charged .power-stat-value { color:#22c55e; }
+        .power-stat.remaining .power-stat-value { color:#a855f7; }
+        .power-stat.missed .power-stat-value { color:#ef4444; }
+        .power-stat.clean .power-stat-value { color:#888; }
+        
+        /* Power Bar */
+        .power-bar-section { text-align:center; }
+        .power-bar-track { height:6px; background:rgba(255,255,255,0.1); border-radius:10px; overflow:hidden; position:relative; }
+        .power-bar-fill { height:100%; border-radius:10px; transition:width 0.5s ease; position:relative; overflow:hidden; }
+        .power-bar-shimmer { position:absolute; top:0; left:-100%; width:100%; height:100%; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.3),transparent); animation:shimmer 3s infinite; }
+        @keyframes shimmer { 0%{left:-100%} 100%{left:200%} }
+        .power-fill-dark { background:#1e1b4b; }
+        .power-fill-dim { background:linear-gradient(90deg,#312e81,#4338ca); }
+        .power-fill-flickering { background:linear-gradient(90deg,#4338ca,#6366f1); }
+        .power-fill-warming { background:linear-gradient(90deg,#4f46e5,#818cf8); }
+        .power-fill-energized { background:linear-gradient(90deg,#7c3aed,#a855f7); }
+        .power-fill-blazing { background:linear-gradient(90deg,#9333ea,#c084fc); }
+        .power-fill-fully-charged { background:linear-gradient(90deg,#a855f7,#e879f9,#f0abfc); }
+        .power-bar-label { font-size:11px; color:#666; margin-top:8px; }
+        
+        /* ===== CHARGING BOMB VISUAL ===== */
+        .arirang-bomb-core { background:#0a0a0f; border:1px solid #1a1a24; overflow:hidden; }
+        .time-badge { background:rgba(147,51,234,0.15); color:#a855f7; padding:4px 10px; border-radius:10px; font-size:11px; font-weight:600; }
+        
+        .charging-bomb-display { position:relative; display:flex; flex-direction:column; align-items:center; padding:40px 20px 30px; }
+        .charge-ambient-glow { position:absolute; width:200px; height:200px; border-radius:50%; filter:blur(60px); top:20px; transition:all 0.5s ease; }
+        .glow-dark { background:#1e1b4b; }
+        .glow-dim { background:#3730a3; }
+        .glow-flickering { background:#4f46e5; }
+        .glow-warming { background:#6366f1; }
+        .glow-energized { background:#7c3aed; }
+        .glow-blazing { background:#9333ea; }
+        .glow-fully-charged { background:#c084fc; animation:full-glow 2s ease-in-out infinite; }
+        @keyframes full-glow { 0%,100%{opacity:0.6;transform:scale(1)} 50%{opacity:0.9;transform:scale(1.1)} }
+        
+        .army-bomb { position:relative; display:flex; flex-direction:column; align-items:center; z-index:1; }
+        
+        /* Charge button */
+        .charge-button { width:20px; height:12px; border-radius:10px 10px 4px 4px; position:relative; margin-bottom:-4px; z-index:3; }
+        .btn-light { position:absolute; top:3px; left:50%; transform:translateX(-50%); width:8px; height:4px; border-radius:2px; }
+        .btn-dark { background:linear-gradient(180deg,#111,#0a0a0a); }
+        .btn-dark .btn-light { background:#222; }
+        .btn-dim { background:linear-gradient(180deg,#1e1b4b,#111); }
+        .btn-dim .btn-light { background:#3730a3; box-shadow:0 0 4px #3730a3; }
+        .btn-flickering { background:linear-gradient(180deg,#312e81,#1e1b4b); }
+        .btn-flickering .btn-light { background:#4f46e5; box-shadow:0 0 6px #4f46e5; animation:btn-flicker 2s ease-in-out infinite; }
+        @keyframes btn-flicker { 0%,100%{opacity:1} 30%{opacity:0.4} 60%{opacity:1} 80%{opacity:0.6} }
+        .btn-warming { background:linear-gradient(180deg,#4338ca,#312e81); }
+        .btn-warming .btn-light { background:#6366f1; box-shadow:0 0 8px #6366f1; }
+        .btn-energized { background:linear-gradient(180deg,#6b21a8,#4c1d95); }
+        .btn-energized .btn-light { background:#a855f7; box-shadow:0 0 8px #a855f7; }
+        .btn-blazing { background:linear-gradient(180deg,#7c3aed,#6b21a8); }
+        .btn-blazing .btn-light { background:#c084fc; box-shadow:0 0 12px #c084fc; }
+        .btn-fully-charged { background:linear-gradient(180deg,#9333ea,#7c3aed); }
+        .btn-fully-charged .btn-light { background:#e879f9; box-shadow:0 0 16px #e879f9; }
+        
+        /* Sphere */
+        .charge-sphere { width:120px; height:120px; border-radius:50%; background:linear-gradient(135deg,rgba(255,255,255,0.08) 0%,rgba(255,255,255,0.02) 50%,rgba(0,0,0,0.2) 100%); border:2px solid rgba(255,255,255,0.1); position:relative; display:flex; align-items:center; justify-content:center; box-shadow:inset 0 -20px 40px rgba(0,0,0,0.3),inset 0 20px 40px rgba(255,255,255,0.05),0 10px 30px rgba(0,0,0,0.5); overflow:hidden; }
+        .sphere-reflection { position:absolute; top:15px; left:20px; width:40px; height:20px; background:linear-gradient(180deg,rgba(255,255,255,0.2),transparent); border-radius:50%; transform:rotate(-30deg); z-index:5; }
+        .sphere-reflection-2 { position:absolute; top:25px; right:25px; width:15px; height:8px; background:rgba(255,255,255,0.15); border-radius:50%; z-index:5; }
+        
+        /* Energy fill level — the key charging visual */
+        .energy-fill-level { position:absolute; bottom:0; left:0; right:0; border-radius:0 0 50% 50%; overflow:hidden; transition:height 1s ease; z-index:1; }
+        .energy-fill-gradient { width:100%; height:100%; }
+        .fill-dark .energy-fill-gradient { background:linear-gradient(0deg,rgba(30,27,75,0.3),transparent); }
+        .fill-dim .energy-fill-gradient { background:linear-gradient(0deg,rgba(55,48,163,0.4),rgba(67,56,202,0.1)); }
+        .fill-flickering .energy-fill-gradient { background:linear-gradient(0deg,rgba(79,70,229,0.5),rgba(99,102,241,0.15)); }
+        .fill-warming .energy-fill-gradient { background:linear-gradient(0deg,rgba(99,102,241,0.5),rgba(129,140,248,0.2)); }
+        .fill-energized .energy-fill-gradient { background:linear-gradient(0deg,rgba(124,58,237,0.6),rgba(168,85,247,0.2)); }
+        .fill-blazing .energy-fill-gradient { background:linear-gradient(0deg,rgba(147,51,234,0.7),rgba(192,132,252,0.25)); }
+        .fill-fully-charged .energy-fill-gradient { background:linear-gradient(0deg,rgba(168,85,247,0.8),rgba(232,121,249,0.4),rgba(240,171,252,0.2)); }
+        .energy-fill-surface { position:absolute; top:0; left:0; right:0; height:3px; background:rgba(255,255,255,0.3); animation:surface-wave 3s ease-in-out infinite; }
+        @keyframes surface-wave { 0%,100%{transform:translateX(-5%) scaleY(1)} 50%{transform:translateX(5%) scaleY(1.5)} }
+        
+        /* Rings */
+        .charge-ring { position:absolute; width:90px; height:90px; border-radius:50%; border:1px solid transparent; animation:ring-rotate 8s linear infinite; z-index:2; }
+        .charge-ring.inner { width:70px; height:70px; animation-direction:reverse; animation-duration:6s; }
+        .ring-dim { border-color:rgba(55,48,163,0.3); }
+        .ring-flickering { border-color:rgba(79,70,229,0.3); }
+        .ring-warming { border-color:rgba(99,102,241,0.4); }
+        .ring-energized { border-color:rgba(147,51,234,0.4); }
+        .ring-blazing { border-color:rgba(192,132,252,0.5); animation-duration:4s; }
+        .ring-fully-charged { border-color:rgba(232,121,249,0.5); animation-duration:3s; }
+        @keyframes ring-rotate { 0%{transform:rotate(0)} 100%{transform:rotate(360deg)} }
+        
+        /* Core */
+        .charge-core { position:relative; z-index:3; display:flex; align-items:center; justify-content:center; width:50px; height:50px; border-radius:8px; background:rgba(0,0,0,0.4); }
+        .bts-logo { font-size:24px; font-weight:700; transition:all 0.3s ease; }
+        .core-dark .bts-logo { color:#222; }
+        .core-dim .bts-logo { color:#3730a3; text-shadow:0 0 8px rgba(55,48,163,0.5); }
+        .core-flickering .bts-logo { color:#4f46e5; text-shadow:0 0 10px rgba(79,70,229,0.5); animation:core-flicker 2s ease-in-out infinite; }
+        @keyframes core-flicker { 0%,100%{opacity:1} 30%{opacity:0.5} 60%{opacity:1} 80%{opacity:0.7} }
+        .core-warming .bts-logo { color:#6366f1; text-shadow:0 0 12px rgba(99,102,241,0.6); }
+        .core-energized .bts-logo { color:#a855f7; text-shadow:0 0 15px #a855f7; }
+        .core-blazing .bts-logo { color:#c084fc; text-shadow:0 0 20px #c084fc; }
+        .core-fully-charged .bts-logo { color:#e879f9; text-shadow:0 0 25px #e879f9, 0 0 50px rgba(232,121,249,0.4); animation:core-full 2s ease-in-out infinite; }
+        @keyframes core-full { 0%,100%{text-shadow:0 0 25px #e879f9} 50%{text-shadow:0 0 35px #e879f9,0 0 60px rgba(232,121,249,0.5)} }
+        
+        /* Particles */
+        .charge-particles { position:absolute; width:100%; height:100%; pointer-events:none; z-index:2; }
+        .charge-particles span { position:absolute; width:4px; height:4px; border-radius:50%; animation:particle-rise 3s ease-in-out infinite; }
+        .charge-particles span:nth-child(1) { bottom:20%; left:20%; animation-delay:0s; }
+        .charge-particles span:nth-child(2) { bottom:30%; right:25%; animation-delay:0.5s; }
+        .charge-particles span:nth-child(3) { bottom:15%; left:50%; animation-delay:1s; }
+        .charge-particles span:nth-child(4) { bottom:25%; right:15%; animation-delay:1.5s; }
+        .charge-particles span:nth-child(5) { bottom:35%; left:30%; animation-delay:2s; }
+        .charge-particles span:nth-child(6) { bottom:40%; right:30%; animation-delay:2.5s; }
+        @keyframes particle-rise { 0%{transform:translateY(0) scale(1);opacity:0.8} 50%{transform:translateY(-15px) scale(1.3);opacity:1} 100%{transform:translateY(-25px) scale(0);opacity:0} }
+        .particles-warming span { background:#818cf8; box-shadow:0 0 6px #818cf8; }
+        .particles-energized span { background:#a855f7; box-shadow:0 0 6px #a855f7; }
+        .particles-blazing span { background:#c084fc; box-shadow:0 0 8px #c084fc; }
+        .particles-fully-charged span { background:#e879f9; box-shadow:0 0 10px #e879f9; }
+        
+        /* Handle */
+        .bomb-handle { display:flex; flex-direction:column; align-items:center; margin-top:-8px; }
+        .handle-connector { width:30px; height:8px; background:linear-gradient(180deg,#2a2a2a,#1a1a1a); border-radius:0 0 4px 4px; }
+        .handle-grip { width:26px; height:40px; background:linear-gradient(90deg,#1a1a1a,#2a2a2a,#1a1a1a); border-radius:4px; display:flex; flex-direction:column; justify-content:center; gap:4px; padding:0 4px; }
+        .grip-line { height:2px; background:#333; border-radius:1px; }
+        .handle-base { width:34px; height:8px; background:linear-gradient(180deg,#222,#111); border-radius:0 0 6px 6px; }
+        
+        /* Power label */
+        .bomb-power-label { margin-top:20px; font-size:12px; font-weight:600; letter-spacing:0.5px; }
+        .label-dark { color:#333; }
+        .label-dim { color:#3730a3; }
+        .label-flickering { color:#4f46e5; }
+        .label-warming { color:#6366f1; }
+        .label-energized { color:#a855f7; }
+        .label-blazing { color:#c084fc; }
+        .label-fully-charged { color:#e879f9; animation:label-glow 2s ease-in-out infinite; }
+        @keyframes label-glow { 0%,100%{text-shadow:0 0 10px rgba(232,121,249,0.3)} 50%{text-shadow:0 0 20px rgba(232,121,249,0.6)} }
+        
+        /* ===== ERA TIMELINE ===== */
+        .era-timeline { margin-top:25px; padding-top:25px; border-top:1px solid #1a1a24; }
+        .timeline-header { display:flex; align-items:center; gap:8px; justify-content:center; margin-bottom:15px; }
+        .timeline-icon { font-size:14px; }
+        .timeline-title { font-size:11px; color:#666; text-transform:uppercase; letter-spacing:1px; }
+        .timeline-current { font-size:10px; color:#a855f7; background:rgba(147,51,234,0.1); padding:2px 8px; border-radius:8px; margin-left:auto; }
+        
+        .era-grid { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-bottom:15px; }
+        .era-cell { padding:8px 12px; border-radius:8px; cursor:pointer; text-align:center; transition:all 0.2s ease; border:1px solid transparent; min-width:70px; }
+        .era-icon { font-size:14px; display:block; }
+        .era-name { font-size:9px; color:#666; display:block; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:80px; }
+        .era-progress { font-size:9px; color:#555; display:block; }
+        .era-complete { background:rgba(34,197,94,0.1); border-color:rgba(34,197,94,0.3); }
+        .era-complete .era-name { color:#22c55e; }
+        .era-active { background:rgba(147,51,234,0.15); border-color:rgba(147,51,234,0.4); animation:era-pulse 2s ease-in-out infinite; }
+        .era-active .era-name { color:#a855f7; }
+        @keyframes era-pulse { 0%,100%{box-shadow:0 0 0 rgba(147,51,234,0)} 50%{box-shadow:0 0 10px rgba(147,51,234,0.3)} }
+        .era-partial { background:rgba(255,255,255,0.02); border-color:rgba(255,255,255,0.08); }
+        .era-locked { background:rgba(40,40,50,0.3); }
+        .era-locked .era-name { color:#444; }
+        .era-cell:hover { transform:scale(1.05); }
+        
+        /* Phase dots */
+        .phase-dot-grid { display:flex; flex-wrap:wrap; gap:4px; justify-content:center; margin-bottom:12px; }
+        .phase-dot { width:28px; height:28px; border-radius:6px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:9px; font-weight:700; transition:all 0.2s ease; min-width:44px; min-height:34px; }
+        .dot-charged { background:rgba(34,197,94,0.15); border:1px solid rgba(34,197,94,0.4); color:#22c55e; }
+        .dot-active { background:rgba(147,51,234,0.2); border:1px solid rgba(147,51,234,0.5); color:#a855f7; animation:wire-active-pulse 2s ease-in-out infinite; }
+        @keyframes wire-active-pulse { 0%,100%{box-shadow:0 0 0 rgba(147,51,234,0)} 50%{box-shadow:0 0 10px rgba(147,51,234,0.4)} }
+        .dot-missed { background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); color:#ef4444; }
+        .dot-locked { background:rgba(40,40,50,0.5); border:1px solid #2a2a35; color:#444; }
+        .phase-dot:hover { transform:scale(1.1); }
+        
+        .phase-legend { display:flex; justify-content:center; gap:12px; flex-wrap:wrap; }
+        .legend-item { display:flex; align-items:center; gap:4px; font-size:10px; color:#555; }
+        .legend-item .dot { width:6px; height:6px; border-radius:50%; }
+        .dot.charged { background:#22c55e; }
+        .dot.active { background:#a855f7; }
+        .dot.locked { background:#444; }
+        .dot.missed { background:#ef4444; }
+        
+        /* ===== DUAL CHARGE SECTION ===== */
+        .dual-charge-section { margin:20px 0 15px; padding:16px; background:rgba(0,0,0,0.3); border-radius:12px; border:1px solid rgba(255,255,255,0.05); }
+        .charge-unit { margin-bottom:0; }
+        .charge-unit-header { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+        .charge-letter { width:22px; height:22px; border-radius:50%; background:rgba(147,51,234,0.2); border:1.5px solid rgba(147,51,234,0.5); color:#a855f7; font-size:10px; font-weight:800; display:flex; align-items:center; justify-content:center; }
+        .charge-letter.letter-charged { background:rgba(34,197,94,0.2); border-color:rgba(34,197,94,0.5); color:#22c55e; }
+        .charge-unit-label { flex:1; font-size:12px; font-weight:600; color:#ccc; }
+        .charge-status { font-size:10px; font-weight:700; padding:3px 8px; border-radius:8px; letter-spacing:0.5px; }
+        .cs-live { background:rgba(168,85,247,0.12); color:#a855f7; }
+        .cs-charged { background:rgba(34,197,94,0.12); color:#22c55e; }
+        
+        /* Charge wire visual */
+        .charge-wire-container { padding:12px 0; }
+        .charge-wire { position:relative; height:4px; display:flex; align-items:center; border-radius:2px; }
+        .charge-wire.wire-live { background:var(--charge-color); box-shadow:0 0 10px var(--charge-color,rgba(168,85,247,0.4)); animation:wire-pulse 2s ease-in-out infinite; }
+        @keyframes wire-pulse { 0%,100%{box-shadow:0 0 8px var(--charge-color)} 50%{box-shadow:0 0 16px var(--charge-color)} }
+        .charge-wire.wire-live .wire-segment { display:none; }
+        .wire-flow { position:absolute; top:0; left:0; height:100%; width:40px; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.4),transparent); border-radius:2px; animation:energy-slide 2s linear infinite; }
+        @keyframes energy-slide { 0%{left:-40px} 100%{left:calc(100% + 40px)} }
+        .charge-wire.wire-charged { background:none; justify-content:center; }
+        .charge-wire.wire-charged .wire-segment { height:4px; border-radius:2px; flex:1; }
+        .charge-wire.wire-charged .wire-segment.left { background:linear-gradient(90deg,var(--charge-color),rgba(34,197,94,0.2)); transform-origin:right; transform:rotate(1.5deg); }
+        .charge-wire.wire-charged .wire-segment.right { background:linear-gradient(270deg,var(--charge-color),rgba(34,197,94,0.2)); transform-origin:left; transform:rotate(-1.5deg); }
+        .charge-point { position:relative; width:30px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+        .charge-bolt { font-size:16px; z-index:2; filter:drop-shadow(0 0 4px rgba(34,197,94,0.6)); animation:bolt-appear 0.6s ease-out; }
+        @keyframes bolt-appear { 0%{transform:scale(1.8) rotate(-20deg);opacity:0} 40%{transform:scale(1.2) rotate(5deg);opacity:1} 100%{transform:scale(1) rotate(0)} }
+        .charge-sparks { position:absolute; width:100%; height:100%; pointer-events:none; }
+        .charge-sparks span { position:absolute; width:3px; height:3px; background:#fbbf24; border-radius:50%; box-shadow:0 0 4px #fbbf24; }
+        .charge-sparks span:nth-child(1) { top:-8px; left:6px; animation:spark-fly 1.5s ease-out infinite; --sx:-8px; --sy:-12px; }
+        .charge-sparks span:nth-child(2) { top:-4px; right:4px; animation:spark-fly 1.5s ease-out 0.3s infinite; --sx:10px; --sy:-8px; }
+        .charge-sparks span:nth-child(3) { bottom:-6px; left:10px; animation:spark-fly 1.5s ease-out 0.6s infinite; --sx:-5px; --sy:10px; }
+        @keyframes spark-fly { 0%{opacity:1;transform:translate(0,0) scale(1)} 50%{opacity:0.8} 100%{opacity:0;transform:translate(var(--sx,5px),var(--sy,-10px)) scale(0)} }
+        
+        .charge-unit-status, .status-done, .status-pending { font-size:11px; margin-top:4px; }
+        .status-done { color:#22c55e; font-weight:600; }
+        .status-pending { color:#888; }
+        
+        .team-charge-bar { margin-top:6px; }
+        .tcb-track { height:4px; background:rgba(255,255,255,0.1); border-radius:10px; overflow:hidden; margin-bottom:6px; }
+        .tcb-fill { height:100%; background:linear-gradient(90deg,#4f46e5,#6366f1); border-radius:10px; transition:width 0.5s ease; }
+        .tcb-fill.tcb-complete { background:linear-gradient(90deg,#16a34a,#22c55e); }
+        
+        .charge-connector { display:flex; align-items:center; gap:10px; margin:14px 0; }
+        .conn-line { flex:1; height:1px; background:rgba(255,255,255,0.08); }
+        .conn-label { font-size:9px; color:#555; text-transform:uppercase; letter-spacing:1px; white-space:nowrap; }
+        
+        /* ===== PHASE CARD ===== */
+        .arirang-phase-card { border:1px solid rgba(147,51,234,0.2); }
+        .arirang-phase-card.phase-charged { border-color:rgba(34,197,94,0.3); background:linear-gradient(135deg,rgba(34,197,94,0.03),transparent); }
+        .phase-header-left { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+        .phase-codename-badge { font-size:10px; color:#a855f7; background:rgba(147,51,234,0.1); padding:3px 8px; border-radius:10px; }
+        .era-tag { font-size:9px; color:#818cf8; background:rgba(129,140,248,0.1); padding:2px 6px; border-radius:6px; }
+        .charged-badge { background:rgba(34,197,94,0.15); color:#22c55e; padding:4px 10px; border-radius:10px; font-size:11px; font-weight:600; }
+        
+        /* Album + Spotify */
+        .album-spotify-row { display:flex; flex-direction:column; gap:8px; margin-bottom:15px; }
+        .album-spotify-item { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; background:rgba(255,255,255,0.02); border-radius:10px; border:1px solid rgba(255,255,255,0.05); }
+        .album-info { display:flex; align-items:center; gap:8px; flex:1; min-width:0; }
+        .album-disc { font-size:16px; flex-shrink:0; }
+        .album-title { font-size:13px; color:#ccc; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+        .spotify-btn { display:inline-flex; align-items:center; gap:5px; padding:6px 12px; background:#1DB954; color:#fff; border-radius:20px; font-size:11px; font-weight:600; text-decoration:none; white-space:nowrap; flex-shrink:0; transition:all 0.2s ease; }
+        .spotify-btn:hover { background:#1ed760; transform:scale(1.03); }
+        .spotify-pill { display:inline-flex; align-items:center; gap:4px; padding:4px 10px; background:rgba(29,185,84,0.15); color:#1DB954; border-radius:12px; font-size:10px; font-weight:600; text-decoration:none; flex-shrink:0; }
+        .spotify-pill:hover { background:rgba(29,185,84,0.25); }
+        
+        /* Qualification / Result box */
+        .phase-result-box { display:flex; align-items:center; justify-content:center; gap:10px; padding:12px; margin-top:15px; border-radius:8px; background:rgba(255,255,255,0.02); border:1px solid #222; }
+        .phase-result-box.result-charged { background:rgba(34,197,94,0.08); border-color:rgba(34,197,94,0.2); }
+        .result-icon { font-size:18px; }
+        .result-msg { font-size:12px; color:#888; }
+        .phase-result-box.result-charged .result-msg { color:#22c55e; }
+        
+        /* Track Checklist */
+        .track-checklist-details { border-top:1px solid rgba(255,255,255,0.05); margin-top:10px; }
+        .checklist-summary { display:flex; justify-content:space-between; align-items:center; padding:12px 0; font-size:12px; color:#888; cursor:pointer; list-style:none; user-select:none; }
+        .checklist-summary::-webkit-details-marker { display:none; }
+        .checklist-summary::before { content:'▸'; margin-right:6px; transition:transform 0.2s; }
+        details[open] .checklist-summary::before { transform:rotate(90deg); }
+        .checklist-count { color:#a855f7; font-weight:600; }
+        .checklist-count.all-done { color:#22c55e; }
+        .track-list { display:flex; flex-direction:column; gap:5px; max-height:200px; overflow-y:auto; }
+        .track-row { display:flex; align-items:center; padding:8px 10px; background:rgba(255,255,255,0.02); border-radius:6px; border-left:2px solid #333; }
+        .track-row.done { background:rgba(34,197,94,0.05); border-left-color:#22c55e; }
+        .track-idx { width:20px; height:20px; border-radius:50%; background:#222; color:#666; font-size:10px; font-weight:600; display:flex; align-items:center; justify-content:center; margin-right:10px; flex-shrink:0; }
+        .track-row.done .track-idx { background:#22c55e; color:#000; }
+        .track-name { flex:1; min-width:0; font-size:12px; color:#ccc; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .track-count { font-size:11px; color:#666; padding:2px 8px; background:rgba(255,255,255,0.05); border-radius:8px; margin-left:8px; }
+        .track-count.complete { color:#22c55e; background:rgba(34,197,94,0.1); }
+        
+        /* ===== REST CARD ===== */
+        .arirang-rest-card { background:linear-gradient(135deg,rgba(50,50,70,0.1),transparent); }
+        .rest-content { display:flex; align-items:center; gap:15px; padding:10px; }
+        .rest-icon { font-size:36px; opacity:0.6; }
+        .rest-text h3 { font-size:14px; color:#888; margin:0; }
+        .rest-text p { font-size:12px; color:#555; margin:4px 0 0; }
+        
+        /* ===== VAULT ===== */
+        .arirang-vault-card .card-header { display:flex; justify-content:space-between; align-items:center; }
+        .unclaimed-count { background:rgba(251,191,36,0.15); color:#fbbf24; padding:3px 8px; border-radius:8px; font-size:10px; font-weight:600; }
+        .vault-grid { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; }
+        .vault-box { width:40px; height:40px; border-radius:8px; display:flex; flex-direction:column; align-items:center; justify-content:center; transition:all 0.2s ease; min-width:44px; min-height:44px; }
+        .box-icon { font-size:14px; }
+        .box-day { font-size:8px; color:#666; margin-top:2px; }
+        .vault-box.locked { background:rgba(40,40,50,0.3); border:1px dashed #2a2a35; }
+        .vault-box.claimed { background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.3); }
+        .vault-box.claimable { background:rgba(251,191,36,0.15); border:1px solid rgba(251,191,36,0.4); cursor:pointer; animation:claimable-glow 2s ease-in-out infinite; }
+        .vault-box.claimable:hover { transform:scale(1.1); box-shadow:0 0 15px rgba(251,191,36,0.3); }
+        @keyframes claimable-glow { 0%,100%{box-shadow:0 0 0 rgba(251,191,36,0)} 50%{box-shadow:0 0 12px rgba(251,191,36,0.3)} }
+        .vault-box.missed { background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.2); opacity:0.6; }
+        .vault-box.active { background:rgba(147,51,234,0.1); border:1px solid rgba(147,51,234,0.3); }
+        .vault-box.pending { background:rgba(60,60,70,0.1); border:1px solid #2a2a35; }
+        
+        /* ===== ACTIVATION CARD ===== */
+        .arirang-activation-card { background:linear-gradient(135deg,rgba(147,51,234,0.05),rgba(168,85,247,0.02)); border:1px dashed rgba(147,51,234,0.2); }
+        .arirang-activation-card.activated { border:1px solid rgba(232,121,249,0.3); animation:activation-shine 3s ease-in-out infinite; }
+        @keyframes activation-shine { 0%,100%{box-shadow:0 0 20px rgba(232,121,249,0.1)} 50%{box-shadow:0 0 30px rgba(232,121,249,0.2)} }
+        .activation-content { display:flex; align-items:center; gap:15px; }
+        .activation-icon-wrap { font-size:36px; }
+        .activation-icon-wrap.glow { animation:icon-glow 2s ease-in-out infinite; }
+        @keyframes icon-glow { 0%,100%{filter:drop-shadow(0 0 5px rgba(232,121,249,0.3))} 50%{filter:drop-shadow(0 0 15px rgba(232,121,249,0.6))} }
+        .activation-info { flex:1; }
+        .activation-title { font-size:14px; font-weight:600; color:#a855f7; margin:0; }
+        .arirang-activation-card.activated .activation-title { color:#e879f9; }
+        .activation-desc { font-size:12px; color:#666; margin:4px 0 0; }
+        .activation-progress { display:flex; align-items:center; gap:10px; margin-top:8px; }
+        .activation-bar { flex:1; height:4px; background:rgba(255,255,255,0.1); border-radius:10px; overflow:hidden; }
+        .activation-fill { height:100%; background:#7c3aed; border-radius:10px; }
+        .activation-count { font-size:11px; color:#666; }
+        
+        /* ===== ACTION CARD ===== */
+        .arirang-action-card { cursor:pointer; transition:all 0.2s ease; }
+        .arirang-action-card:hover { border-color:rgba(147,51,234,0.3); }
+        .action-content { display:flex; align-items:center; gap:12px; }
+        .action-icon { font-size:22px; }
+        .action-text { flex:1; }
+        .action-title { font-size:13px; color:#fff; font-weight:600; display:block; }
+        .action-subtitle { font-size:11px; color:#666; }
+        .action-arrow { font-size:18px; color:#555; }
+        
+        /* ===== HOME WIDGET ===== */
+        .arirang-home-widget { display:flex; align-items:center; gap:12px; padding:15px; background:linear-gradient(135deg,rgba(147,51,234,0.08),rgba(168,85,247,0.03)); border:1px solid rgba(147,51,234,0.2); border-radius:12px; margin-bottom:15px; cursor:pointer; transition:all 0.3s ease; }
+        .arirang-home-widget:hover { border-color:rgba(147,51,234,0.4); transform:translateY(-2px); }
+        .widget-bomb-charge { display:flex; flex-direction:column; align-items:center; }
+        .widget-sphere-charge { width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg,rgba(147,51,234,0.1),rgba(30,27,75,0.2)); border:1px solid rgba(147,51,234,0.4); display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; }
+        .widget-fill { position:absolute; bottom:0; left:0; right:0; background:linear-gradient(0deg,rgba(147,51,234,0.6),rgba(168,85,247,0.2)); transition:height 0.5s ease; }
+        .widget-logo { font-size:14px; color:#a855f7; position:relative; z-index:1; }
+        .widget-handle-c { width:12px; height:16px; background:linear-gradient(180deg,#2a2a2a,#1a1a1a); border-radius:0 0 4px 4px; margin-top:-4px; }
+        .widget-info { flex:1; }
+        .widget-header { display:flex; align-items:center; gap:8px; }
+        .widget-title { font-size:12px; font-weight:700; color:#a855f7; letter-spacing:0.5px; }
+        .widget-live-dot { width:6px; height:6px; background:#22c55e; border-radius:50%; animation:blink 2s ease-in-out infinite; }
+        .widget-progress-bar { height:3px; background:rgba(255,255,255,0.1); border-radius:10px; overflow:hidden; margin:4px 0; }
+        .widget-progress-fill { height:100%; background:linear-gradient(90deg,#7c3aed,#a855f7); border-radius:10px; transition:width 0.5s ease; }
+        .widget-sub { font-size:10px; color:#666; }
+        .widget-arrow { font-size:16px; color:#555; }
+        
+        /* ===== MODALS ===== */
+        .phase-detail-modal, .arirang-badge-modal, .arirang-lb-modal { position:fixed; top:0; left:0; right:0; bottom:0; z-index:10000; display:flex; align-items:center; justify-content:center; padding:20px; opacity:0; transition:opacity 0.3s ease; }
+        .phase-detail-modal.show, .arirang-badge-modal.show, .arirang-lb-modal.show { opacity:1; }
+        .modal-bg { position:absolute; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); }
+        
+        .phase-detail-card { position:relative; background:#0f0f18; border-radius:14px; border:1px solid #1a1a24; padding:20px; max-width:320px; width:100%; }
+        .phase-detail-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px; }
+        .phase-detail-header h3 { font-size:15px; color:#fff; margin:0; }
+        .phase-detail-era { font-size:10px; color:#818cf8; display:block; margin-top:2px; }
+        .phase-detail-date { font-size:11px; color:#666; display:block; }
+        .phase-state-badge { font-size:10px; font-weight:700; padding:4px 10px; border-radius:8px; white-space:nowrap; }
+        .state-charged { background:rgba(34,197,94,0.15); color:#22c55e; }
+        .state-active { background:rgba(147,51,234,0.15); color:#a855f7; }
+        .state-missed { background:rgba(239,68,68,0.12); color:#ef4444; }
+        .state-locked { background:rgba(100,100,100,0.12); color:#666; }
+        .phase-detail-albums { margin-bottom:16px; }
+        .phase-album-row { display:flex; align-items:center; gap:8px; padding:8px 10px; background:rgba(255,255,255,0.02); border-radius:8px; margin-bottom:6px; }
+        .album-label { flex:1; font-size:12px; color:#ccc; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .phase-detail-charges { display:flex; flex-direction:column; gap:6px; margin-bottom:16px; }
+        .charge-row { display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:8px; font-size:12px; color:#888; }
+        .charge-row.met { background:rgba(34,197,94,0.06); color:#22c55e; }
+        .charge-row.unmet { background:rgba(255,255,255,0.02); }
+        .charge-badge { margin-left:auto; font-size:10px; font-weight:700; padding:2px 8px; border-radius:6px; }
+        .charge-row.met .charge-badge { background:rgba(34,197,94,0.15); color:#22c55e; }
+        .charge-row.unmet .charge-badge { background:rgba(239,68,68,0.1); color:#ef4444; }
+        .btn-close-phase { width:100%; padding:10px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:8px; color:#888; font-size:12px; cursor:pointer; }
+        
+        .badge-reveal { position:relative; text-align:center; padding:30px; max-width:280px; background:#0f0f18; border-radius:16px; border:1px solid rgba(251,191,36,0.2); }
+        .badge-sparkle { font-size:24px; margin-bottom:10px; animation:sparkle-spin 2s ease-in-out infinite; }
+        @keyframes sparkle-spin { 0%,100%{transform:rotate(-5deg) scale(1)} 50%{transform:rotate(5deg) scale(1.1)} }
+        .badge-img-wrap { position:relative; display:inline-block; }
+        .badge-img-wrap::before { content:''; position:absolute; top:-10px; left:-10px; right:-10px; bottom:-10px; background:radial-gradient(circle,rgba(251,191,36,0.4),transparent 70%); animation:badge-glow 2s ease-in-out infinite; }
+        @keyframes badge-glow { 0%,100%{transform:scale(1);opacity:0.5} 50%{transform:scale(1.1);opacity:1} }
+        .badge-img { width:90px; height:90px; border-radius:50%; border:3px solid #fbbf24; object-fit:cover; position:relative; }
+        .badge-reveal h3 { color:#fbbf24; font-size:16px; margin:15px 0 5px; }
+        .badge-name { color:#fff; font-size:13px; font-weight:600; margin:0; }
+        .badge-desc { color:#888; font-size:11px; margin:5px 0 0; }
+        .badge-era { color:#818cf8; font-size:10px; margin:4px 0 0; }
+        .badge-xp { color:#22c55e; font-size:18px; font-weight:700; margin-top:15px; }
+        
+        .lb-panel { position:relative; background:#0f0f15; border-radius:16px; width:100%; max-width:360px; max-height:70vh; overflow:hidden; border:1px solid #1a1a24; }
+        .lb-header { display:flex; justify-content:space-between; align-items:center; padding:15px 20px; border-bottom:1px solid #1a1a24; }
+        .lb-header h3 { margin:0; font-size:15px; color:#fff; }
+        .lb-header button { background:none; border:none; color:#666; font-size:18px; cursor:pointer; padding:5px; }
+        .lb-body { padding:12px; max-height:55vh; overflow-y:auto; }
+        .lb-entry { display:flex; align-items:center; padding:10px 12px; background:rgba(255,255,255,0.02); border-radius:10px; margin-bottom:6px; border-left:3px solid var(--team-color,#7b2cbf); }
+        .lb-rank { width:26px; height:26px; border-radius:50%; background:#1a1a24; color:#888; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; margin-right:12px; }
+        .lb-rank.top1 { background:#fbbf24; color:#000; }
+        .lb-rank.top2 { background:#94a3b8; color:#000; }
+        .lb-rank.top3 { background:#b45309; color:#fff; }
+        .lb-info { flex:1; }
+        .lb-name { font-size:12px; color:#fff; font-weight:600; display:block; }
+        .lb-team { font-size:10px; color:var(--team-color,#888); }
+        .lb-stats { text-align:right; }
+        .lb-phases { font-size:11px; color:#22c55e; font-weight:600; }
+        .lb-xp { font-size:10px; color:#666; display:block; }
+        .lb-empty { text-align:center; padding:40px 20px; color:#555; }
+        .lb-empty span { font-size:32px; display:block; margin-bottom:10px; }
+        
+        /* ===== RESPONSIVE ===== */
+        @media (max-width:360px) {
+            .charge-sphere { width:90px; height:90px; }
+            .power-stats-grid { gap:8px; }
+            .power-stat { padding:8px 12px; }
+            .power-stat-value { font-size:18px; }
+            .phase-dot { min-width:38px; min-height:34px; }
+            .vault-box { width:36px; height:36px; min-width:38px; min-height:38px; }
+            .era-cell { min-width:60px; padding:6px 8px; }
+            .spotify-btn span { display:none; }
+            .spotify-btn { padding:6px 8px; }
+        }
+        
+        @media (prefers-reduced-motion:reduce) {
+            .wire-flow { animation:none; display:none; }
+            .charge-sparks span { animation:none; display:none; }
+            .charge-ring { animation:none; }
+            .charge-particles span { animation:none; }
+            .charge-ambient-glow { animation:none; }
+            .charge-wire.wire-live { animation:none; }
+            .power-bar-shimmer { animation:none; display:none; }
+        }
+    `;
+    
+    document.head.appendChild(style);
+}
 // ==================== EXPORTS & INIT ====================
 document.addEventListener('DOMContentLoaded', initApp);
 
