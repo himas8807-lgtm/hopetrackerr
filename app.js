@@ -5583,7 +5583,7 @@ async function renderPageByRoute(pageName) {
         'chat', 'playlists', 'gc-links', 'helper-roles', 'song-of-day', 'sotd',
         'secret-missions', 'announcements', 'drawer', 'goals', 'rankings', 
         'team-level', 'summary', 'comparison', 'album2x', 'profile', 'namjoon', 
-        'streaming-tips', 'guide', 'attendance',
+        'streaming-tips', 'guide', 'attendance', 'arirang-road',
         'arirang-hype', 'arirang-vault'
     ];
 
@@ -6274,6 +6274,7 @@ async function renderHome() {
         if (quickStatsEl) {
             quickStatsEl.innerHTML = `
                 ${btsCountdownHtml}
+                ${defuseWidget}
                 ${refreshNotice}
                 <div id="streak-widget-container"></div>
                 <div class="card quick-stats-card" style="border-color:${teamColor(team)}40;background:linear-gradient(135deg, ${teamColor(team)}11, var(--bg-card));">
