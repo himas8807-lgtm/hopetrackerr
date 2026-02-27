@@ -6282,7 +6282,7 @@ async function renderHome() {
         if (quickStatsEl) {
             quickStatsEl.innerHTML = `
                 ${btsCountdownHtml}
-                ${defuseWidget}
+                ${widgetHTML}
                 ${refreshNotice}
                 <div id="streak-widget-container"></div>
                 <div class="card quick-stats-card" style="border-color:${teamColor(team)}40;background:linear-gradient(135deg, ${teamColor(team)}11, var(--bg-card));">
@@ -15470,7 +15470,7 @@ function renderEraTimeline(phases, eras, currentEra) {
             
             <div class="era-grid">
                 ${Object.entries(eras || {}).map(([eraName, era]) => {
-                    const eraData = era as any;
+                    const eraData = era;
                     const isActive = eraName === currentEra;
                     const isComplete = eraData.complete;
                     
@@ -15479,7 +15479,7 @@ function renderEraTimeline(phases, eras, currentEra) {
                     else if (isActive) stateClass = 'era-active';
                     else {
                         const eraPhases = (eraData.phases || []);
-                        const anyPast = phases.some((p: any) => eraPhases.includes(p.phase) && (p.state === 'charged' || p.state === 'missed' || p.state === 'active'));
+                        const anyPast = phases.some((p)  => eraPhases.includes(p.phase) && (p.state === 'charged' || p.state === 'missed' || p.state === 'active'));
                         if (anyPast) stateClass = 'era-partial';
                     }
                     
