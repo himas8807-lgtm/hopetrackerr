@@ -11797,3 +11797,204 @@ input, textarea, select {
     margin-top: 15px;
     font-size: 14px;
 }
+/* ==================== HOBI HELP BUTTON & MODAL ==================== */
+
+/* The Button */
+.btn-hobi-help {
+    background: rgba(251, 191, 36, 0.1);
+    border: 1px solid rgba(251, 191, 36, 0.4);
+    color: #fbbf24;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    animation: hobi-bounce 2s infinite;
+}
+
+.btn-hobi-help:hover {
+    background: rgba(251, 191, 36, 0.2);
+    transform: scale(1.05);
+}
+
+.hobi-icon {
+    font-size: 16px;
+}
+
+@keyframes hobi-bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+}
+
+/* The Modal */
+.hobi-guide-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10001; /* Above everything else */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.hobi-guide-modal.show {
+    opacity: 1;
+}
+
+.hobi-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(4px);
+}
+
+.hobi-card {
+    position: relative;
+    background: #1a1a24;
+    border: 2px solid #fbbf24;
+    border-radius: 20px;
+    width: 100%;
+    max-width: 340px;
+    box-shadow: 0 0 30px rgba(251, 191, 36, 0.2);
+    overflow: hidden;
+    transform: scale(0.9);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.hobi-guide-modal.show .hobi-card {
+    transform: scale(1);
+}
+
+.hobi-header {
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.15), rgba(245, 158, 11, 0.05));
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    border-bottom: 1px solid rgba(251, 191, 36, 0.2);
+}
+
+.hobi-avatar {
+    font-size: 32px;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+    animation: head-shake 2s infinite;
+}
+
+@keyframes head-shake {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-10deg); }
+    75% { transform: rotate(10deg); }
+}
+
+.hobi-title-group h3 {
+    margin: 0;
+    color: #fbbf24;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.hobi-title-group p {
+    margin: 2px 0 0;
+    color: #aaa;
+    font-size: 12px;
+}
+
+.hobi-close {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: #666;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+.hobi-body {
+    padding: 20px;
+}
+
+.hobi-intro {
+    font-style: italic;
+    color: #fff;
+    font-size: 14px;
+    text-align: center;
+    margin-bottom: 20px;
+    background: rgba(255,255,255,0.05);
+    padding: 10px;
+    border-radius: 10px;
+}
+
+.hobi-step {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.step-num {
+    width: 24px;
+    height: 24px;
+    background: #fbbf24;
+    color: #000;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.step-text strong {
+    display: block;
+    color: #fff;
+    margin-bottom: 4px;
+    font-size: 14px;
+}
+
+.step-text p {
+    margin: 0;
+    color: #aaa;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.step-text .highlight {
+    color: #fbbf24;
+    font-weight: 700;
+}
+
+.hobi-footer-note {
+    text-align: center;
+    color: #a855f7;
+    font-weight: 600;
+    margin-top: 20px;
+    font-size: 14px;
+}
+
+.btn-hobi-confirm {
+    width: 100%;
+    padding: 15px;
+    background: #fbbf24;
+    border: none;
+    color: #000;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-hobi-confirm:hover {
+    background: #f59e0b;
+}
