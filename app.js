@@ -15230,11 +15230,11 @@ window.renderArirangVault = renderArirangVault;
 // =============================================
 // RENDER OPERATION DEFUSE PAGE
 // =============================================
-
 async function renderOperationDefuse() {
     const container = $('arirang-road-content') || $('operation-defuse-content');
     if (!container) return;
     
+    // 1. Show initial loading state (No variables used yet)
     container.innerHTML = `
         <div style="text-align:center;padding:60px 20px;">
             <div class="bomb-loading">💣</div>
@@ -15243,6 +15243,7 @@ async function renderOperationDefuse() {
     `;
     
     try {
+        // 2. Fetch the data from Backend
         const data = await api('getDefuseStatus', { agentNo: STATE.agentNo });
         
         if (!data.success) {
@@ -15256,9 +15257,10 @@ async function renderOperationDefuse() {
             return;
         }
         
+        // 3. Define variables AFTER data is received
         const { stats, wires, todayChallenge, bombStatus, timeRemaining, config } = data;
         
-        // Determine threat level color
+        // 4. Determine threat level color
         const threatPct = stats.totalWires > 0 ? ((stats.totalWires - stats.wiresDefused) / stats.totalWires) * 100 : 100;
         let threatColor = '#00ff88';
         let threatLevel = 'LOW';
@@ -15266,6 +15268,11 @@ async function renderOperationDefuse() {
         else if (threatPct > 40) { threatColor = '#ff9800'; threatLevel = 'HIGH'; }
         else if (threatPct > 20) { threatColor = '#ffd700'; threatLevel = 'MODERATE'; }
         
+        // 5. Ingest Styles and generate Wire HTML
+        addDefuseStyles();
+        const wiresHTML = generateWiresHTML(stats.totalWires, wires);
+
+        // 6. Build UI
         container.innerHTML = `
             <!-- HEADER / STATUS PANEL -->
             <div class="card defuse-header" style="background:linear-gradient(135deg, rgba(255,68,68,0.1), rgba(123,44,191,0.1));border:1px solid rgba(255,68,68,0.3);">
@@ -15275,9 +15282,7 @@ async function renderOperationDefuse() {
                         <span style="color:${threatColor};font-weight:700;font-size:14px;">THREAT LEVEL: ${threatLevel}</span>
                     </div>
                     <h2 style="margin:0;color:#fff;font-size:18px;">⚠️ OPERATION DEFUSE ⚠️</h2>
-                    <p style="color:#aaa;font-size:12px;margin:5px 0 15px;">Arirang Bomb Defusal Unit</p>
-                    
-                    <div style="display:flex;justify-content:center;gap:30px;flex-wrap:wrap;">
+                    <div style="display:flex;justify-content:center;gap:30px;margin-top:15px;">
                         <div class="defuse-stat">
                             <div style="font-size:28px;font-weight:700;color:#00ff88;">${stats.wiresDefused}</div>
                             <div style="font-size:11px;color:#888;">Wires Cut</div>
@@ -15286,46 +15291,23 @@ async function renderOperationDefuse() {
                             <div style="font-size:28px;font-weight:700;color:#ff4444;">${stats.wiresFailed}</div>
                             <div style="font-size:11px;color:#888;">Failed</div>
                         </div>
-                        <div class="defuse-stat">
-                            <div style="font-size:28px;font-weight:700;color:#ffd700;">${stats.totalWires - stats.wiresDefused - stats.wiresFailed}</div>
-                            <div style="font-size:11px;color:#888;">Remaining</div>
-                        </div>
-                    </div>
-                    
-                    <div style="margin-top:15px;">
-                        <div style="background:#222;border-radius:10px;height:12px;overflow:hidden;max-width:300px;margin:0 auto;">
-                            <div style="height:100%;width:${stats.percentComplete}%;background:linear-gradient(90deg, #00ff88, #7b2cbf);transition:width 0.5s;"></div>
-                        </div>
-                        <div style="font-size:11px;color:#888;margin-top:5px;">${stats.percentComplete}% Complete</div>
                     </div>
                 </div>
             </div>
             
-            <!-- THE BOMB VISUAL -->
-            <div class="card" style="background:#0a0a0f;border:1px solid #333;">
-                <div class="card-body" style="padding:20px;text-align:center;">
+            <!-- THE BOMB VISUAL WITH ACTUAL WIRE LINES -->
+            <div class="card" style="background:#0a0a0f;border:1px solid #333; overflow:visible;">
+                <div class="card-body" style="padding:50px 20px; text-align:center; position:relative;">
                     <div class="bomb-container">
+                        ${wiresHTML}
                         <div class="army-bomb ${bombStatus === 'DEFUSED' ? 'defused' : bombStatus === 'DETONATED' ? 'detonated' : 'active'}">
                             💣
                         </div>
-                        
-                        <div class="wires-grid">
-                            ${wires.map(wire => `
-                                <div class="wire wire-${wire.state}" 
-                                     data-wire="${wire.wireNumber}" 
-                                     data-date="${wire.date}"
-                                     onclick="showWireDetails('${wire.date}')"
-                                     title="${wire.codename}: ${wire.albums.join(', ')}">
-                                    <span class="wire-num">${wire.wireNumber}</span>
-                                    <span class="wire-icon">${getWireIcon(wire.state)}</span>
-                                </div>
-                            `).join('')}
-                        </div>
                     </div>
                     
-                    <div style="margin-top:15px;padding:10px;background:rgba(255,107,53,0.1);border-radius:8px;display:${todayChallenge ? 'block' : 'none'}">
-                        <div style="color:#ff6b35;font-size:12px;font-weight:600;">⏰ Time to defuse today's wire</div>
-                        <div style="color:#fff;font-size:18px;font-weight:700;margin-top:5px;">${timeRemaining}</div>
+                    <div style="margin-top:40px;padding:10px;background:rgba(255,107,53,0.1);border-radius:8px;display:${todayChallenge ? 'inline-block' : 'none'}">
+                        <div style="color:#ff6b35;font-size:11px;font-weight:600;">⏰ TIME TO DETONATION</div>
+                        <div style="color:#fff;font-size:18px;font-weight:700;margin-top:5px;font-family:monospace;">${timeRemaining}</div>
                     </div>
                 </div>
             </div>
@@ -15335,79 +15317,31 @@ async function renderOperationDefuse() {
                 <div class="card" style="text-align:center;padding:30px;">
                     <div style="font-size:40px;margin-bottom:10px;">✅</div>
                     <h3 style="color:#00ff88;">No Active Wire Today</h3>
-                    <p style="color:#888;">Check back tomorrow for the next wire!</p>
                 </div>
             `}
             
             <!-- REWARDS VAULT -->
             <div class="card">
-                <div class="card-header">
-                    <h3 style="margin:0;"><span style="margin-right:8px;">🎁</span>Rewards Vault</h3>
-                    <span style="color:#888;font-size:12px;">${stats.unclaimedRewards} unclaimed</span>
-                </div>
+                <div class="card-header"><h3>🎁 Rewards Vault</h3></div>
                 <div class="card-body">
                     <div class="rewards-grid">
                         ${wires.filter(w => w.state !== 'locked').map(wire => `
-                            <div class="reward-box reward-${wire.state}" 
-                                 onclick="${wire.qualified && !wire.claimed ? `claimDefuseReward('${wire.date}')` : ''}"
-                                 style="cursor:${wire.qualified && !wire.claimed ? 'pointer' : 'default'}">
-                                ${wire.claimed ? '✅' : wire.qualified ? '🎁' : wire.state === 'failed' ? '❌' : '🔒'}
+                            <div class="reward-box reward-${wire.state} ${wire.qualified && !wire.claimed ? 'qualified' : ''}" 
+                                 onclick="${wire.qualified && !wire.claimed ? `claimDefuseReward('${wire.date}')` : ''}">
+                                ${wire.claimed ? '✅' : wire.qualified ? '🎁' : '🔒'}
                                 <span class="reward-day">D${wire.wireNumber}</span>
                             </div>
                         `).join('')}
                     </div>
                 </div>
             </div>
-            
-            <!-- MYSTERY BOX -->
-            <div class="card mystery-box ${data.mysteryBoxUnlocked ? 'unlocked' : 'locked'}">
-                <div class="card-body" style="text-align:center;padding:30px;">
-                    <div style="font-size:60px;margin-bottom:15px;">${data.mysteryBoxUnlocked ? '🎁✨' : '🔐'}</div>
-                    <h3 style="color:${data.mysteryBoxUnlocked ? '#ffd700' : '#888'};">
-                        ${data.mysteryBoxUnlocked ? 'MYSTERY BOX UNLOCKED!' : 'CLASSIFIED REWARD'}
-                    </h3>
-                    <p style="color:#666;font-size:13px;">
-                        ${data.mysteryBoxUnlocked ? 'Tap to reveal your reward!' : `Defuse ALL ${stats.totalWires} wires to unlock`}
-                    </p>
-                    ${!data.mysteryBoxUnlocked ? `
-                        <div style="margin-top:15px;">
-                            <div style="background:#222;border-radius:8px;height:8px;max-width:200px;margin:0 auto;overflow:hidden;">
-                                <div style="height:100%;width:${stats.percentComplete}%;background:#7b2cbf;"></div>
-                            </div>
-                            <div style="font-size:11px;color:#666;margin-top:5px;">${stats.wiresDefused}/${stats.totalWires}</div>
-                        </div>
-                    ` : ''}
-                </div>
-            </div>
-            
-            <!-- LEADERBOARD LINK -->
-            <div class="card" onclick="showDefuseLeaderboard()" style="cursor:pointer;">
-                <div class="card-body" style="display:flex;align-items:center;justify-content:space-between;padding:15px;">
-                    <div style="display:flex;align-items:center;gap:12px;">
-                        <span style="font-size:24px;">🏆</span>
-                        <div>
-                            <div style="color:#fff;font-weight:600;">Defuse Leaderboard</div>
-                            <div style="color:#888;font-size:12px;">See top bomb defusers</div>
-                        </div>
-                    </div>
-                    <span style="color:#888;">→</span>
-                </div>
-            </div>
+
+            <button onclick="loadPage('home')" class="btn-secondary" style="width:100%; margin-top:15px;">← Back to Command Center</button>
         `;
-        
-        // Add CSS animations
-        addDefuseStyles();
         
     } catch (e) {
         console.error('Error loading Operation Defuse:', e);
-        container.innerHTML = `
-            <div class="card" style="text-align:center;padding:40px;">
-                <div style="font-size:48px;margin-bottom:15px;">⚠️</div>
-                <h3 style="color:#ff6b6b;">Connection Error</h3>
-                <p style="color:#888;">Could not load bomb status</p>
-                <button class="btn-primary" onclick="renderOperationDefuse()" style="margin-top:15px;">Retry</button>
-            </div>
-        `;
+        container.innerHTML = `<div class="card" style="text-align:center;padding:40px;"><p>Connection Error</p><button class="btn-primary" onclick="renderOperationDefuse()">Retry</button></div>`;
     }
 }
 
@@ -15999,7 +15933,109 @@ function renderDefuseHomeWidget() {
         </div>
     `;
 }
+function generateWiresHTML(total, wiresData) {
+    let html = '';
+    const radius = 120; // How far the buttons are from the bomb
+    
+    // Position buttons in an arc from -150 degrees to -30 degrees
+    const startAngle = -150;
+    const endAngle = -30;
+    const step = (endAngle - startAngle) / (total - 1);
 
+    wiresData.forEach((wire, i) => {
+        const angle = startAngle + (step * i);
+        const x = Math.cos(angle * Math.PI / 180) * radius;
+        const y = Math.sin(angle * Math.PI / 180) * radius;
+        
+        // Calculate rotation for the wire line so it points at the center
+        const lineRotation = angle + 180;
+
+        html += `
+            <div class="wire-wrapper" style="transform: translate(${x}px, ${y}px);">
+                <div class="wire-line wire-line-${wire.state}" style="transform: rotate(${lineRotation}deg); width: ${radius}px;"></div>
+                <div class="wire wire-${wire.state}">
+                    <span class="wire-num">${wire.wireNumber}</span>
+                </div>
+            </div>
+        `;
+    });
+    return html;
+}
+function addDefuseStyles() {
+    if (document.getElementById('defuse-styles')) return;
+    const s = document.createElement('style');
+    s.id = 'defuse-styles';
+    s.innerHTML = `
+        .bomb-container { position: relative; display: flex; justify-content: center; align-items: center; height: 100px; }
+        .bomb-loading { font-size: 50px; animation: bomb-pulse 1s infinite; }
+        .army-bomb { font-size: 80px; z-index: 10; position: relative; animation: bomb-pulse 2s infinite; }
+        .wire-wrapper { position: absolute; display: flex; align-items: center; justify-content: center; z-index: 5; }
+        .wire-line { position: absolute; height: 2px; background: #333; transform-origin: left center; z-index: 1; }
+        .wire-line-active { background: #ff4444; box-shadow: 0 0 10px #ff4444; height: 3px; }
+        .wire-line-defused { background: #00ff88; opacity: 0.5; }
+        .wire { width: 34px; height: 34px; border-radius: 50%; background: #111; border: 2px solid #333; display: flex; align-items: center; justify-content: center; z-index: 5; }
+        .wire-active { border-color: #ff4444; box-shadow: 0 0 15px #ff4444; background: #2a0000; }
+        .wire-defused { border-color: #00ff88; background: rgba(0, 255, 136, 0.1); }
+        .wire-num { font-size: 10px; font-weight: bold; color: #fff; }
+        .rewards-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+        .reward-box { aspect-ratio: 1; background: #1a1a2e; border: 1px solid #333; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 20px; transition: 0.3s; }
+        .reward-box.qualified { border-color: #ffd700; background: rgba(255,215,0,0.15); cursor: pointer; animation: mystery-glow 2s infinite; }
+        .reward-day { font-size: 8px; color: #666; margin-top: 2px; }
+        @keyframes bomb-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        @keyframes threat-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+    `;
+    document.head.appendChild(s);
+}
+
+function renderTodayDefuseMission(c, config) {
+    const teamPct = Math.min(100, Math.round((c.collectiveStreams / c.targetStreams) * 100));
+    const userPct = c.totalTracks > 0 ? Math.round((c.completedTracks / c.totalTracks) * 100) : 0;
+    
+    return `
+        <div class="card today-mission" style="border:2px solid #ff6b35; margin-top:20px;">
+            <div class="card-header" style="background:rgba(255,107,53,0.1);">
+                <h3 style="margin:0;color:#ff6b35;">🔴 TODAY'S WIRE: ${c.codename}</h3>
+                <p style="margin:5px 0 0; font-size:12px; color:#888;">${c.albums.join(' + ')}</p>
+            </div>
+            <div class="card-body">
+                <div style="margin-bottom:15px;">
+                    <div style="display:flex;justify-content:space-between;font-size:12px;color:#888;margin-bottom:5px;">
+                        <span>Team Goal</span><span>${fmt(c.collectiveStreams)}/${fmt(c.targetStreams)}</span>
+                    </div>
+                    <div class="progress-bar"><div class="progress-fill" style="width:${teamPct}%;background:${c.teamGoalMet ? '#00ff88' : '#7b2cbf'};"></div></div>
+                </div>
+                <div style="margin-bottom:20px;">
+                    <div style="display:flex;justify-content:space-between;font-size:12px;color:#888;margin-bottom:5px;">
+                        <span>Your 2X Progress</span><span>${c.completedTracks}/${c.totalTracks}</span>
+                    </div>
+                    <div class="progress-bar"><div class="progress-fill" style="width:${userPct}%;background:${c.passed2x ? '#00ff88' : '#ff6b35'};"></div></div>
+                </div>
+                <div class="defuse-tracks" style="display:flex; flex-direction:column; gap:5px;">
+                    ${c.tracks.map(t => `<div class="contrib-item" style="background:rgba(0,0,0,0.2); padding:8px 12px; border-radius:6px; display:flex; justify-content:space-between;">
+                        <span style="font-size:13px;">${t.passed ? '✅' : '⬜'} ${sanitize(t.name)}</span>
+                        <span style="font-family:monospace; color:${t.passed ? '#00ff88' : '#888'};">${t.count}/${config.requiredStreams}</span>
+                    </div>`).join('')}
+                </div>
+            </div>
+        </div>`;
+}
+
+async function claimDefuseReward(date) {
+    try {
+        loading(true);
+        const result = await api('claimDefuseReward', { date });
+        loading(false);
+        if (result.success) {
+            showToast(result.message, 'success');
+            renderOperationDefuse(); // Refresh
+        } else {
+            showToast(result.error, 'error');
+        }
+    } catch (e) {
+        loading(false);
+        showToast('Claim failed', 'error');
+    }
+}
 // ==================== EXPORTS & INIT ====================
 document.addEventListener('DOMContentLoaded', initApp);
 
@@ -16074,5 +16110,7 @@ window.renderSummary = renderSummary;
 window.renderWeekConfirmation = renderWeekConfirmation;
 window.updateTeamStatus = updateTeamStatus;
 window.toggleResultsRelease = toggleResultsRelease;
+window.claimDefuseReward = claimDefuseReward;
+window.renderOperationDefuse = renderOperationDefuse;
 
 console.log('🎮 hopetracker v6.0 Loaded with Voting System 🗳️💜');
