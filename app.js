@@ -15414,7 +15414,7 @@ async function renderOperationDefuse() {
             </div>
             
             <!-- TODAY'S MISSION -->
-            ${todayChallenge ? renderTodayDefuseMission(todayChallenge, config) : renderNoMissionCard()}
+            ${todayChallenge ? renderTodayDefuseMission(todayChallenge, config) : renderNoMissionCard(wires)}
             
             <!-- REWARDS VAULT -->
             ${renderRewardsVault(wires, stats)}
@@ -15612,25 +15612,114 @@ function renderWireCell(wire) {
         'locked': '○'
     };
     
+    // Determine sub-indicator states for past/active wires
+    const showSubDots = wire.state !== 'locked';
+    
     return `
         <div class="wire-cell ${stateClass}" 
-             onclick="showWireInfo('${wire.date}', '${wire.codename}', '${wire.albums.join(', ')}')"
+             onclick="showWireDetail(${JSON.stringify({
+                 date: wire.date,
+                 codename: wire.codename,
+                 albums: wire.albums,
+                 state: wire.state,
+                 userPassed2x: wire.userPassed2x || false,
+                 teamGoalMet: wire.teamGoalMet || false,
+                 spotifyLinks: wire.spotifyLinks || []
+             }).replace(/"/g, '&quot;')})"
              title="${wire.codename}: ${wire.albums.join(', ')}">
             <span class="wire-num">${wire.wireNumber}</span>
-            <span class="wire-icon">${icons[wire.state] || '○'}</span>
+            ${showSubDots ? `
+                <div class="wire-sub-dots">
+                    <span class="sub-dot ${wire.userPassed2x ? 'sub-done' : (wire.state === 'failed' ? 'sub-fail' : 'sub-pending')}" 
+                          title="Your 2X"></span>
+                    <span class="sub-dot ${wire.teamGoalMet ? 'sub-done' : (wire.state === 'failed' ? 'sub-fail' : 'sub-pending')}" 
+                          title="Team Goal"></span>
+                </div>
+            ` : `
+                <span class="wire-icon">${icons[wire.state] || '○'}</span>
+            `}
         </div>
     `;
 }
-
-function renderNoMissionCard() {
+function showWireDetail(wire) {
+    // wire is the parsed JSON object from onclick
+    const stateLabels = {
+        'defused': { text: 'DEFUSED ✓', cls: 'state-defused' },
+        'active': { text: 'ACTIVE NOW', cls: 'state-active' },
+        'failed': { text: 'MISSED', cls: 'state-failed' },
+        'locked': { text: 'LOCKED', cls: 'state-locked' }
+    };
+    const stateInfo = stateLabels[wire.state] || stateLabels.locked;
+    
+    const modal = document.createElement('div');
+    modal.className = 'wire-detail-modal';
+    modal.innerHTML = `
+        <div class="modal-bg" onclick="this.parentElement.remove()"></div>
+        <div class="wire-detail-card">
+            <div class="wire-detail-header">
+                <div>
+                    <h3>${wire.codename}</h3>
+                    <span class="wire-detail-date">${wire.date}</span>
+                </div>
+                <span class="wire-state-badge ${stateInfo.cls}">${stateInfo.text}</span>
+            </div>
+            
+            <div class="wire-detail-albums">
+                ${wire.albums.map((album, i) => `
+                    <div class="wire-album-row">
+                        <span class="album-disc">💿</span>
+                        <span class="album-label">${sanitize(album)}</span>
+                        ${wire.spotifyLinks?.[i]?.url ? `
+                            <a href="${wire.spotifyLinks[i].url}" target="_blank" rel="noopener" 
+                               class="spotify-pill" onclick="event.stopPropagation()">
+                                <span class="spotify-icon">▶</span> Spotify
+                            </a>
+                        ` : ''}
+                    </div>
+                `).join('')}
+            </div>
+            
+            ${wire.state !== 'locked' ? `
+                <div class="wire-detail-conditions">
+                    <div class="condition-row ${wire.userPassed2x ? 'met' : 'unmet'}">
+                        <span class="condition-icon">${wire.userPassed2x ? '✂️' : '🔌'}</span>
+                        <span>Wire A: Your 2X</span>
+                        <span class="condition-badge">${wire.userPassed2x ? 'CUT' : 'INTACT'}</span>
+                    </div>
+                    <div class="condition-row ${wire.teamGoalMet ? 'met' : 'unmet'}">
+                        <span class="condition-icon">${wire.teamGoalMet ? '✂️' : '🔌'}</span>
+                        <span>Wire B: Team Goal</span>
+                        <span class="condition-badge">${wire.teamGoalMet ? 'CUT' : 'INTACT'}</span>
+                    </div>
+                </div>
+            ` : ''}
+            
+            <button class="btn-close-wire-detail" onclick="this.closest('.wire-detail-modal').remove()">
+                Close
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    requestAnimationFrame(() => modal.classList.add('show'));
+}
+function renderNoMissionCard(wires) {
+    const nextWire = (wires || []).find(w => w.state === 'locked');
+    const allDone = (wires || []).every(w => w.state === 'defused' || w.state === 'failed');
+    
     return `
         <div class="card defuse-rest-card">
             <div class="card-body">
                 <div class="rest-content">
-                    <div class="rest-icon">🌙</div>
+                    <div class="rest-icon">${allDone ? '🎖️' : '🌙'}</div>
                     <div class="rest-text">
-                        <h3>No Active Wire Today</h3>
-                        <p>Rest up, Agent. The next wire awaits.</p>
+                        <h3>${allDone ? 'All Wires Addressed' : 'No Active Wire Today'}</h3>
+                        <p>${allDone 
+                            ? 'Every wire has been handled. Check the mystery box!' 
+                            : nextWire 
+                                ? `Next wire: Day ${nextWire.wireNumber} — ${nextWire.codename} (${nextWire.date})`
+                                : 'Stand by for further instructions, Agent.'
+                        }</p>
                     </div>
                 </div>
             </div>
@@ -15639,88 +15728,182 @@ function renderNoMissionCard() {
 }
 
 function renderTodayDefuseMission(challenge, config) {
-    const userPct = challenge.totalTracks > 0 
-        ? Math.round((challenge.completedTracks / challenge.totalTracks) * 100) 
-        : 0;
+    // Data is now correctly shaped from updated backend:
+    // challenge.tracks = [{name, count, required, passed}, ...]
+    // challenge.completedTracks = number
+    // challenge.totalTracks = number
+    // challenge.spotifyLinks = [{album, url}, ...]
+    
+    const completedTracks = challenge.completedTracks || 0;
+    const totalTracks = challenge.totalTracks || 0;
+    const userPct = totalTracks > 0 ? Math.round((completedTracks / totalTracks) * 100) : 0;
     const teamPct = Math.min(100, Math.round((challenge.collectiveStreams / challenge.targetStreams) * 100));
     
+    // Wire A = personal 2x, Wire B = team goal
+    const wireACut = challenge.passed2x;
+    const wireBCut = challenge.teamGoalMet;
+    const bothCut = wireACut && wireBCut;
+    
     return `
-        <div class="card defuse-mission-card ${challenge.qualified ? 'mission-complete' : ''}">
+        <div class="card defuse-mission-card ${bothCut ? 'mission-complete' : ''}">
             <div class="card-header">
                 <div class="mission-header-left">
                     <h3><span class="header-icon">🎯</span> Today's Wire</h3>
                     <span class="wire-badge">${challenge.codename}</span>
                 </div>
-                ${challenge.qualified ? '<span class="complete-badge">✓ DEFUSED</span>' : ''}
+                ${bothCut ? '<span class="complete-badge">✓ DEFUSED</span>' : ''}
             </div>
             <div class="card-body">
-                <!-- Album -->
-                <div class="album-tag">
-                    <span class="album-icon">💿</span>
-                    <span class="album-name">${challenge.albums.join(' + ')}</span>
+                
+                <!-- Album + Spotify Links -->
+                <div class="album-tag-row">
+                    ${(challenge.spotifyLinks || []).map(link => `
+                        <div class="album-tag-with-link">
+                            <div class="album-tag-info">
+                                <span class="album-icon">💿</span>
+                                <span class="album-name">${sanitize(link.album)}</span>
+                            </div>
+                            <a href="${link.url}" target="_blank" rel="noopener" class="spotify-btn">
+                                <svg class="spotify-svg" viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                                    <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
+                                </svg>
+                                <span>Stream on Spotify</span>
+                            </a>
+                        </div>
+                    `).join('')}
                 </div>
                 
-                <!-- Your Progress -->
-                <div class="progress-block">
-                    <div class="progress-info">
-                        <span class="progress-title">Your ${config.requiredStreams}X Progress</span>
-                        <span class="progress-status ${challenge.passed2x ? 'done' : ''}">
-                            ${challenge.passed2x ? '✓ Complete' : `${challenge.completedTracks || 0}/${challenge.totalTracks || 0}`}
+                <!-- ===================== -->
+                <!-- DUAL WIRE VISUAL      -->
+                <!-- ===================== -->
+                <div class="dual-wire-section">
+                    
+                    <!-- WIRE A: Personal 2X -->
+                    <div class="wire-unit ${wireACut ? 'wire-is-cut' : 'wire-is-live'}">
+                        <div class="wire-unit-header">
+                            <div class="wire-letter-badge ${wireACut ? 'cut' : ''}">A</div>
+                            <span class="wire-unit-label">Your 2X Challenge</span>
+                            <span class="wire-cut-status ${wireACut ? 'status-cut' : 'status-live'}">
+                                ${wireACut ? '✂️ CUT' : '🔴 LIVE'}
+                            </span>
+                        </div>
+                        
+                        <!-- The Wire Line -->
+                        <div class="defuse-wire-container">
+                            <div class="defuse-wire-line ${wireACut ? 'cut' : 'live'}" 
+                                 style="--wire-color: ${wireACut ? '#22c55e' : '#a855f7'}; --wire-glow: ${wireACut ? 'rgba(34,197,94,0.4)' : 'rgba(168,85,247,0.4)'}">
+                                <div class="wire-segment left"></div>
+                                ${wireACut ? `
+                                    <div class="wire-cut-point">
+                                        <span class="cut-scissors">✂️</span>
+                                        <div class="cut-sparks">
+                                            <span></span><span></span><span></span>
+                                        </div>
+                                    </div>
+                                ` : `
+                                    <div class="wire-energy-flow"></div>
+                                `}
+                                <div class="wire-segment right"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="wire-unit-progress">
+                            ${wireACut 
+                                ? `<span class="wire-done-text">✓ All ${totalTracks} tracks streamed ${config.requiredStreams}X</span>`
+                                : `<span class="wire-pending-text">${completedTracks}/${totalTracks} tracks complete</span>`
+                            }
+                        </div>
+                    </div>
+                    
+                    <!-- Connector between wires -->
+                    <div class="wire-connector">
+                        <div class="connector-line"></div>
+                        <span class="connector-label">${bothCut ? '💥 BOTH CUT' : 'Both must be cut'}</span>
+                        <div class="connector-line"></div>
+                    </div>
+                    
+                    <!-- WIRE B: Team Goal -->
+                    <div class="wire-unit ${wireBCut ? 'wire-is-cut' : 'wire-is-live'}">
+                        <div class="wire-unit-header">
+                            <div class="wire-letter-badge ${wireBCut ? 'cut' : ''}">B</div>
+                            <span class="wire-unit-label">Team Collective Goal</span>
+                            <span class="wire-cut-status ${wireBCut ? 'status-cut' : 'status-live'}">
+                                ${wireBCut ? '✂️ CUT' : '🔴 LIVE'}
+                            </span>
+                        </div>
+                        
+                        <!-- The Wire Line -->
+                        <div class="defuse-wire-container">
+                            <div class="defuse-wire-line ${wireBCut ? 'cut' : 'live'}"
+                                 style="--wire-color: ${wireBCut ? '#22c55e' : '#6366f1'}; --wire-glow: ${wireBCut ? 'rgba(34,197,94,0.4)' : 'rgba(99,102,241,0.4)'}">
+                                <div class="wire-segment left"></div>
+                                ${wireBCut ? `
+                                    <div class="wire-cut-point">
+                                        <span class="cut-scissors">✂️</span>
+                                        <div class="cut-sparks">
+                                            <span></span><span></span><span></span>
+                                        </div>
+                                    </div>
+                                ` : `
+                                    <div class="wire-energy-flow"></div>
+                                `}
+                                <div class="wire-segment right"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Team progress bar -->
+                        <div class="wire-team-progress">
+                            <div class="team-bar">
+                                <div class="team-bar-fill ${wireBCut ? 'complete' : ''}" style="width:${teamPct}%"></div>
+                            </div>
+                            <span class="wire-unit-progress">
+                                ${wireBCut 
+                                    ? `<span class="wire-done-text">✓ Goal reached</span>`
+                                    : `<span class="wire-pending-text">${fmt(challenge.collectiveStreams)} / ${fmt(challenge.targetStreams)} streams</span>`
+                                }
+                            </span>
+                        </div>
+                    </div>
+                    
+                </div>
+                
+                <!-- Qualification status -->
+                <div class="qualification-box ${bothCut ? 'qualified' : ''}">
+                    ${bothCut ? `
+                        <span class="qual-icon">🎉</span>
+                        <span class="qual-msg">Wire Defused! Claim your reward in the vault below.</span>
+                    ` : `
+                        <span class="qual-icon">💜</span>
+                        <span class="qual-msg">
+                            ${!wireACut && !wireBCut ? 'Cut both wires: Complete 2X + Help team reach goal' :
+                              !wireACut ? 'Wire A still live — Complete all tracks 2X' :
+                              'Wire B still live — Help team reach the stream goal'}
                         </span>
-                    </div>
-                    <div class="progress-bar">
-                        <div class="progress-fill user ${challenge.passed2x ? 'complete' : ''}" style="width:${userPct}%"></div>
-                    </div>
+                    `}
                 </div>
                 
-                <!-- Team Progress -->
-                <div class="progress-block">
-                    <div class="progress-info">
-                        <span class="progress-title">Team Streams</span>
-                        <span class="progress-status ${challenge.teamGoalMet ? 'done' : ''}">
-                            ${challenge.teamGoalMet ? '✓ Goal Met' : `${fmt(challenge.collectiveStreams)}/${fmt(challenge.targetStreams)}`}
-                        </span>
-                    </div>
-                    <div class="progress-bar">
-                        <div class="progress-fill team ${challenge.teamGoalMet ? 'complete' : ''}" style="width:${teamPct}%"></div>
-                    </div>
-                </div>
-                
-                <!-- Track List -->
-                <div class="track-checklist">
-                    <div class="checklist-header">
+                <!-- Track Checklist (collapsible) -->
+                <details class="track-checklist-details" ${!wireACut ? 'open' : ''}>
+                    <summary class="checklist-summary">
                         <span>📋 Track Checklist</span>
-                        <span class="checklist-count">${challenge.completedTracks || 0}/${challenge.totalTracks || 0}</span>
-                    </div>
+                        <span class="checklist-count ${wireACut ? 'all-done' : ''}">${completedTracks}/${totalTracks}</span>
+                    </summary>
                     <div class="track-list">
                         ${(challenge.tracks || []).map((track, i) => {
-                            const count = challenge.userProgress?.[track.name] || 0;
-                            const done = count >= config.requiredStreams;
+                            const count = track.count || 0;
+                            const required = track.required || config.requiredStreams;
+                            const done = track.passed || (count >= required);
                             return `
                                 <div class="track-row ${done ? 'done' : ''}">
-                                    <span class="track-idx">${i + 1}</span>
+                                    <span class="track-idx">${done ? '✓' : (i + 1)}</span>
                                     <span class="track-name">${sanitize(track.name)}</span>
-                                    <span class="track-count ${done ? 'complete' : ''}">${count}/${config.requiredStreams}</span>
+                                    <span class="track-count ${done ? 'complete' : ''}">${count}/${required}</span>
                                 </div>
                             `;
                         }).join('')}
                     </div>
-                </div>
+                </details>
                 
-                <!-- Qualification -->
-                <div class="qualification-box ${challenge.qualified ? 'qualified' : ''}">
-                    ${challenge.qualified ? `
-                        <span class="qual-icon">🎉</span>
-                        <span class="qual-msg">Wire Defused! Claim your reward above.</span>
-                    ` : `
-                        <span class="qual-icon">💜</span>
-                        <span class="qual-msg">
-                            ${!challenge.passed2x && !challenge.teamGoalMet ? 'Complete 2X + Help team reach goal' :
-                              !challenge.passed2x ? 'Complete all tracks 2X' :
-                              'Waiting for team to reach goal'}
-                        </span>
-                    `}
-                </div>
             </div>
         </div>
     `;
@@ -15814,7 +15997,15 @@ function showWireInfo(date, codename, albums) {
     showToast(`${codename}: ${albums}`, 'info');
 }
 
+let _claimingDefuseReward = false;
+
 async function claimDefuseReward(date) {
+    if (_claimingDefuseReward) return;
+    _claimingDefuseReward = true;
+    
+    const container = $('operation-defuse-content');
+    const scrollPos = container?.parentElement?.scrollTop || window.scrollY;
+    
     try {
         loading(true);
         const result = await api('claimDefuseReward', { agentNo: STATE.agentNo, date });
@@ -15822,16 +16013,26 @@ async function claimDefuseReward(date) {
         
         if (result.success) {
             showDefuseBadgePopup(result.badge, result.xpAwarded);
-            setTimeout(() => renderOperationDefuse(), 600);
+            setTimeout(() => {
+                renderOperationDefuse();
+                requestAnimationFrame(() => {
+                    if (container?.parentElement) {
+                        container.parentElement.scrollTop = scrollPos;
+                    } else {
+                        window.scrollTo(0, scrollPos);
+                    }
+                });
+            }, 600);
         } else {
             showToast(result.error || 'Could not claim reward', 'error');
         }
     } catch (e) {
         loading(false);
         showToast('Error claiming reward', 'error');
+    } finally {
+        _claimingDefuseReward = false;
     }
 }
-
 function showDefuseBadgePopup(badge, xp) {
     const popup = document.createElement('div');
     popup.className = 'defuse-badge-modal';
@@ -15840,7 +16041,8 @@ function showDefuseBadgePopup(badge, xp) {
         <div class="badge-reveal">
             <div class="badge-sparkle">✨</div>
             <div class="badge-img-wrap">
-                <img src="${badge.imageUrl}" alt="${badge.name}" class="badge-img">
+                <img src="${badge.imageUrl}" alt="${badge.name}" class="badge-img"
+                     onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%237c3aed%22/><text x=%2250%22 y=%2258%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2230%22>⟭⟬</text></svg>'">
             </div>
             <h3>Badge Earned!</h3>
             <p class="badge-name">${sanitize(badge.name)}</p>
@@ -17259,6 +17461,631 @@ function addArmyBombStyles() {
             display: block;
             margin-bottom: 10px;
         }
+        /* ==================== DUAL WIRE SECTION ==================== */
+.dual-wire-section {
+    margin: 20px 0 15px;
+    padding: 16px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+.wire-unit {
+    margin-bottom: 0;
+}
+
+.wire-unit-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.wire-letter-badge {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: rgba(147,51,234,0.2);
+    border: 1.5px solid rgba(147,51,234,0.5);
+    color: #a855f7;
+    font-size: 10px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.wire-letter-badge.cut {
+    background: rgba(34,197,94,0.2);
+    border-color: rgba(34,197,94,0.5);
+    color: #22c55e;
+}
+
+.wire-unit-label {
+    flex: 1;
+    font-size: 12px;
+    font-weight: 600;
+    color: #ccc;
+}
+
+.wire-cut-status {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 8px;
+    letter-spacing: 0.5px;
+}
+
+.wire-cut-status.status-live {
+    background: rgba(239,68,68,0.12);
+    color: #ef4444;
+    animation: status-blink 2s ease-in-out infinite;
+}
+
+.wire-cut-status.status-cut {
+    background: rgba(34,197,94,0.12);
+    color: #22c55e;
+}
+
+@keyframes status-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* ==================== WIRE LINE VISUAL ==================== */
+.defuse-wire-container {
+    padding: 12px 0;
+    position: relative;
+}
+
+.defuse-wire-line {
+    position: relative;
+    height: 4px;
+    display: flex;
+    align-items: center;
+    border-radius: 2px;
+}
+
+/* --- LIVE WIRE --- */
+.defuse-wire-line.live {
+    background: var(--wire-color);
+    box-shadow: 0 0 10px var(--wire-glow), 0 0 20px var(--wire-glow);
+    animation: wire-live-pulse 2s ease-in-out infinite;
+}
+
+.defuse-wire-line.live .wire-segment { display: none; }
+
+.wire-energy-flow {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 40px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    border-radius: 2px;
+    animation: energy-slide 2s linear infinite;
+}
+
+@keyframes wire-live-pulse {
+    0%, 100% { box-shadow: 0 0 8px var(--wire-glow); }
+    50% { box-shadow: 0 0 16px var(--wire-glow), 0 0 24px var(--wire-glow); }
+}
+
+@keyframes energy-slide {
+    0% { left: -40px; }
+    100% { left: calc(100% + 40px); }
+}
+
+/* --- CUT WIRE --- */
+.defuse-wire-line.cut {
+    background: none;
+    box-shadow: none;
+    justify-content: center;
+    gap: 0;
+}
+
+.defuse-wire-line.cut .wire-segment {
+    height: 4px;
+    border-radius: 2px;
+    flex: 1;
+}
+
+.defuse-wire-line.cut .wire-segment.left {
+    background: linear-gradient(90deg, var(--wire-color), rgba(34,197,94,0.2));
+    transform-origin: right center;
+    transform: rotate(1.5deg);
+    margin-right: 0;
+}
+
+.defuse-wire-line.cut .wire-segment.right {
+    background: linear-gradient(270deg, var(--wire-color), rgba(34,197,94,0.2));
+    transform-origin: left center;
+    transform: rotate(-1.5deg);
+    margin-left: 0;
+}
+
+/* Cut Point */
+.wire-cut-point {
+    position: relative;
+    width: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.cut-scissors {
+    font-size: 16px;
+    z-index: 2;
+    filter: drop-shadow(0 0 4px rgba(34,197,94,0.6));
+    animation: scissors-snip 0.6s ease-out;
+}
+
+@keyframes scissors-snip {
+    0% { transform: scale(1.8) rotate(-20deg); opacity: 0; }
+    40% { transform: scale(1.2) rotate(5deg); opacity: 1; }
+    100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+
+/* Sparks at cut point */
+.cut-sparks {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.cut-sparks span {
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    background: #fbbf24;
+    border-radius: 50%;
+    box-shadow: 0 0 4px #fbbf24;
+}
+
+.cut-sparks span:nth-child(1) {
+    top: -8px; left: 6px;
+    animation: spark-fly 1.5s ease-out infinite;
+}
+
+.cut-sparks span:nth-child(2) {
+    top: -4px; right: 4px;
+    animation: spark-fly 1.5s ease-out 0.3s infinite;
+}
+
+.cut-sparks span:nth-child(3) {
+    bottom: -6px; left: 10px;
+    animation: spark-fly 1.5s ease-out 0.6s infinite;
+}
+
+@keyframes spark-fly {
+    0% { opacity: 1; transform: translate(0, 0) scale(1); }
+    50% { opacity: 0.8; }
+    100% { opacity: 0; transform: translate(var(--sx, 5px), var(--sy, -10px)) scale(0); }
+}
+
+.cut-sparks span:nth-child(1) { --sx: -8px; --sy: -12px; }
+.cut-sparks span:nth-child(2) { --sx: 10px; --sy: -8px; }
+.cut-sparks span:nth-child(3) { --sx: -5px; --sy: 10px; }
+
+/* Wire progress text */
+.wire-unit-progress,
+.wire-done-text,
+.wire-pending-text {
+    font-size: 11px;
+    margin-top: 4px;
+}
+
+.wire-done-text { color: #22c55e; font-weight: 600; }
+.wire-pending-text { color: #888; }
+
+/* Team progress bar under Wire B */
+.wire-team-progress {
+    margin-top: 6px;
+}
+
+.team-bar {
+    height: 4px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 6px;
+}
+
+.team-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4f46e5, #6366f1);
+    border-radius: 10px;
+    transition: width 0.5s ease;
+}
+
+.team-bar-fill.complete {
+    background: linear-gradient(90deg, #16a34a, #22c55e);
+}
+
+/* ==================== WIRE CONNECTOR ==================== */
+.wire-connector {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 14px 0;
+}
+
+.connector-line {
+    flex: 1;
+    height: 1px;
+    background: rgba(255,255,255,0.08);
+}
+
+.connector-label {
+    font-size: 9px;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    white-space: nowrap;
+}
+
+.wire-unit.wire-is-cut + .wire-connector .connector-label,
+.qualification-box.qualified ~ .wire-connector .connector-label {
+    color: #22c55e;
+}
+
+/* ==================== SPOTIFY BUTTON ==================== */
+.album-tag-row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.album-tag-with-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    background: rgba(255,255,255,0.02);
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+.album-tag-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+}
+
+.album-icon { font-size: 16px; flex-shrink: 0; }
+
+.album-name {
+    font-size: 13px;
+    color: #ccc;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+}
+
+.spotify-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    background: #1DB954;
+    color: #fff;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+.spotify-btn:hover {
+    background: #1ed760;
+    transform: scale(1.03);
+}
+
+.spotify-svg { flex-shrink: 0; }
+
+/* Spotify pill for wire detail modal */
+.spotify-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    background: rgba(29,185,84,0.15);
+    color: #1DB954;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 600;
+    text-decoration: none;
+    flex-shrink: 0;
+}
+
+.spotify-pill:hover {
+    background: rgba(29,185,84,0.25);
+}
+
+.spotify-icon { font-size: 10px; }
+
+/* ==================== WIRE CELL SUB-INDICATORS ==================== */
+.wire-sub-dots {
+    display: flex;
+    gap: 3px;
+    justify-content: center;
+}
+
+.sub-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.sub-dot.sub-done {
+    background: #22c55e;
+    box-shadow: 0 0 4px rgba(34,197,94,0.5);
+}
+
+.sub-dot.sub-pending {
+    background: #444;
+}
+
+.sub-dot.sub-fail {
+    background: #ef4444;
+    opacity: 0.6;
+}
+
+/* Override wire-cell size for better touch + fit sub-dots */
+.wire-cell {
+    width: 34px;
+    height: 34px;
+    min-width: 44px;   /* touch target */
+    min-height: 44px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    gap: 2px;
+}
+
+/* ==================== TRACK CHECKLIST AS DETAILS ==================== */
+.track-checklist-details {
+    border-top: 1px solid rgba(255,255,255,0.05);
+    margin-top: 10px;
+}
+
+.checklist-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    font-size: 12px;
+    color: #888;
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+}
+
+.checklist-summary::-webkit-details-marker { display: none; }
+
+.checklist-summary::before {
+    content: '▸';
+    margin-right: 6px;
+    transition: transform 0.2s;
+}
+
+details[open] .checklist-summary::before {
+    transform: rotate(90deg);
+}
+
+.checklist-count { color: #a855f7; font-weight: 600; }
+.checklist-count.all-done { color: #22c55e; }
+
+.track-name {
+    flex: 1;
+    min-width: 0;
+    font-size: 12px;
+    color: #ccc;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ==================== WIRE DETAIL MODAL ==================== */
+.wire-detail-modal {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.wire-detail-modal.show { opacity: 1; }
+
+.wire-detail-card {
+    position: relative;
+    background: #0f0f18;
+    border-radius: 14px;
+    border: 1px solid #1a1a24;
+    padding: 20px;
+    max-width: 320px;
+    width: 100%;
+}
+
+.wire-detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+}
+
+.wire-detail-header h3 {
+    font-size: 15px;
+    color: #fff;
+    margin: 0;
+}
+
+.wire-detail-date {
+    font-size: 11px;
+    color: #666;
+    display: block;
+    margin-top: 2px;
+}
+
+.wire-state-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 8px;
+    white-space: nowrap;
+}
+
+.wire-state-badge.state-defused { background: rgba(34,197,94,0.15); color: #22c55e; }
+.wire-state-badge.state-active { background: rgba(147,51,234,0.15); color: #a855f7; }
+.wire-state-badge.state-failed { background: rgba(239,68,68,0.12); color: #ef4444; }
+.wire-state-badge.state-locked { background: rgba(100,100,100,0.12); color: #666; }
+
+.wire-detail-albums {
+    margin-bottom: 16px;
+}
+
+.wire-album-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background: rgba(255,255,255,0.02);
+    border-radius: 8px;
+    margin-bottom: 6px;
+}
+
+.album-disc { font-size: 14px; }
+.album-label { flex: 1; font-size: 12px; color: #ccc; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.wire-detail-conditions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 16px;
+}
+
+.condition-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    color: #888;
+}
+
+.condition-row.met {
+    background: rgba(34,197,94,0.06);
+    color: #22c55e;
+}
+
+.condition-row.unmet {
+    background: rgba(255,255,255,0.02);
+}
+
+.condition-icon { font-size: 14px; }
+
+.condition-badge {
+    margin-left: auto;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 6px;
+}
+
+.condition-row.met .condition-badge { background: rgba(34,197,94,0.15); color: #22c55e; }
+.condition-row.unmet .condition-badge { background: rgba(239,68,68,0.1); color: #ef4444; }
+
+.btn-close-wire-detail {
+    width: 100%;
+    padding: 10px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    color: #888;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+/* ==================== BADGE POPUP BACKGROUND FIX ==================== */
+.badge-reveal {
+    position: relative;
+    text-align: center;
+    padding: 30px;
+    max-width: 280px;
+    background: #0f0f18;
+    border-radius: 16px;
+    border: 1px solid rgba(251,191,36,0.2);
+}
+
+/* ==================== RESPONSIVE ==================== */
+@media (max-width: 360px) {
+    .bomb-sphere {
+        width: 90px;
+        height: 90px;
+    }
+    
+    .defuse-stats-grid {
+        gap: 8px;
+    }
+    
+    .stat-box {
+        padding: 8px 12px;
+    }
+    
+    .stat-box .stat-value {
+        font-size: 18px;
+    }
+    
+    .wire-cell {
+        min-width: 38px;
+        min-height: 38px;
+    }
+    
+    .vault-box {
+        width: 36px;
+        height: 36px;
+    }
+    
+    .spotify-btn span {
+        display: none; /* Icon only on tiny screens */
+    }
+    
+    .spotify-btn {
+        padding: 6px 8px;
+    }
+    
+    .dual-wire-section {
+        padding: 12px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .wire-energy-flow { animation: none; display: none; }
+    .cut-sparks span { animation: none; display: none; }
+    .energy-ring { animation: none; }
+    .energy-particles span { animation: none; }
+    .ambient-glow { animation: none; }
+    .defuse-wire-line.live { animation: none; }
+}
     `;
     
     document.head.appendChild(style);
