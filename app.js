@@ -16238,9 +16238,9 @@ function addArirangStyles() {
         /* ===== HEADER CARD ===== */
         .arirang-header-card { background: linear-gradient(135deg, #0f0f1a, #161625); border: 1px solid rgba(147, 51, 234, 0.3); border-radius: 16px; padding: 20px; }
         .arirang-header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .arirang-badge-pill { display: inline-flex; align-items: center; gap: 6px; background: rgba(147, 51, 234, 0.1); padding: 3px 10px 3px 3px; border-radius: 30px; border: 1px solid rgba(147, 51, 234, 0.3); }
-        .arirang-badge-pill .badge-icon { width: 20px; height: 20px; background: #9333ea; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; flex-shrink: 0; line-height: 1; }
-        .arirang-badge-pill .badge-text { font-size: 9px; color: #c084fc; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; }
+        .arirang-badge-pill { display: inline-flex; align-items: center; gap: 4px; background: rgba(147,51,234,0.15); padding: 4px 10px; border-radius: 20px; }
+        .arirang-badge-pill .badge-icon { font-size: 11px; line-height: 1; }
+        .arirang-badge-pill .badge-text { font-size: 9px; color: #a855f7; font-weight: 600; letter-spacing: 1px; }
         .arirang-title { font-size: 22px; font-weight: 900; color: #fff; margin: 0; letter-spacing: 1.5px; }
         .arirang-subtitle { color: #888; font-size: 12px; margin: 6px 0 0 0; display: flex; align-items: center; gap: 8px; }
         
