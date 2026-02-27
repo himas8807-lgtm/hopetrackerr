@@ -5583,7 +5583,7 @@ async function renderPageByRoute(pageName) {
         'chat', 'playlists', 'gc-links', 'helper-roles', 'song-of-day', 'sotd',
         'secret-missions', 'announcements', 'drawer', 'goals', 'rankings', 
         'team-level', 'summary', 'comparison', 'album2x', 'profile', 'namjoon', 
-        'streaming-tips', 'guide', 'attendance', 'arirang-road',
+        'streaming-tips', 'guide', 'attendance', 'operation-defuse',
         'arirang-hype', 'arirang-vault'
     ];
 
@@ -5635,7 +5635,7 @@ async function renderPageByRoute(pageName) {
             case 'attendance': await renderAttendance(); break; 
             case 'arirang-hype': await renderArirangHype(); break;
             case 'arirang-vault': await renderArirangVault(); break;
-            case 'arirang-road': await renderOperationDefuse(); break;
+            case 'operation-defuse': await renderOperationDefuse(); break;
         }
     } catch (e) {
         console.error('Page render error:', e);
