@@ -2648,13 +2648,13 @@ function switchAdminTab(tabName) {
             break;
         case 'leaves':
             loadLeavesAdmin(); 
-            ;
+            break; 
         case 'assets':
             renderAdminAssets();
-            ;
+            break; 
         case 'history':
             loadMissionHistory();
-            ;
+            break; 
     }
 }
 
@@ -15482,65 +15482,55 @@ function computeBombPower(phasesCharged, totalPhases) {
 // =============================================
 
 function renderChargingBomb(bombPower, stats, fullyCharged) {
-    const pct = stats.percentComplete;
-    const tier = bombPower.tier;
+    const pct = stats.percentComplete || 0;
+    const tier = bombPower?.tier || 'dark';
     
     return `
         <div class="charging-bomb-display">
-            <!-- Ambient glow scales with power -->
-            <div class="charge-ambient-glow glow-${tier}" style="opacity:${bombPower.glowIntensity}"></div>
+            <!-- Background Glow -->
+            <div class="charge-ambient-glow glow-${tier}"></div>
             
-            <!-- The Army Bomb -->
+            <!-- THE REALISTIC ARMY BOMB -->
             <div class="army-bomb bomb-${tier}">
-                <!-- Top Button -->
-                <div class="charge-button btn-${tier}">
-                    <div class="btn-light"></div>
-                </div>
+                
+                <!-- Top Cap (Black) -->
+                <div class="charge-button"></div>
                 
                 <!-- Glass Sphere -->
                 <div class="charge-sphere">
+                    <!-- Shine Reflection -->
                     <div class="sphere-reflection"></div>
-                    <div class="sphere-reflection-2"></div>
                     
-                    <!-- Energy fill level -->
+                    <!-- Liquid Energy Fill -->
                     <div class="energy-fill-level" style="height:${pct}%">
                         <div class="energy-fill-gradient fill-${tier}"></div>
                         <div class="energy-fill-surface"></div>
                     </div>
                     
-                    <!-- Energy rings -->
-                    ${pct >= 20 ? `<div class="charge-ring ring-${tier}"></div>` : ''}
-                    ${pct >= 50 ? `<div class="charge-ring inner ring-${tier}"></div>` : ''}
+                    <!-- Optional Particles (Only at high levels) -->
+                    ${pct >= 40 ? `
+                        <div class="charge-particles particles-${tier}">
+                            <span></span><span></span><span></span>
+                        </div>
+                    ` : ''}
                     
-                    <!-- BTS Logo -->
+                    <!-- Frosted Logo Insert -->
                     <div class="charge-core core-${tier}">
                         <span class="bts-logo">⟭⟬</span>
                     </div>
-                    
-                    <!-- Particles based on power -->
-                    ${pct >= 30 ? `
-                        <div class="charge-particles particles-${tier}">
-                            <span></span><span></span><span></span>
-                            ${pct >= 60 ? '<span></span><span></span><span></span>' : ''}
-                        </div>
-                    ` : ''}
                 </div>
                 
-                <!-- Handle -->
+                <!-- Matte Black Handle -->
                 <div class="bomb-handle">
                     <div class="handle-connector"></div>
-                    <div class="handle-grip">
-                        <div class="grip-line"></div>
-                        <div class="grip-line"></div>
-                        <div class="grip-line"></div>
-                    </div>
+                    <div class="handle-grip"></div>
                     <div class="handle-base"></div>
                 </div>
             </div>
             
-            <!-- Power label -->
+            <!-- Text Label -->
             <div class="bomb-power-label label-${tier}">
-                ${fullyCharged ? '💜 FULLY CHARGED' : `⚡ ${pct}% Power`}
+                ${fullyCharged ? '💜 FULLY CHARGED' : `⚡ ${pct}% POWER`}
             </div>
         </div>
     `;
@@ -16288,116 +16278,228 @@ function addArirangStyles() {
         .power-fill-fully-charged { background:linear-gradient(90deg,#a855f7,#e879f9,#f0abfc); }
         .power-bar-label { font-size:11px; color:#666; margin-top:8px; }
         
-        /* ===== CHARGING BOMB VISUAL ===== */
-        .arirang-bomb-core { background:#0a0a0f; border:1px solid #1a1a24; overflow:hidden; }
-        .time-badge { background:rgba(147,51,234,0.15); color:#a855f7; padding:4px 10px; border-radius:10px; font-size:11px; font-weight:600; }
-        
-        .charging-bomb-display { position:relative; display:flex; flex-direction:column; align-items:center; padding:40px 20px 30px; }
-        .charge-ambient-glow { position:absolute; width:200px; height:200px; border-radius:50%; filter:blur(60px); top:20px; transition:all 0.5s ease; }
-        .glow-dark { background:#1e1b4b; }
-        .glow-dim { background:#3730a3; }
-        .glow-flickering { background:#4f46e5; }
-        .glow-warming { background:#6366f1; }
-        .glow-energized { background:#7c3aed; }
-        .glow-blazing { background:#9333ea; }
-        .glow-fully-charged { background:#c084fc; animation:full-glow 2s ease-in-out infinite; }
-        @keyframes full-glow { 0%,100%{opacity:0.6;transform:scale(1)} 50%{opacity:0.9;transform:scale(1.1)} }
-        
-        .army-bomb { position:relative; display:flex; flex-direction:column; align-items:center; z-index:1; }
-        
-        /* Charge button */
-        .charge-button { width:20px; height:12px; border-radius:10px 10px 4px 4px; position:relative; margin-bottom:-4px; z-index:3; }
-        .btn-light { position:absolute; top:3px; left:50%; transform:translateX(-50%); width:8px; height:4px; border-radius:2px; }
-        .btn-dark { background:linear-gradient(180deg,#111,#0a0a0a); }
-        .btn-dark .btn-light { background:#222; }
-        .btn-dim { background:linear-gradient(180deg,#1e1b4b,#111); }
-        .btn-dim .btn-light { background:#3730a3; box-shadow:0 0 4px #3730a3; }
-        .btn-flickering { background:linear-gradient(180deg,#312e81,#1e1b4b); }
-        .btn-flickering .btn-light { background:#4f46e5; box-shadow:0 0 6px #4f46e5; animation:btn-flicker 2s ease-in-out infinite; }
-        @keyframes btn-flicker { 0%,100%{opacity:1} 30%{opacity:0.4} 60%{opacity:1} 80%{opacity:0.6} }
-        .btn-warming { background:linear-gradient(180deg,#4338ca,#312e81); }
-        .btn-warming .btn-light { background:#6366f1; box-shadow:0 0 8px #6366f1; }
-        .btn-energized { background:linear-gradient(180deg,#6b21a8,#4c1d95); }
-        .btn-energized .btn-light { background:#a855f7; box-shadow:0 0 8px #a855f7; }
-        .btn-blazing { background:linear-gradient(180deg,#7c3aed,#6b21a8); }
-        .btn-blazing .btn-light { background:#c084fc; box-shadow:0 0 12px #c084fc; }
-        .btn-fully-charged { background:linear-gradient(180deg,#9333ea,#7c3aed); }
-        .btn-fully-charged .btn-light { background:#e879f9; box-shadow:0 0 16px #e879f9; }
-        
-        /* Sphere */
-        .charge-sphere { width:120px; height:120px; border-radius:50%; background:linear-gradient(135deg,rgba(255,255,255,0.08) 0%,rgba(255,255,255,0.02) 50%,rgba(0,0,0,0.2) 100%); border:2px solid rgba(255,255,255,0.1); position:relative; display:flex; align-items:center; justify-content:center; box-shadow:inset 0 -20px 40px rgba(0,0,0,0.3),inset 0 20px 40px rgba(255,255,255,0.05),0 10px 30px rgba(0,0,0,0.5); overflow:hidden; }
-        .sphere-reflection { position:absolute; top:15px; left:20px; width:40px; height:20px; background:linear-gradient(180deg,rgba(255,255,255,0.2),transparent); border-radius:50%; transform:rotate(-30deg); z-index:5; }
-        .sphere-reflection-2 { position:absolute; top:25px; right:25px; width:15px; height:8px; background:rgba(255,255,255,0.15); border-radius:50%; z-index:5; }
-        
-        /* Energy fill level — the key charging visual */
-        .energy-fill-level { position:absolute; bottom:0; left:0; right:0; border-radius:0 0 50% 50%; overflow:hidden; transition:height 1s ease; z-index:1; }
-        .energy-fill-gradient { width:100%; height:100%; }
-        .fill-dark .energy-fill-gradient { background:linear-gradient(0deg,rgba(30,27,75,0.3),transparent); }
-        .fill-dim .energy-fill-gradient { background:linear-gradient(0deg,rgba(55,48,163,0.4),rgba(67,56,202,0.1)); }
-        .fill-flickering .energy-fill-gradient { background:linear-gradient(0deg,rgba(79,70,229,0.5),rgba(99,102,241,0.15)); }
-        .fill-warming .energy-fill-gradient { background:linear-gradient(0deg,rgba(99,102,241,0.5),rgba(129,140,248,0.2)); }
-        .fill-energized .energy-fill-gradient { background:linear-gradient(0deg,rgba(124,58,237,0.6),rgba(168,85,247,0.2)); }
-        .fill-blazing .energy-fill-gradient { background:linear-gradient(0deg,rgba(147,51,234,0.7),rgba(192,132,252,0.25)); }
-        .fill-fully-charged .energy-fill-gradient { background:linear-gradient(0deg,rgba(168,85,247,0.8),rgba(232,121,249,0.4),rgba(240,171,252,0.2)); }
-        .energy-fill-surface { position:absolute; top:0; left:0; right:0; height:3px; background:rgba(255,255,255,0.3); animation:surface-wave 3s ease-in-out infinite; }
-        @keyframes surface-wave { 0%,100%{transform:translateX(-5%) scaleY(1)} 50%{transform:translateX(5%) scaleY(1.5)} }
-        
-        /* Rings */
-        .charge-ring { position:absolute; width:90px; height:90px; border-radius:50%; border:1px solid transparent; animation:ring-rotate 8s linear infinite; z-index:2; }
-        .charge-ring.inner { width:70px; height:70px; animation-direction:reverse; animation-duration:6s; }
-        .ring-dim { border-color:rgba(55,48,163,0.3); }
-        .ring-flickering { border-color:rgba(79,70,229,0.3); }
-        .ring-warming { border-color:rgba(99,102,241,0.4); }
-        .ring-energized { border-color:rgba(147,51,234,0.4); }
-        .ring-blazing { border-color:rgba(192,132,252,0.5); animation-duration:4s; }
-        .ring-fully-charged { border-color:rgba(232,121,249,0.5); animation-duration:3s; }
-        @keyframes ring-rotate { 0%{transform:rotate(0)} 100%{transform:rotate(360deg)} }
-        
-        /* Core */
-        .charge-core { position:relative; z-index:3; display:flex; align-items:center; justify-content:center; width:50px; height:50px; border-radius:8px; background:rgba(0,0,0,0.4); }
-        .bts-logo { font-size:24px; font-weight:700; transition:all 0.3s ease; }
-        .core-dark .bts-logo { color:#222; }
-        .core-dim .bts-logo { color:#3730a3; text-shadow:0 0 8px rgba(55,48,163,0.5); }
-        .core-flickering .bts-logo { color:#4f46e5; text-shadow:0 0 10px rgba(79,70,229,0.5); animation:core-flicker 2s ease-in-out infinite; }
-        @keyframes core-flicker { 0%,100%{opacity:1} 30%{opacity:0.5} 60%{opacity:1} 80%{opacity:0.7} }
-        .core-warming .bts-logo { color:#6366f1; text-shadow:0 0 12px rgba(99,102,241,0.6); }
-        .core-energized .bts-logo { color:#a855f7; text-shadow:0 0 15px #a855f7; }
-        .core-blazing .bts-logo { color:#c084fc; text-shadow:0 0 20px #c084fc; }
-        .core-fully-charged .bts-logo { color:#e879f9; text-shadow:0 0 25px #e879f9, 0 0 50px rgba(232,121,249,0.4); animation:core-full 2s ease-in-out infinite; }
-        @keyframes core-full { 0%,100%{text-shadow:0 0 25px #e879f9} 50%{text-shadow:0 0 35px #e879f9,0 0 60px rgba(232,121,249,0.5)} }
-        
-        /* Particles */
-        .charge-particles { position:absolute; width:100%; height:100%; pointer-events:none; z-index:2; }
-        .charge-particles span { position:absolute; width:4px; height:4px; border-radius:50%; animation:particle-rise 3s ease-in-out infinite; }
-        .charge-particles span:nth-child(1) { bottom:20%; left:20%; animation-delay:0s; }
-        .charge-particles span:nth-child(2) { bottom:30%; right:25%; animation-delay:0.5s; }
-        .charge-particles span:nth-child(3) { bottom:15%; left:50%; animation-delay:1s; }
-        .charge-particles span:nth-child(4) { bottom:25%; right:15%; animation-delay:1.5s; }
-        .charge-particles span:nth-child(5) { bottom:35%; left:30%; animation-delay:2s; }
-        .charge-particles span:nth-child(6) { bottom:40%; right:30%; animation-delay:2.5s; }
-        @keyframes particle-rise { 0%{transform:translateY(0) scale(1);opacity:0.8} 50%{transform:translateY(-15px) scale(1.3);opacity:1} 100%{transform:translateY(-25px) scale(0);opacity:0} }
-        .particles-warming span { background:#818cf8; box-shadow:0 0 6px #818cf8; }
-        .particles-energized span { background:#a855f7; box-shadow:0 0 6px #a855f7; }
-        .particles-blazing span { background:#c084fc; box-shadow:0 0 8px #c084fc; }
-        .particles-fully-charged span { background:#e879f9; box-shadow:0 0 10px #e879f9; }
-        
-        /* Handle */
-        .bomb-handle { display:flex; flex-direction:column; align-items:center; margin-top:-8px; }
-        .handle-connector { width:30px; height:8px; background:linear-gradient(180deg,#2a2a2a,#1a1a1a); border-radius:0 0 4px 4px; }
-        .handle-grip { width:26px; height:40px; background:linear-gradient(90deg,#1a1a1a,#2a2a2a,#1a1a1a); border-radius:4px; display:flex; flex-direction:column; justify-content:center; gap:4px; padding:0 4px; }
-        .grip-line { height:2px; background:#333; border-radius:1px; }
-        .handle-base { width:34px; height:8px; background:linear-gradient(180deg,#222,#111); border-radius:0 0 6px 6px; }
-        
-        /* Power label */
-        .bomb-power-label { margin-top:20px; font-size:12px; font-weight:600; letter-spacing:0.5px; }
-        .label-dark { color:#333; }
-        .label-dim { color:#3730a3; }
-        .label-flickering { color:#4f46e5; }
-        .label-warming { color:#6366f1; }
-        .label-energized { color:#a855f7; }
-        .label-blazing { color:#c084fc; }
-        .label-fully-charged { color:#e879f9; animation:label-glow 2s ease-in-out infinite; }
-        @keyframes label-glow { 0%,100%{text-shadow:0 0 10px rgba(232,121,249,0.3)} 50%{text-shadow:0 0 20px rgba(232,121,249,0.6)} }
+        /* ===== REALISTIC ARMY BOMB (MOTS EDITION) ===== */
+.arirang-bomb-core { background: #050508; border: 1px solid #1a1a24; overflow: hidden; position: relative; }
+
+.charging-bomb-display { 
+    position: relative; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    padding: 50px 20px 40px; 
+}
+
+/* Ambient Glow (Background) */
+.charge-ambient-glow { 
+    position: absolute; 
+    width: 250px; 
+    height: 250px; 
+    border-radius: 50%; 
+    filter: blur(80px); 
+    top: 20px; 
+    transition: all 0.5s ease; 
+    z-index: 0;
+}
+
+/* THE BOMB CONTAINER */
+.army-bomb { 
+    position: relative; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    z-index: 10; 
+}
+
+/* 1. THE RED FUSE (The small red dot on top) */
+.army-bomb::before {
+    content: '';
+    position: absolute;
+    top: -6px;
+    right: 38px; /* Offset to side like real bomb */
+    width: 8px;
+    height: 6px;
+    background: #ef4444; /* The Red Fuse */
+    border-radius: 2px;
+    box-shadow: 0 0 5px rgba(239, 68, 68, 0.8);
+    z-index: 5;
+}
+
+/* 2. THE BLACK CAP (Top of sphere) */
+.charge-button { 
+    width: 24px; 
+    height: 8px; 
+    background: #1a1a1a;
+    border-radius: 4px 4px 0 0; 
+    position: relative; 
+    margin-bottom: -2px; 
+    z-index: 4; 
+    box-shadow: inset 0 2px 2px rgba(255,255,255,0.1);
+}
+
+/* 3. THE GLASS SPHERE */
+.charge-sphere { 
+    width: 130px; 
+    height: 130px; 
+    border-radius: 50%; 
+    /* Glass Effect */
+    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 40%, rgba(255,255,255,0.01) 60%, rgba(0,0,0,0.3) 100%);
+    border: 1px solid rgba(255,255,255,0.15); 
+    box-shadow: 
+        inset 0 10px 20px rgba(255,255,255,0.1), /* Top shine */
+        inset 0 -10px 30px rgba(0,0,0,0.6),      /* Bottom shadow */
+        0 0 15px rgba(255,255,255,0.05);         /* Outer glow */
+    position: relative; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    overflow: hidden; 
+    z-index: 3;
+    backdrop-filter: blur(1px);
+}
+
+/* Sphere Reflection (The shiny glare) */
+.sphere-reflection { 
+    position: absolute; 
+    top: 15px; 
+    right: 20px; 
+    width: 25px; 
+    height: 15px; 
+    background: rgba(255,255,255,0.4); 
+    border-radius: 50%; 
+    transform: rotate(45deg); 
+    filter: blur(2px);
+    z-index: 10;
+}
+
+/* 4. THE BTS LOGO (Frosted Insert) */
+.charge-core { 
+    position: relative; 
+    z-index: 5; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    width: 100%;
+    height: 100%;
+}
+
+.bts-logo { 
+    font-size: 55px; /* Larger to match photo */
+    font-weight: 300; 
+    color: rgba(255,255,255,0.7); /* Frosted white look */
+    text-shadow: 0 0 10px rgba(255,255,255,0.3);
+    /* Make it look 3D */
+    transform: scaleY(1.2); 
+}
+
+/* 5. LIQUID FILL (Charging Effect) */
+.energy-fill-level { 
+    position: absolute; 
+    bottom: 0; 
+    left: 0; 
+    right: 0; 
+    width: 100%;
+    border-radius: 0 0 130px 130px; /* Match sphere curve */
+    overflow: hidden; 
+    transition: height 1s cubic-bezier(0.4, 0, 0.2, 1); 
+    z-index: 1; /* Behind logo */
+    opacity: 0.9;
+}
+
+.energy-fill-surface { 
+    position: absolute; 
+    top: 0; 
+    left: 0; 
+    right: 0; 
+    height: 5px; 
+    background: rgba(255,255,255,0.6); 
+    box-shadow: 0 0 10px rgba(255,255,255,0.8);
+    animation: surface-wave 3s ease-in-out infinite; 
+}
+
+/* 6. THE HANDLE (Matte Black) */
+.bomb-handle { 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    margin-top: -5px; /* Connect tightly to sphere */
+    z-index: 2;
+}
+
+/* The Neck Ring */
+.handle-connector { 
+    width: 44px; 
+    height: 12px; 
+    background: #0f0f0f; 
+    border-radius: 2px;
+    border-top: 1px solid #333;
+    box-shadow: inset 0 -2px 5px rgba(0,0,0,0.8);
+}
+
+/* The Main Grip */
+.handle-grip { 
+    width: 32px; 
+    height: 140px; /* Longer handle */
+    background: linear-gradient(90deg, #1a1a1a, #2a2a2a 40%, #111); /* Matte cylinder look */
+    display: flex; 
+    flex-direction: column; 
+    align-items: center;
+    position: relative;
+}
+
+/* The Switch (Button on Handle) */
+.handle-grip::after {
+    content: '';
+    position: absolute;
+    top: 20px;
+    width: 14px;
+    height: 24px;
+    background: #000;
+    border: 1px solid #333;
+    border-radius: 10px; /* Pill shape button */
+    box-shadow: 0 2px 0 rgba(255,255,255,0.05);
+}
+
+/* Handle Base Flare */
+.handle-base { 
+    width: 36px; 
+    height: 10px; 
+    background: #111; 
+    border-radius: 0 0 4px 4px;
+    margin-top: -2px;
+}
+
+/* ===== COLOR STATES (Applying to the Fill & Glow) ===== */
+
+/* Fill Gradients */
+.fill-dim .energy-fill-gradient { background: linear-gradient(to top, #312e81, #4338ca); }
+.fill-flickering .energy-fill-gradient { background: linear-gradient(to top, #4338ca, #6366f1); }
+.fill-warming .energy-fill-gradient { background: linear-gradient(to top, #4f46e5, #818cf8); }
+.fill-energized .energy-fill-gradient { background: linear-gradient(to top, #7c3aed, #a855f7); }
+.fill-blazing .energy-fill-gradient { background: linear-gradient(to top, #9333ea, #c084fc); }
+.fill-fully-charged .energy-fill-gradient { background: linear-gradient(to top, #a855f7, #e879f9, #fff); }
+
+/* Glow Colors */
+.glow-dim { background: #3730a3; opacity: 0.1; }
+.glow-flickering { background: #4f46e5; opacity: 0.2; }
+.glow-warming { background: #6366f1; opacity: 0.3; }
+.glow-energized { background: #a855f7; opacity: 0.5; }
+.glow-blazing { background: #c084fc; opacity: 0.7; }
+.glow-fully-charged { background: #e879f9; opacity: 0.9; }
+
+/* Logo Glow (When Charged) */
+.core-fully-charged .bts-logo { 
+    color: #fff;
+    text-shadow: 0 0 15px #e879f9, 0 0 30px #a855f7;
+}
+
+/* Text Label */
+.bomb-power-label { 
+    margin-top: 15px; 
+    font-family: 'Orbitron', sans-serif;
+    font-size: 14px; 
+    letter-spacing: 1px;
+}
+.label-fully-charged { color: #e879f9; text-shadow: 0 0 10px rgba(232,121,249,0.5); }
         
         /* ===== ERA TIMELINE ===== */
         .era-timeline { margin-top:25px; padding-top:25px; border-top:1px solid #1a1a24; }
@@ -16676,6 +16778,28 @@ function addArirangStyles() {
             .charge-wire.wire-live { animation:none; }
             .power-bar-shimmer { animation:none; display:none; }
         }
+        /* ==================== MOBILE OPTIMIZATION ==================== */
+@media (max-width: 380px) {
+    /* Scale the whole bomb down 15% on small screens so it fits nicely */
+    .charging-bomb-display {
+        transform: scale(0.85);
+        transform-origin: center top;
+        padding: 40px 10px 10px; /* Reduce padding */
+        margin-bottom: -40px;    /* Pull content below it up */
+    }
+
+    /* Adjust the background glow so it doesn't overflow screen */
+    .charge-ambient-glow {
+        width: 200px;
+        height: 200px;
+        filter: blur(60px);
+    }
+}
+
+/* Fix for High-DPI Mobile Screens (Sharper Text) */
+.bts-logo {
+    -webkit-font-smoothing: antialiased;
+}
         
     `;
     
@@ -16753,12 +16877,11 @@ window.toggleNamjoonTask = toggleNamjoonTask;
 // Make functions globally available
 window.renderSummary = renderSummary;
 window.renderWeekConfirmation = renderWeekConfirmation;
-window.updateTeamStatus = updateTeamStatus;
-window.toggleResultsRelease = toggleResultsRelease;
-window.renderOperationDefuse = renderOperationDefuse;
-window.claimDefuseReward = claimDefuseReward;
-window.showDefuseLeaderboard = showDefuseLeaderboard;
-window.showWireInfo = showWireInfo;
-window.showHobiGuide = showHobiGuide; 
+window.updateTeamStatus = smartUpdateStatus;
+window.toggleResultsRelease = toggleResultsReleaseAdmin;
+window.renderOperationDefuse = renderArirangProtocol;
+window.claimDefuseReward = claimArirangReward;
+window.showDefuseLeaderboard = showArirangLeaderboard;
+window.showHobiGuide = showArirangHelp;
 
 console.log('🎮 hopetracker v6.0 Loaded with Voting System 🗳️💜');
