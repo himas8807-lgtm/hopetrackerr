@@ -15441,7 +15441,7 @@ function renderTodayDefuseMission(challenge, config) {
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
                         <span style="color:#fff;font-weight:600;">Your ${config.requiredStreams}X Progress</span>
                         <span style="color:${challenge.passed2x ? '#00ff88' : '#ff6b35'};">
-                            ${challenge.passed2x ? '✅ Complete' : `${challenge.completedTracks}/${challenge.totalTracks}`}
+                            ${challenge.passed2x ? '✅ Complete' : `${challenge.completedTracks || 0}/${challenge.totalTracks || 0}`}
                         </span>
                     </div>
                     <div style="background:#222;border-radius:8px;height:10px;overflow:hidden;">
