@@ -15246,7 +15246,7 @@ window.renderArirangVault = renderArirangVault;
 // =============================================
 
 async function renderArirangProtocol() {
-    const container = $('operation-defuse-content') || $('arirang-protocol-content');
+    const container = $('operation-defuse-content');
     if (!container) return;
     
     container.innerHTML = `
@@ -15276,8 +15276,83 @@ async function renderArirangProtocol() {
             return;
         }
         
-        const { stats, phases, eras, todayChallenge, bombStatus, bombPower, timeRemaining, config, currentEra, fullyCharged, nextPhase } = data;
+        // =============================================
+        // DEFENSIVE DATA EXTRACTION WITH FALLBACKS
+        // =============================================
         
+        // Stats - use defaults if missing
+        const stats = data.stats || {
+            phasesCharged: data.wiresDefused || 0,      // Old name fallback
+            phasesMissed: data.wiresFailed || 0,        // Old name fallback
+            totalPhases: data.totalWires || 22,         // Old name fallback
+            userQualifiedDays: 0,
+            unclaimedRewards: 0,
+            percentComplete: 0
+        };
+        
+        // Normalize old naming to new naming
+        if (stats.wiresDefused !== undefined && stats.phasesCharged === undefined) {
+            stats.phasesCharged = stats.wiresDefused;
+        }
+        if (stats.wiresFailed !== undefined && stats.phasesMissed === undefined) {
+            stats.phasesMissed = stats.wiresFailed;
+        }
+        if (stats.totalWires !== undefined && stats.totalPhases === undefined) {
+            stats.totalPhases = stats.totalWires;
+        }
+        
+        // Calculate percentComplete if missing
+        if (stats.percentComplete === undefined || stats.percentComplete === 0) {
+            stats.percentComplete = stats.totalPhases > 0 
+                ? Math.round((stats.phasesCharged / stats.totalPhases) * 100) 
+                : 0;
+        }
+        
+        // Phases/Wires - normalize naming
+        const phases = data.phases || data.wires || [];
+        
+        // Normalize phase properties (wire -> phase naming)
+        phases.forEach(p => {
+            if (p.wireNumber !== undefined && p.phase === undefined) p.phase = p.wireNumber;
+            if (p.defused !== undefined && p.charged === undefined) p.charged = p.defused;
+            if (p.state === 'defused') p.state = 'charged';
+        });
+        
+        // Eras - provide default if missing
+        const eras = data.eras || {};
+        
+        // Today's challenge - normalize
+        const todayChallenge = data.todayChallenge || null;
+        if (todayChallenge) {
+            if (todayChallenge.wireNumber !== undefined && todayChallenge.phase === undefined) {
+                todayChallenge.phase = todayChallenge.wireNumber;
+            }
+        }
+        
+        // Bomb status
+        const bombStatus = data.bombStatus || 'CHARGING';
+        
+        // =============================================
+        // COMPUTE BOMB POWER IF MISSING
+        // =============================================
+        const bombPower = data.bombPower || computeBombPower(stats.phasesCharged || 0, stats.totalPhases || 22);
+        
+        // Other fields
+        const timeRemaining = data.timeRemaining || '--';
+        const config = data.config || {
+            requiredStreams: 2,
+            dailyTarget: 1000,
+            xpPerDay: 2,
+            startDate: '2026-02-27',
+            endDate: '2026-03-20'
+        };
+        const currentEra = data.currentEra || 'Pre-Mission';
+        const fullyCharged = data.fullyCharged || data.mysteryBoxUnlocked || (stats.phasesCharged === stats.totalPhases && stats.phasesMissed === 0);
+        const nextPhase = data.nextPhase || null;
+        
+        // =============================================
+        // RENDER THE UI
+        // =============================================
         container.innerHTML = `
             ${renderArirangHelpButton()}
             ${renderArirangGuide()}
@@ -15378,12 +15453,28 @@ async function renderArirangProtocol() {
                 </div>
                 <h3 style="color:#ef4444;margin-top:20px;">Connection Lost</h3>
                 <p style="color:#888;font-size:13px;">Could not reach HQ servers</p>
+                <p style="color:#666;font-size:11px;margin-top:5px;">${e.message || 'Unknown error'}</p>
                 <button class="btn-primary" onclick="renderArirangProtocol()" style="margin-top:15px;">
                     Reconnect
                 </button>
             </div>
         `;
     }
+}
+
+// =============================================
+// COMPUTE BOMB POWER (Frontend Fallback)
+// =============================================
+function computeBombPower(phasesCharged, totalPhases) {
+    const pct = totalPhases > 0 ? Math.round((phasesCharged / totalPhases) * 100) : 0;
+    
+    if (pct === 100) return { level: pct, tier: 'fully-charged', glowIntensity: 1.0, tierName: 'FULLY CHARGED', tierColor: '#e879f9' };
+    if (pct >= 80) return { level: pct, tier: 'blazing', glowIntensity: 0.85, tierName: 'BLAZING', tierColor: '#a855f7' };
+    if (pct >= 60) return { level: pct, tier: 'energized', glowIntensity: 0.65, tierName: 'ENERGIZED', tierColor: '#818cf8' };
+    if (pct >= 40) return { level: pct, tier: 'warming', glowIntensity: 0.45, tierName: 'WARMING UP', tierColor: '#6366f1' };
+    if (pct >= 20) return { level: pct, tier: 'flickering', glowIntensity: 0.25, tierName: 'FLICKERING', tierColor: '#4f46e5' };
+    if (pct > 0) return { level: pct, tier: 'dim', glowIntensity: 0.12, tierName: 'DIM', tierColor: '#3730a3' };
+    return { level: 0, tier: 'dark', glowIntensity: 0, tierName: 'DORMANT', tierColor: '#1e1b4b' };
 }
 
 // =============================================
