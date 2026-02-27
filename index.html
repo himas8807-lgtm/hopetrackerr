@@ -16,7 +16,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     
     <!-- CSS -->
-    <link rel="stylesheet" href="styles.css?v=5.1">
+    <link rel="stylesheet" href="styles.css?v=5.2">
 </head>
 <body>
 
@@ -113,7 +113,7 @@
                         <div class="pulse-dot"></div>
                         <span>SYSTEM ONLINE</span>
                     </div>
-                    <div class="version-info">v5.0 | Hopetracker</div>
+                    <div class="version-info">v5.2 | Hopetracker</div>
                 </div>
             </div>
         </div>
@@ -281,9 +281,11 @@
                 <div class="nav-section">
                     <span class="nav-section-title">ARIRANG</span>
 
-                    <a href="#" class="nav-link" data-page="arirang-road">
-                        <span class="nav-icon">🎁</span>
-                        <span class="nav-text">Road to Arirang</span>
+                    <!-- ⚡ OPERATION DEFUSE - FEATURED LINK -->
+                    <a href="#" class="nav-link nav-link-featured" data-page="operation-defuse">
+                        <span class="nav-icon">💣</span>
+                        <span class="nav-text">Operation Defuse</span>
+                        <span class="nav-badge nav-badge-live">LIVE</span>
                     </a>
                     
                     <a href="#" class="nav-link" data-page="arirang-hype">
@@ -584,6 +586,26 @@
                     </div>
                 </section>
 
+                <!-- ==================== OPERATION DEFUSE ==================== -->
+                <section id="page-operation-defuse" class="page">
+                    <div class="page-header">
+                        <div class="page-title-section">
+                            <h1>💣 Operation Defuse</h1>
+                            <p class="page-subtitle">Arirang Bomb Defusal Unit</p>
+                        </div>
+                        <div class="page-actions">
+                            <button type="button" class="refresh-btn" onclick="renderOperationDefuse()" title="Refresh">🔄</button>
+                        </div>
+                    </div>
+                    <div id="operation-defuse-content">
+                        <!-- Content loaded dynamically -->
+                        <div class="loading-placeholder">
+                            <div class="bomb-loading-icon">💣</div>
+                            <p>Accessing Bomb Defusal Unit...</p>
+                        </div>
+                    </div>
+                </section>
+
                 <!-- ARIRANG HYPE FORCE -->
                 <section id="page-arirang-hype" class="page">
                     <div class="page-header">
@@ -690,6 +712,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
     <!-- ==================== APP SCRIPT ==================== -->
-    <script src="app.js?v=5.1"></script>
+    <script src="app.js?v=5.2"></script>
 </body>
 </html>
