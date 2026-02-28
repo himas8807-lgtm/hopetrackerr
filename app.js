@@ -15381,7 +15381,7 @@ async function renderArirangProtocol() {
                     <div class="action-content">
                         <span class="action-icon">🏆</span>
                         <div class="action-text">
-                            <span class="action-title">Charging Champions</span>
+                            <span class="action-title">Arirang Champions</span>
                             <span class="action-subtitle">See top agents</span>
                         </div>
                         <span class="action-arrow">→</span>
@@ -16258,7 +16258,7 @@ async function showArirangLeaderboard() {
             <div class="modal-bg" onclick="this.parentElement.remove()"></div>
             <div class="lb-panel">
                 <div class="lb-header">
-                    <h3>🏆 Charging Champions</h3>
+                    <h3>🏆 Arirang Champions</h3>
                     <button onclick="this.closest('.arirang-lb-modal').remove()">✕</button>
                 </div>
                 <div class="lb-body">
