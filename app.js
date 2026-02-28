@@ -16024,7 +16024,7 @@ function renderArirangGuide() {
                     <div class="guide-text">
                         <strong>Daily Charging Protocol</strong>
                         <p>Each day has <span class="highlight">2 charges</span> to complete:</p>
-                        <p><strong>Charge A</strong> — Stream every track <span class="highlight">2X</span> on Last.fm</p>
+                        <p><strong>Charge A</strong> — Stream every track <span class="highlight">2X</span> on spotify</p>
                         <p><strong>Charge B</strong> — Help the team reach the collective stream goal</p>
                         <p style="margin-top:4px;">Both charges = phase powered → <span class="highlight">+2 XP</span> + a special reward!</p>
                     </div>
