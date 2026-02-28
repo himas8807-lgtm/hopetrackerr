@@ -17060,12 +17060,8 @@ function addDailyWaveStyles() {
 // =============================================
 // UTILITIES
 // =============================================
-function $(id) { return document.getElementById(id); }
 
-function loading(show) {
-    const loader = $('global-loader');
-    if (loader) loader.style.display = show ? 'flex' : 'none';
-}
+
 
 function showToast(message, type = 'info') {
     const existing = document.querySelector('.toast-notification');
@@ -17082,7 +17078,7 @@ function showToast(message, type = 'info') {
     setTimeout(() => { toast.style.animation = 'toast-in 0.3s ease-out reverse'; setTimeout(() => toast.remove(), 300); }, 3000);
 }
 
-const STATE = window.STATE || { agentNo: 'test-agent' };
+
 
 // =============================================
 // INIT
