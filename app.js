@@ -16039,7 +16039,7 @@ function renderArirangHelpButton() {
         <div style="text-align: center; margin-bottom: 15px;">
             <button class="btn-hobi-help" onclick="showArirangHelp()">
                 <span class="hobi-icon">🐿️</span>
-                <span>Confused? Tap for help!</span>
+                <span>Feeling Hobi? Tap for help!</span>
             </button>
         </div>
     `;
