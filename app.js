@@ -15873,7 +15873,7 @@ function renderTodayPhase(challenge, config, phases) {
                 ${bothCharged ? `
                     <div class="xp-reward-preview" style="background:${col.bg}">
                         <span class="xp-icon">⭐</span>
-                        <span class="xp-text" style="color:${col.accent}">+5 XP earned for this phase!</span>
+                        <span class="xp-text" style="color:${col.accent}">+2 XP earned for this phase!</span>
                     </div>
                 ` : ''}
                 
@@ -16026,7 +16026,7 @@ function renderArirangGuide() {
                         <p>Each day has <span class="highlight">2 charges</span> to complete:</p>
                         <p><strong>Charge A</strong> — Stream every track <span class="highlight">2X</span> on Last.fm</p>
                         <p><strong>Charge B</strong> — Help the team reach the collective stream goal</p>
-                        <p style="margin-top:4px;">Both charges = phase powered → <span class="highlight">+5 XP</span> + a special reward!</p>
+                        <p style="margin-top:4px;">Both charges = phase powered → <span class="highlight">+2 XP</span> + a special reward!</p>
                     </div>
                 </div>
             </div>
@@ -16085,7 +16085,7 @@ function showArirangHelp() {
                     <div class="step-num">⚡</div>
                     <div class="step-text">
                         <strong>Both charged? Phase complete!</strong>
-                        <p>Your Army Bomb powers up and you earn <span class="highlight">+5 XP</span>. Don't miss a day — keep that streak going!</p>
+                        <p>Your Army Bomb powers up and you earn <span class="highlight">+2 XP</span>. Don't miss a day — keep that streak going!</p>
                     </div>
                 </div>
                 
@@ -17109,7 +17109,7 @@ window.renderArirangHomeWidget = renderArirangHomeWidget;
 window.launchSurprise = launchSurprise;
 
 console.log('%c💜 OPERATION: ARIRANG PROTOCOL v2.0', 'color:#a855f7; font-weight:bold; font-size:16px;');
-console.log('%c📅 March 1-20, 2025 | 20 Phases | +5 XP per charge', 'color:#c084fc; font-size:12px;');
+console.log('%c📅 March 1-20, 2025 | 20 Phases | +2 XP per charge', 'color:#c084fc; font-size:12px;');
 // ==================== EXPORTS & INIT ====================
 document.addEventListener('DOMContentLoaded', initApp);
 
