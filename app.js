@@ -15241,18 +15241,79 @@ async function renderArirangVault() {
 
 window.renderArirangVault = renderArirangVault;
 // =============================================
-// OPERATION: ARIRANG PROTOCOL
-// Army Bomb Charging Interface
+// OPERATION: ARIRANG PROTOCOL v2.0
+// Army Bomb Charging Interface + Daily Wave
+// March 1st - March 20th, 2025
 // =============================================
 
 let _arirangGeneration = 0;
 const _eraDataCache = {};
+let _dailyWaveActive = false;
 
+// =============================================
+// INTERNAL SONG DATA (NEVER SHOWN ON PAGE)
+// =============================================
+const _WAVE_SONGS = [
+    { day: 1, id: 'spring-day', title: 'Spring Day', artist: 'BTS', album: 'You Never Walk Alone', era: '🌸', bpm: 107, color: '#e879f9', wave: 'slow-sway', spotifyId: '4upRoEWkMWhhMfEgPZMFRP', lyric: '"보고 싶다"', lyricEn: '"I miss you"' },
+    { day: 2, id: 'epiphany', title: 'Epiphany', artist: 'Jin', album: 'LOVE YOURSELF 結 Answer', era: '🪞', bpm: 72, color: '#c084fc', wave: 'slow-sway', spotifyId: '1M4iiMSiPjC1FMX5NZxNK3', lyric: '"나는 나를 사랑해"', lyricEn: '"I\'m the one I should love"' },
+    { day: 3, id: 'magic-shop', title: 'Magic Shop', artist: 'BTS', album: 'LOVE YOURSELF 轉 Tear', era: '✨', bpm: 80, color: '#818cf8', wave: 'stars', spotifyId: '5V3aHSCRAH3D1VfIHwtnSU', lyric: '"너의 마법 상점을 열어"', lyricEn: '"Open your magic shop"' },
+    { day: 4, id: 'euphoria', title: 'Euphoria', artist: 'Jungkook', album: 'LOVE YOURSELF 結 Answer', era: '🌊', bpm: 100, color: '#a78bfa', wave: 'ocean', spotifyId: '1hVmh3AKJuTxZ2ypBLmhZ2', lyric: '"너는 내 삶에 다시 빛을"', lyricEn: '"You brought light back into my life"' },
+    { day: 5, id: 'film-out', title: 'Film Out', artist: 'BTS', album: 'BTS, THE BEST', era: '🎬', bpm: 72, color: '#94a3b8', wave: 'slow-sway', spotifyId: '3P3UA61WRQqwCXaoFOTENd', lyric: '"지워야 될 내 맘이"', lyricEn: '"My heart that should be erased"' },
+    { day: 6, id: 'louder-than-bombs', title: 'Louder Than Bombs', artist: 'BTS', album: 'MAP OF THE SOUL: 7', era: '💣', bpm: 81, color: '#6366f1', wave: 'heartbeat', spotifyId: '4PJLrKKcOgA5b6TXvBYfLJ', lyric: '"네 목소리를 들려줘"', lyricEn: '"Let me hear your voice"' },
+    { day: 7, id: 'truth-untold', title: 'The Truth Untold', artist: 'BTS', album: 'LOVE YOURSELF 轉 Tear', era: '🌹', bpm: 76, color: '#a855f7', wave: 'slow-sway', spotifyId: '2kaeKp6wMkJe1k3UN6FoML', lyric: '"말하지 못한 진심"', lyricEn: '"The truth I couldn\'t say"' },
+    { day: 8, id: 'butterfly', title: 'Butterfly', artist: 'BTS', album: 'HYYH pt.2', era: '🦋', bpm: 82, color: '#c4b5fd', wave: 'flutter', spotifyId: '3PcB8JkN4YODRLRghYAiUY', lyric: '"넌 내게로 날아와"', lyricEn: '"You flew to me"' },
+    { day: 9, id: 'mikrokosmos', title: 'Mikrokosmos', artist: 'BTS', album: 'MAP OF THE SOUL: PERSONA', era: '🌌', bpm: 86, color: '#818cf8', wave: 'stars', spotifyId: '0jSccBRnhNU4KtACMQPvco', lyric: '"별빛처럼"', lyricEn: '"Like starlight"' },
+    { day: 10, id: 'blue-grey', title: 'Blue & Grey', artist: 'BTS', album: 'BE', era: '🌧️', bpm: 93, color: '#64748b', wave: 'ocean', spotifyId: '4Kq11CVRD3egq3kCvK5OhY', lyric: '"어디서부터 잘못됐는지"', lyricEn: '"Where did it go wrong"' },
+    { day: 11, id: 'life-goes-on', title: 'Life Goes On', artist: 'BTS', album: 'BE', era: '🌿', bpm: 80, color: '#86efac', wave: 'slow-sway', spotifyId: '249gnXbHph4OHyFSi1LPcO', lyric: '"살아가겠지 뭐"', lyricEn: '"Life goes on, like this"' },
+    { day: 12, id: 'serendipity', title: 'Serendipity', artist: 'Jimin', album: 'LOVE YOURSELF 承 Her', era: '🌙', bpm: 90, color: '#fbbf24', wave: 'flutter', spotifyId: '2PjVvqX4USbPJhaFaX4QM0', lyric: '"내 삶 속의 모든 것"', lyricEn: '"Everything in my life"' },
+    { day: 13, id: 'zero-oclock', title: '00:00 (Zero O\'Clock)', artist: 'BTS', album: 'MAP OF THE SOUL: 7', era: '🕛', bpm: 67, color: '#f0abfc', wave: 'slow-sway', spotifyId: '1GxIWsMD5SMpNwITh0Xu40', lyric: '"넌 그래도 괜찮아"', lyricEn: '"You\'re still okay"' },
+    { day: 14, id: 'wab-eternal', title: 'We Are Bulletproof: The Eternal', artist: 'BTS', album: 'MAP OF THE SOUL: 7', era: '🛡️', bpm: 75, color: '#7c3aed', wave: 'ocean', spotifyId: '133ocfbXXG4HTk76qgSeUb', lyric: '"영원히 함께야"', lyricEn: '"Together forever"' },
+    { day: 15, id: 'singularity', title: 'Singularity', artist: 'V', album: 'LOVE YOURSELF 轉 Tear', era: '🎭', bpm: 67, color: '#4c1d95', wave: 'slow-sway', spotifyId: '5MRhQ3MrcKkHZxOJmRqXoq', lyric: '"소리 없는 아우성"', lyricEn: '"A silent scream"' },
+    { day: 16, id: 'inner-child', title: 'Inner Child', artist: 'V', album: 'MAP OF THE SOUL: 7', era: '👦', bpm: 86, color: '#fb923c', wave: 'stars', spotifyId: '0RiZEEIENqjVAfPIFoF4RP', lyric: '"네가 나를 만들었으니까"', lyricEn: '"Because you made me"' },
+    { day: 17, id: 'moon', title: 'Moon', artist: 'Jin', album: 'MAP OF THE SOUL: 7', era: '🌕', bpm: 114, color: '#e2e8f0', wave: 'flutter', spotifyId: '3gMIPlR5vVdqOqq8FiJBiW', lyric: '"네 곁을 맴돌래"', lyricEn: '"I\'ll orbit around you"' },
+    { day: 18, id: 'friends', title: 'Friends', artist: 'Jimin & V', album: 'MAP OF THE SOUL: 7', era: '👫', bpm: 110, color: '#f472b6', wave: 'heartbeat', spotifyId: '5cfXqWEKD1QHGb1X1eliBr', lyric: '"영원히 함께 가자"', lyricEn: '"Let\'s go together forever"' },
+    { day: 19, id: 'yet-to-come', title: 'Yet To Come', artist: 'BTS', album: 'Proof', era: '🌅', bpm: 80, color: '#a78bfa', wave: 'slow-sway', spotifyId: '2MWdJCJbIQTKJDqyKfWwMc', lyric: '"우린 아직 여기 있어"', lyricEn: '"We\'re still here"' },
+    { day: 20, id: 'arirang', title: 'ARIRANG', artist: 'BTS', album: 'ARIRANG', era: '💜', bpm: 95, color: '#e879f9', wave: 'stars', spotifyId: 'ARIRANG_SPOTIFY_ID', lyric: '"아리랑 아리랑 아라리요"', lyricEn: '"Arirang Arirang Arariyo"' }
+];
+
+// =============================================
+// ERA COLOR MAP — distinct per phase
+// =============================================
+const ERA_COLORS = {
+    1: { accent: '#e879f9', bg: 'rgba(232,121,249,0.06)', border: 'rgba(232,121,249,0.25)', glow: '#e879f9' },
+    2: { accent: '#c084fc', bg: 'rgba(192,132,252,0.06)', border: 'rgba(192,132,252,0.25)', glow: '#c084fc' },
+    3: { accent: '#818cf8', bg: 'rgba(129,140,248,0.06)', border: 'rgba(129,140,248,0.25)', glow: '#818cf8' },
+    4: { accent: '#a78bfa', bg: 'rgba(167,139,250,0.06)', border: 'rgba(167,139,250,0.25)', glow: '#a78bfa' },
+    5: { accent: '#94a3b8', bg: 'rgba(148,163,184,0.06)', border: 'rgba(148,163,184,0.25)', glow: '#94a3b8' },
+    6: { accent: '#6366f1', bg: 'rgba(99,102,241,0.06)', border: 'rgba(99,102,241,0.25)', glow: '#6366f1' },
+    7: { accent: '#a855f7', bg: 'rgba(168,85,247,0.06)', border: 'rgba(168,85,247,0.25)', glow: '#a855f7' },
+    8: { accent: '#c4b5fd', bg: 'rgba(196,181,253,0.06)', border: 'rgba(196,181,253,0.25)', glow: '#c4b5fd' },
+    9: { accent: '#818cf8', bg: 'rgba(129,140,248,0.06)', border: 'rgba(129,140,248,0.25)', glow: '#818cf8' },
+    10:{ accent: '#64748b', bg: 'rgba(100,116,139,0.06)', border: 'rgba(100,116,139,0.25)', glow: '#64748b' },
+    11:{ accent: '#86efac', bg: 'rgba(134,239,172,0.06)', border: 'rgba(134,239,172,0.25)', glow: '#86efac' },
+    12:{ accent: '#fbbf24', bg: 'rgba(251,191,36,0.06)', border: 'rgba(251,191,36,0.25)', glow: '#fbbf24' },
+    13:{ accent: '#f0abfc', bg: 'rgba(240,171,252,0.06)', border: 'rgba(240,171,252,0.25)', glow: '#f0abfc' },
+    14:{ accent: '#7c3aed', bg: 'rgba(124,58,237,0.06)', border: 'rgba(124,58,237,0.25)', glow: '#7c3aed' },
+    15:{ accent: '#4c1d95', bg: 'rgba(76,29,149,0.08)', border: 'rgba(76,29,149,0.25)', glow: '#4c1d95' },
+    16:{ accent: '#fb923c', bg: 'rgba(251,146,60,0.06)', border: 'rgba(251,146,60,0.25)', glow: '#fb923c' },
+    17:{ accent: '#e2e8f0', bg: 'rgba(226,232,240,0.06)', border: 'rgba(226,232,240,0.25)', glow: '#e2e8f0' },
+    18:{ accent: '#f472b6', bg: 'rgba(244,114,182,0.06)', border: 'rgba(244,114,182,0.25)', glow: '#f472b6' },
+    19:{ accent: '#a78bfa', bg: 'rgba(167,139,250,0.06)', border: 'rgba(167,139,250,0.25)', glow: '#a78bfa' },
+    20:{ accent: '#e879f9', bg: 'rgba(232,121,249,0.08)', border: 'rgba(232,121,249,0.35)', glow: '#e879f9' }
+};
+
+function getPhaseColor(phaseNum) {
+    return ERA_COLORS[phaseNum] || ERA_COLORS[1];
+}
+
+// =============================================
+// MAIN RENDER
+// =============================================
 async function renderArirangProtocol() {
     const gen = ++_arirangGeneration;
     const container = $('operation-defuse-content');
     if (!container) return;
-    
+
     container.innerHTML = `
         <div class="arirang-loading">
             <div class="loading-bomb-charge">
@@ -15262,157 +15323,51 @@ async function renderArirangProtocol() {
             <p>Initializing ARIRANG Protocol...</p>
         </div>
     `;
-    
+
     try {
         const data = await api('getDefuseStatus', { agentNo: STATE.agentNo });
-        
-        // Stale response guard
         if (gen !== _arirangGeneration) return;
-        
+
         if (!data.success) {
-            container.innerHTML = `
-                <div class="card" style="text-align:center;padding:40px;">
-                    <div class="mini-army-bomb inactive">
-                        <div class="mini-sphere"><span>⟭⟬</span></div>
-                        <div class="mini-handle"></div>
-                    </div>
-                    <h3 style="color:#7b2cbf;margin-top:20px;">Protocol Classified</h3>
-                    <p style="color:#888;font-size:13px;">${data.error || 'ARIRANG Protocol will commence soon. Stand by, Agent.'}</p>
-                </div>
-            `;
+            container.innerHTML = renderProtocolClassified(data.error);
             return;
         }
-        
-        // =============================================
-        // DEFENSIVE DATA EXTRACTION WITH FALLBACKS
-        // =============================================
-        
-        // Normalize raw stats first, then apply defaults
+
         const raw = data.stats || {};
-        
         const stats = {
-            phasesCharged:     raw.phasesCharged  ?? raw.wiresDefused      ?? data.wiresDefused ?? 0,
-            phasesMissed:      raw.phasesMissed   ?? raw.wiresFailed       ?? data.wiresFailed  ?? 0,
-            totalPhases:       raw.totalPhases    ?? raw.totalWires        ?? data.totalWires   ?? 22,
+            phasesCharged: raw.phasesCharged ?? raw.wiresDefused ?? 0,
+            phasesMissed: raw.phasesMissed ?? raw.wiresFailed ?? 0,
+            totalPhases: raw.totalPhases ?? raw.totalWires ?? 20,
             userQualifiedDays: raw.userQualifiedDays ?? 0,
-            unclaimedRewards:  raw.unclaimedRewards  ?? 0,
-            percentComplete:   raw.percentComplete   ?? 0
+            unclaimedRewards: raw.unclaimedRewards ?? 0,
+            percentComplete: raw.percentComplete ?? 0
         };
-        
-        // Calculate percentComplete if missing or zero
+
         if (stats.percentComplete === 0 && stats.totalPhases > 0) {
             stats.percentComplete = Math.round((stats.phasesCharged / stats.totalPhases) * 100);
         }
-        
-        // Phases/Wires - normalize naming
-        const phases = (data.phases || data.wires || []).map(p => {
-            const copy = Object.assign({}, p);
-            if (copy.wireNumber !== undefined && copy.phase === undefined) copy.phase = copy.wireNumber;
-            if (copy.defused !== undefined && copy.charged === undefined) copy.charged = copy.defused;
-            if (copy.state === 'defused') copy.state = 'charged';
-            return copy;
-        });
-        
-        // Eras - provide default if missing
+
+        const phases = normalizePhases(data.phases || data.wires || []);
         const eras = data.eras || {};
-        
-        // Today's challenge - normalize
-        const todayChallenge = data.todayChallenge ? Object.assign({}, data.todayChallenge) : null;
-        if (todayChallenge) {
-            if (todayChallenge.wireNumber !== undefined && todayChallenge.phase === undefined) {
-                todayChallenge.phase = todayChallenge.wireNumber;
-            }
-        }
-        
-        // Bomb status
-        const bombStatus = data.bombStatus || 'CHARGING';
-        
-        // =============================================
-        // COMPUTE BOMB POWER IF MISSING
-        // =============================================
-        const bombPower = data.bombPower || computeBombPower(stats.phasesCharged || 0, stats.totalPhases || 22);
-        
-        // Other fields
+        const todayChallenge = normalizeTodayChallenge(data.todayChallenge);
+        const bombPower = data.bombPower || computeBombPower(stats.phasesCharged, stats.totalPhases);
         const timeRemaining = data.timeRemaining || '--';
-        const config = data.config || {
-            requiredStreams: 2,
-            dailyTarget: 1000,
-            xpPerDay: 2,
-            startDate: '2026-02-27',
-            endDate: '2026-03-20'
-        };
+        const config = data.config || { requiredStreams: 2, dailyTarget: 1000, xpPerDay: 5 };
         const currentEra = data.currentEra || 'Pre-Mission';
-        const fullyCharged = data.fullyCharged || data.mysteryBoxUnlocked || (stats.phasesCharged === stats.totalPhases && stats.phasesMissed === 0);
-        const nextPhase = data.nextPhase || null;
-        
-        // =============================================
-        // RENDER THE UI
-        // =============================================
+        const fullyCharged = data.fullyCharged || (stats.phasesCharged === stats.totalPhases && stats.phasesMissed === 0);
+
         container.innerHTML = `
             ${renderArirangHelpButton()}
             ${renderArirangGuide()}
             
             <!-- MISSION HEADER -->
-            <div class="card arirang-header-card">
-                <div class="card-body">
-                    <div class="arirang-header-top">
-                        <div class="arirang-badge-pill">
-                            <span class="badge-text">SPECIAL OPS</span>
-                        </div>
-                        <div class="power-level-badge power-${bombPower.tier}">
-                            <span class="power-dot"></span>
-                            <span>${bombPower.tierName}</span>
-                        </div>
-                    </div>
-                    
-                    <h2 class="arirang-title">OPERATION: ARIRANG</h2>
-                    <p class="arirang-subtitle">Global Album Preparation Protocol • Phase ${getTodayPhaseNumber(phases)} of ${stats.totalPhases}</p>
-                    
-                    <!-- Power Stats -->
-                    <div class="power-stats-grid">
-                        <div class="power-stat charged">
-                            <div class="power-stat-icon">⚡</div>
-                            <div class="power-stat-value">${stats.phasesCharged}</div>
-                            <div class="power-stat-label">Charged</div>
-                        </div>
-                        <div class="power-stat remaining">
-                            <div class="power-stat-icon">◐</div>
-                            <div class="power-stat-value">${stats.totalPhases - stats.phasesCharged - stats.phasesMissed}</div>
-                            <div class="power-stat-label">Remaining</div>
-                        </div>
-                        <div class="power-stat ${stats.phasesMissed > 0 ? 'missed' : 'clean'}">
-                            <div class="power-stat-icon">${stats.phasesMissed > 0 ? '○' : '✓'}</div>
-                            <div class="power-stat-value">${stats.phasesMissed}</div>
-                            <div class="power-stat-label">Missed</div>
-                        </div>
-                    </div>
-                    
-                    <!-- Power Bar -->
-                    <div class="power-bar-section">
-                        <div class="power-bar-track">
-                            <div class="power-bar-fill power-fill-${bombPower.tier}" style="width:${stats.percentComplete}%">
-                                <div class="power-bar-shimmer"></div>
-                            </div>
-                        </div>
-                        <div class="power-bar-label">${stats.percentComplete}% Power</div>
-                    </div>
-                </div>
-            </div>
+            ${renderMissionHeader(stats, bombPower, phases)}
             
             <!-- ARMY BOMB CHARGING CORE -->
-            <div class="card arirang-bomb-core">
-                <div class="card-header">
-                    <h3><span class="header-icon">💎</span> Charging Core</h3>
-                    ${todayChallenge ? `<span class="time-badge">⏱ ${timeRemaining}</span>` : ''}
-                </div>
-                <div class="card-body">
-                    ${renderChargingBomb(bombPower, stats, fullyCharged)}
-                    ${renderEraTimeline(phases, eras, currentEra)}
-                </div>
-            </div>
+            ${renderChargingCore(bombPower, stats, fullyCharged, todayChallenge, timeRemaining, phases, eras, currentEra)}
             
             <!-- TODAY'S PHASE -->
-            ${todayChallenge ? renderTodayPhase(todayChallenge, config) : renderNoPhaseCard(phases)}
+            ${todayChallenge ? renderTodayPhase(todayChallenge, config, phases) : renderNoPhaseCard(phases)}
             
             <!-- REWARDS VAULT -->
             ${renderArirangVault(phases, stats)}
@@ -15434,93 +15389,260 @@ async function renderArirangProtocol() {
                 </div>
             </div>
         `;
-        
+
         addArirangStyles();
-        
+
     } catch (e) {
-        // Stale response guard
         if (gen !== _arirangGeneration) return;
-        
         console.error('Error loading ARIRANG Protocol:', e);
-        container.innerHTML = `
-            <div class="card" style="text-align:center;padding:40px;">
-                <div class="mini-army-bomb error">
-                    <div class="mini-sphere"><span>⟭⟬</span></div>
-                    <div class="mini-handle"></div>
-                </div>
-                <h3 style="color:#ef4444;margin-top:20px;">Connection Lost</h3>
-                <p style="color:#888;font-size:13px;">Could not reach HQ servers</p>
-                <p style="color:#666;font-size:11px;margin-top:5px;">${e.message || 'Unknown error'}</p>
-                <button class="btn-primary" onclick="renderArirangProtocol()" style="margin-top:15px;">
-                    Reconnect
-                </button>
-            </div>
-        `;
+        container.innerHTML = renderConnectionError(e);
     }
 }
 
 // =============================================
-// COMPUTE BOMB POWER (Frontend Fallback)
+// HELPERS
 // =============================================
+function normalizePhases(phases) {
+    return phases.map(p => {
+        const copy = Object.assign({}, p);
+        if (copy.wireNumber !== undefined && copy.phase === undefined) copy.phase = copy.wireNumber;
+        if (copy.defused !== undefined && copy.charged === undefined) copy.charged = copy.defused;
+        if (copy.state === 'defused') copy.state = 'charged';
+        return copy;
+    });
+}
+
+function normalizeTodayChallenge(challenge) {
+    if (!challenge) return null;
+    const copy = Object.assign({}, challenge);
+    if (copy.wireNumber !== undefined && copy.phase === undefined) copy.phase = copy.wireNumber;
+    return copy;
+}
+
+function getTodayPhaseNumber(phases) {
+    const today = phases.find(p => p.state === 'active');
+    return today ? today.phase : phases.length;
+}
+
 function computeBombPower(phasesCharged, totalPhases) {
     const pct = totalPhases > 0 ? Math.round((phasesCharged / totalPhases) * 100) : 0;
-    
     if (pct === 100) return { level: pct, tier: 'fully-charged', glowIntensity: 1.0, tierName: 'FULLY CHARGED', tierColor: '#e879f9' };
-    if (pct >= 80) return { level: pct, tier: 'blazing', glowIntensity: 0.85, tierName: 'BLAZING', tierColor: '#a855f7' };
-    if (pct >= 60) return { level: pct, tier: 'energized', glowIntensity: 0.65, tierName: 'ENERGIZED', tierColor: '#818cf8' };
-    if (pct >= 40) return { level: pct, tier: 'warming', glowIntensity: 0.45, tierName: 'WARMING UP', tierColor: '#6366f1' };
-    if (pct >= 20) return { level: pct, tier: 'flickering', glowIntensity: 0.25, tierName: 'FLICKERING', tierColor: '#4f46e5' };
-    if (pct > 0) return { level: pct, tier: 'dim', glowIntensity: 0.12, tierName: 'DIM', tierColor: '#3730a3' };
+    if (pct >= 80) return { level: pct, tier: 'blazing', glowIntensity: 0.85, tierName: 'BLAZING', tierColor: '#c084fc' };
+    if (pct >= 60) return { level: pct, tier: 'energized', glowIntensity: 0.65, tierName: 'ENERGIZED', tierColor: '#a855f7' };
+    if (pct >= 40) return { level: pct, tier: 'warming', glowIntensity: 0.45, tierName: 'WARMING UP', tierColor: '#8b5cf6' };
+    if (pct >= 20) return { level: pct, tier: 'flickering', glowIntensity: 0.25, tierName: 'FLICKERING', tierColor: '#7c3aed' };
+    if (pct > 0) return { level: pct, tier: 'dim', glowIntensity: 0.12, tierName: 'DIM', tierColor: '#6d28d9' };
     return { level: 0, tier: 'dark', glowIntensity: 0, tierName: 'DORMANT', tierColor: '#1e1b4b' };
 }
 
+function fmt(n) { return n?.toLocaleString?.() || n || '0'; }
+function sanitize(str) { if (!str) return ''; return String(str).replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+function teamColor(team) { return { 'Hyung Line': '#7c3aed', 'Maknae Line': '#a855f7', 'OT7': '#c084fc' }[team] || '#7c3aed'; }
+
 // =============================================
-// CHARGING ARMY BOMB VISUAL
+// ERROR / CLASSIFIED
 // =============================================
+function renderProtocolClassified(error) {
+    return `
+        <div class="card arirang-classified" style="text-align:center;padding:40px;">
+            <div class="mini-army-bomb inactive">
+                <div class="mini-sphere"><span>⟭⟬</span></div>
+                <div class="mini-handle"></div>
+            </div>
+            <h3 style="color:#a855f7;margin-top:20px;">Protocol Classified</h3>
+            <p style="color:#888;font-size:13px;">${error || 'ARIRANG Protocol commences March 1st. Stand by, Agent.'}</p>
+        </div>
+    `;
+}
+
+function renderConnectionError(e) {
+    return `
+        <div class="card" style="text-align:center;padding:40px;">
+            <h3 style="color:#ef4444;margin-top:20px;">Connection Lost</h3>
+            <p style="color:#888;font-size:13px;">Could not reach HQ servers</p>
+            <p style="color:#666;font-size:11px;">${e.message || 'Unknown error'}</p>
+            <button class="btn-primary" onclick="renderArirangProtocol()" style="margin-top:15px;">Reconnect</button>
+        </div>
+    `;
+}
+
+// =============================================
+// MISSION HEADER
+// =============================================
+function renderMissionHeader(stats, bombPower, phases) {
+    return `
+        <div class="card arirang-header-card">
+            <div class="card-body">
+                <div class="arirang-header-top">
+                    <div class="arirang-badge-pill">
+                        <span class="badge-dot"></span>
+                        <span class="badge-text">SPECIAL OPS</span>
+                    </div>
+                    <div class="power-level-badge power-${bombPower.tier}">
+                        <span class="power-dot"></span>
+                        <span>${bombPower.tierName}</span>
+                    </div>
+                </div>
+                
+                <h2 class="arirang-title">
+                    <span class="title-icon">💜</span>
+                    OPERATION: ARIRANG
+                </h2>
+                <p class="arirang-subtitle">
+                    <span class="subtitle-dot"></span>
+                    Global Album Preparation Protocol • Phase ${getTodayPhaseNumber(phases)} of ${stats.totalPhases}
+                </p>
+                
+                <div class="power-stats-grid">
+                    <div class="power-stat charged">
+                        <div class="power-stat-icon">⚡</div>
+                        <div class="power-stat-value">${stats.phasesCharged}</div>
+                        <div class="power-stat-label">Charged</div>
+                    </div>
+                    <div class="power-stat remaining">
+                        <div class="power-stat-icon">◐</div>
+                        <div class="power-stat-value">${stats.totalPhases - stats.phasesCharged - stats.phasesMissed}</div>
+                        <div class="power-stat-label">Remaining</div>
+                    </div>
+                    <div class="power-stat ${stats.phasesMissed > 0 ? 'missed' : 'clean'}">
+                        <div class="power-stat-icon">${stats.phasesMissed > 0 ? '○' : '✓'}</div>
+                        <div class="power-stat-value">${stats.phasesMissed}</div>
+                        <div class="power-stat-label">Missed</div>
+                    </div>
+                </div>
+                
+                <div class="power-bar-section">
+                    <div class="power-bar-track">
+                        <div class="power-bar-fill power-fill-${bombPower.tier}" style="width:${stats.percentComplete}%">
+                            <div class="power-bar-shimmer"></div>
+                        </div>
+                    </div>
+                    <div class="power-bar-label">${stats.percentComplete}% Power</div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// =============================================
+// CHARGING CORE
+// =============================================
+function renderChargingCore(bombPower, stats, fullyCharged, todayChallenge, timeRemaining, phases, eras, currentEra) {
+    return `
+        <div class="card arirang-bomb-core">
+            <div class="card-header">
+                <h3><span class="header-icon">💎</span> Charging Core</h3>
+                ${todayChallenge ? `<span class="time-badge">⏱ ${timeRemaining}</span>` : ''}
+            </div>
+            <div class="card-body">
+                ${renderChargingBomb(bombPower, stats, fullyCharged)}
+                ${renderEraTimeline(phases, eras, currentEra)}
+            </div>
+        </div>
+    `;
+}
 
 function renderChargingBomb(bombPower, stats, fullyCharged) {
     const pct = stats.percentComplete || 0;
-    
-    // Use bombPower.tier directly for correct gradient mapping
-    const gradientClass = 'fill-' + bombPower.tier;
-    
+    const tier = bombPower.tier;
+
+    // dim-to-purple gradient tiers
+    const sphereGlows = {
+        'dark':          'inset 0 0 15px rgba(30,27,75,0.4), 0 0 5px rgba(30,27,75,0.1)',
+        'dim':           'inset 0 0 20px rgba(109,40,217,0.15), 0 0 10px rgba(109,40,217,0.1)',
+        'flickering':    'inset 0 0 25px rgba(124,58,237,0.25), 0 0 15px rgba(124,58,237,0.15)',
+        'warming':       'inset 0 0 30px rgba(139,92,246,0.35), 0 0 20px rgba(139,92,246,0.2)',
+        'energized':     'inset 0 0 35px rgba(168,85,247,0.45), 0 0 30px rgba(168,85,247,0.25)',
+        'blazing':       'inset 0 0 40px rgba(192,132,252,0.55), 0 0 40px rgba(192,132,252,0.3)',
+        'fully-charged': 'inset 0 0 50px rgba(232,121,249,0.6), 0 0 60px rgba(232,121,249,0.4), 0 0 100px rgba(232,121,249,0.2)'
+    };
+
+    const sphereBorder = {
+        'dark': 'rgba(30,27,75,0.3)',
+        'dim': 'rgba(109,40,217,0.3)',
+        'flickering': 'rgba(124,58,237,0.35)',
+        'warming': 'rgba(139,92,246,0.4)',
+        'energized': 'rgba(168,85,247,0.5)',
+        'blazing': 'rgba(192,132,252,0.6)',
+        'fully-charged': 'rgba(232,121,249,0.7)'
+    };
+
     return `
         <div class="charging-bomb-display">
-            <!-- Background Glow (Pulses) -->
-            <div class="charge-ambient-glow" style="background: radial-gradient(circle, ${pct > 0 ? '#7c3aed' : 'transparent'} 0%, transparent 70%); opacity: ${0.2 + (pct/200)}"></div>
+            <!-- Concert Stars — density scales with charge -->
+            <div class="concert-stars">
+                ${Array(Math.max(5, Math.floor(pct / 3))).fill(0).map((_, i) => `
+                    <div class="concert-star" style="
+                        left:${Math.random()*100}%;
+                        top:${Math.random()*100}%;
+                        animation-delay:${Math.random()*4}s;
+                        opacity:${0.15 + (pct/200)};
+                        --star-color:${['#a855f7','#c084fc','#e879f9','#f0abfc','#7c3aed'][Math.floor(Math.random()*5)]};
+                        --star-size:${1 + Math.random()*(1 + pct/40)}px;
+                    "></div>
+                `).join('')}
+            </div>
             
-            <div class="army-bomb">
-                <div class="charge-button"></div>
+            <!-- Ambient Glow — scales with tier -->
+            <div class="charge-ambient-glow charge-ambient-${tier}"></div>
+            
+            <div class="army-bomb ${fullyCharged ? 'fully-charged' : ''} bomb-tier-${tier}">
+                <div class="charge-button charge-btn-${tier}"></div>
                 
-                <div class="charge-sphere">
-                    <div class="sphere-reflection"></div>
+                <div class="charge-sphere" style="
+                    box-shadow:${sphereGlows[tier] || sphereGlows.dark};
+                    border-color:${sphereBorder[tier] || sphereBorder.dark};
+                ">
+                    <div class="sphere-reflection" style="opacity:${0.1 + pct/200}"></div>
                     
-                    <!-- Liquid -->
+                    <!-- Multi-layer Liquid Fill -->
                     <div class="energy-fill-level" style="height:${pct}%">
-                        <div class="energy-fill-gradient ${gradientClass}"></div>
-                        <div class="energy-fill-surface"></div>
+                        <div class="energy-fill-gradient fill-${tier}"></div>
+                        <div class="energy-fill-surface" style="opacity:${0.3 + pct/150}"></div>
+                        <div class="energy-fill-bubbles">
+                            ${pct > 15 ? Array(Math.floor(pct/10)).fill(0).map(() => `
+                                <span class="fill-bubble" style="
+                                    left:${10+Math.random()*80}%;
+                                    animation-delay:${Math.random()*4}s;
+                                    --bubble-size:${2+Math.random()*3}px;
+                                "></span>
+                            `).join('') : ''}
+                        </div>
                     </div>
                     
-                    <!-- Magic Particles (Always render, CSS handles visibility) -->
+                    <!-- Inner Energy Ring -->
+                    ${pct > 30 ? `
+                    <div class="energy-ring ring-${tier}"></div>
+                    ` : ''}
+                    
+                    <!-- Particles -->
                     ${pct > 10 ? `
-                    <div class="charge-particles">
-                        <span></span><span></span><span></span>
+                    <div class="charge-particles particles-${tier}">
+                        ${Array(Math.min(8, Math.floor(pct/12))).fill(0).map((_, i) => `
+                            <span style="
+                                left:${15+Math.random()*70}%;
+                                bottom:${10+Math.random()*40}%;
+                                animation-delay:${i*0.5}s;
+                            "></span>
+                        `).join('')}
                     </div>` : ''}
                     
-                    <!-- Logo (Etched) -->
-                    <div class="charge-core ${fullyCharged ? 'core-fully-charged' : ''}">
-                        <span class="bts-logo">⟭⟬</span>
+                    <!-- BTS Logo -->
+                    <div class="charge-core core-${tier}">
+                        <span class="bts-logo"  style="opacity:${0.4 + pct/170}">⟭⟬</span>
                     </div>
                 </div>
                 
                 <div class="bomb-handle">
                     <div class="handle-connector"></div>
-                    <div class="handle-grip"></div>
+                    <div class="handle-grip">
+                        <div class="grip-light grip-light-${tier}"></div>
+                    </div>
                     <div class="handle-base"></div>
                 </div>
             </div>
             
-            <div class="bomb-power-label ${fullyCharged ? 'label-fully-charged' : ''}">
+            <div class="bomb-power-label label-${tier}">
                 ${fullyCharged ? '💜 FULLY CHARGED' : `⚡ ${pct}% POWER`}
             </div>
         </div>
@@ -15530,13 +15652,9 @@ function renderChargingBomb(bombPower, stats, fullyCharged) {
 // =============================================
 // ERA TIMELINE
 // =============================================
-
 function renderEraTimeline(phases, eras, currentEra) {
-    // Cache era data for safe onclick lookups
-    Object.entries(eras || {}).forEach(function(entry) {
-        _eraDataCache[entry[0]] = entry[1];
-    });
-    
+    Object.entries(eras || {}).forEach(([name, data]) => { _eraDataCache[name] = data; });
+
     return `
         <div class="era-timeline">
             <div class="timeline-header">
@@ -15547,50 +15665,45 @@ function renderEraTimeline(phases, eras, currentEra) {
             
             <div class="era-grid">
                 ${Object.entries(eras || {}).map(([eraName, era]) => {
-                    const eraData = era;
                     const isActive = eraName === currentEra;
-                    const isComplete = eraData.complete;
-                    
+                    const isComplete = era.complete;
                     let stateClass = 'era-locked';
                     if (isComplete) stateClass = 'era-complete';
                     else if (isActive) stateClass = 'era-active';
                     else {
-                        const eraPhases = (eraData.phases || []);
-                        const anyPast = phases.some(function(p) { return eraPhases.includes(p.phase) && (p.state === 'charged' || p.state === 'missed' || p.state === 'active'); });
+                        const anyPast = phases.some(p => (era.phases || []).includes(p.phase) && (p.state === 'charged' || p.state === 'missed' || p.state === 'active'));
                         if (anyPast) stateClass = 'era-partial';
                     }
-                    
                     const safeEraName = eraName.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-                    
                     return `
                         <div class="era-cell ${stateClass}" 
-                             style="--era-color:${eraData.color}"
+                             style="--era-color:${era.color || '#a855f7'}"
                              onclick="showEraDetail('${safeEraName}')"
-                             title="${sanitize(eraName)}: ${eraData.charged}/${eraData.total}">
-                            <span class="era-icon">${eraData.icon}</span>
+                             title="${sanitize(eraName)}: ${era.charged}/${era.total}">
+                            <span class="era-icon">${era.icon}</span>
                             <span class="era-name">${sanitize(eraName)}</span>
-                            <span class="era-progress">${eraData.charged}/${eraData.total}</span>
+                            <span class="era-progress">${era.charged}/${era.total}</span>
                         </div>
                     `;
                 }).join('')}
             </div>
             
-            <!-- Phase dots -->
+            <!-- Phase dots with per-phase color -->
             <div class="phase-dot-grid">
-                ${(phases || []).map(p => {
+                ${phases.map(p => {
+                    const col = getPhaseColor(p.phase);
                     const dotClass = p.state === 'charged' ? 'dot-charged' :
                                      p.state === 'active' ? 'dot-active' :
                                      p.state === 'missed' ? 'dot-missed' : 'dot-locked';
                     return `
                         <div class="phase-dot ${dotClass}" 
+                             style="--phase-accent:${col.accent};--phase-bg:${col.bg};--phase-border:${col.border};--phase-glow:${col.glow}"
                              onclick="showPhaseInfo(${JSON.stringify({
-                                 date: p.date,
-                                 codename: p.codename,
-                                 albums: p.albums,
-                                 state: p.state,
-                                 era: p.era,
+                                 phase: p.phase, date: p.date, codename: p.codename,
+                                 albums: p.albums, state: p.state, era: p.era,
                                  userPassed2x: p.userPassed2x || false,
                                  teamGoalMet: p.teamGoalMet || false,
+                                 qualified: p.qualified || false,
                                  spotifyLinks: p.spotifyLinks || []
                              }).replace(/"/g, '&quot;')})"
                              title="Phase ${p.phase}: ${sanitize(p.codename)}">
@@ -15611,35 +15724,41 @@ function renderEraTimeline(phases, eras, currentEra) {
 }
 
 // =============================================
-// TODAY'S PHASE — DUAL CHARGE VISUAL
+// TODAY'S PHASE — per-phase visual identity
 // =============================================
-
-function renderTodayPhase(challenge, config) {
+function renderTodayPhase(challenge, config, phases) {
     const completedTracks = challenge.completedTracks || 0;
     const totalTracks = challenge.totalTracks || 0;
     const userPct = totalTracks > 0 ? Math.round((completedTracks / totalTracks) * 100) : 0;
-    const teamPct = Math.min(100, Math.round((challenge.collectiveStreams / challenge.targetStreams) * 100));
-    
-    const chargeA = challenge.passed2x;
-    const chargeB = challenge.teamGoalMet;
+    const teamPct = Math.min(100, Math.round((challenge.collectiveStreams || 0) / (challenge.targetStreams || 1) * 100));
+    const chargeA = challenge.passed2x || false;
+    const chargeB = challenge.teamGoalMet || false;
     const bothCharged = chargeA && chargeB;
-    
+    const col = getPhaseColor(challenge.phase);
+
     return `
-        <div class="card arirang-phase-card ${bothCharged ? 'phase-charged' : ''}">
-            <div class="card-header">
+        <div class="card arirang-phase-card ${bothCharged ? 'phase-charged' : ''}"
+             style="--phase-accent:${col.accent};--phase-bg:${col.bg};--phase-border:${col.border};--phase-glow:${col.glow}">
+            <div class="card-header phase-header-styled">
                 <div class="phase-header-left">
-                    <h3><span class="header-icon">⚡</span> Today's Phase</h3>
-                    <span class="phase-codename-badge">${sanitize(challenge.codename)}</span>
-                    ${challenge.era ? `<span class="era-tag">${sanitize(challenge.era)}</span>` : ''}
+                    <h3><span class="header-icon">⚡</span> Phase ${challenge.phase}</h3>
+                    <span class="phase-codename-badge" style="background:${col.bg};border-color:${col.border};color:${col.accent}">${sanitize(challenge.codename)}</span>
+                    ${challenge.era ? `<span class="era-tag" style="color:${col.accent}">${sanitize(challenge.era)}</span>` : ''}
                 </div>
-                ${bothCharged ? '<span class="charged-badge">⚡ CHARGED</span>' : ''}
+                ${bothCharged ? `<span class="charged-badge" style="background:${col.bg};color:${col.accent}">⚡ CHARGED</span>` : ''}
             </div>
             <div class="card-body">
+                
+                <!-- Phase identity strip -->
+                <div class="phase-identity-strip" style="background:linear-gradient(90deg,${col.accent}15,transparent);border-left:3px solid ${col.accent}">
+                    <span class="phase-day-label">Day ${challenge.phase} of 20</span>
+                    <span class="phase-era-label" style="color:${col.accent}">${sanitize(challenge.era || '')}</span>
+                </div>
                 
                 <!-- Album + Spotify -->
                 <div class="album-spotify-row">
                     ${(challenge.spotifyLinks || []).map(link => `
-                        <div class="album-spotify-item">
+                        <div class="album-spotify-item" style="border-color:${col.border}">
                             <div class="album-info">
                                 <span class="album-disc">💿</span>
                                 <span class="album-title">${sanitize(link.album)}</span>
@@ -15654,22 +15773,21 @@ function renderTodayPhase(challenge, config) {
                     `).join('')}
                 </div>
                 
-                <!-- DUAL CHARGE VISUAL -->
-                <div class="dual-charge-section">
+                <!-- DUAL CHARGE -->
+                <div class="dual-charge-section" style="border-color:${col.border}">
                     
-                    <!-- CHARGE A: Personal 2X -->
+                    <!-- CHARGE A -->
                     <div class="charge-unit ${chargeA ? 'unit-charged' : 'unit-live'}">
                         <div class="charge-unit-header">
-                            <div class="charge-letter ${chargeA ? 'letter-charged' : ''}">A</div>
+                            <div class="charge-letter ${chargeA ? 'letter-charged' : ''}" style="--letter-color:${col.accent}">A</div>
                             <span class="charge-unit-label">Your 2X Charge</span>
-                            <span class="charge-status ${chargeA ? 'cs-charged' : 'cs-live'}">
+                            <span class="charge-status ${chargeA ? 'cs-charged' : 'cs-live'}" style="--cs-color:${col.accent}">
                                 ${chargeA ? '⚡ CHARGED' : '○ CHARGING'}
                             </span>
                         </div>
                         
                         <div class="charge-wire-container">
-                            <div class="charge-wire ${chargeA ? 'wire-charged' : 'wire-live'}"
-                                 style="--charge-color:${chargeA ? '#22c55e' : '#a855f7'}">
+                            <div class="charge-wire ${chargeA ? 'wire-charged' : 'wire-live'}" style="--charge-color:${col.accent}">
                                 ${chargeA ? `
                                     <div class="wire-segment left"></div>
                                     <div class="charge-point">
@@ -15677,40 +15795,36 @@ function renderTodayPhase(challenge, config) {
                                         <div class="charge-sparks"><span></span><span></span><span></span></div>
                                     </div>
                                     <div class="wire-segment right"></div>
-                                ` : `
-                                    <div class="wire-flow"></div>
-                                `}
+                                ` : `<div class="wire-flow"></div>`}
                             </div>
                         </div>
                         
                         <div class="charge-unit-status">
                             ${chargeA
-                                ? `<span class="status-done">✓ All ${totalTracks} tracks streamed ${config.requiredStreams}X</span>`
-                                : `<span class="status-pending">${completedTracks}/${totalTracks} tracks complete</span>`
-                            }
+                                ? `<span class="status-done" style="color:${col.accent}">✓ All ${totalTracks} tracks streamed ${config.requiredStreams}X</span>`
+                                : `<span class="status-pending">${completedTracks}/${totalTracks} tracks complete</span>`}
                         </div>
                     </div>
                     
                     <!-- Connector -->
                     <div class="charge-connector">
-                        <div class="conn-line"></div>
+                        <div class="conn-line" style="background:${col.border}"></div>
                         <span class="conn-label">${bothCharged ? '⚡ BOTH CHARGED' : 'Both needed to charge phase'}</span>
-                        <div class="conn-line"></div>
+                        <div class="conn-line" style="background:${col.border}"></div>
                     </div>
                     
-                    <!-- CHARGE B: Team Goal -->
+                    <!-- CHARGE B -->
                     <div class="charge-unit ${chargeB ? 'unit-charged' : 'unit-live'}">
                         <div class="charge-unit-header">
-                            <div class="charge-letter ${chargeB ? 'letter-charged' : ''}">B</div>
+                            <div class="charge-letter ${chargeB ? 'letter-charged' : ''}" style="--letter-color:${col.accent}">B</div>
                             <span class="charge-unit-label">Team Power Goal</span>
-                            <span class="charge-status ${chargeB ? 'cs-charged' : 'cs-live'}">
+                            <span class="charge-status ${chargeB ? 'cs-charged' : 'cs-live'}" style="--cs-color:${col.accent}">
                                 ${chargeB ? '⚡ CHARGED' : '○ CHARGING'}
                             </span>
                         </div>
                         
                         <div class="charge-wire-container">
-                            <div class="charge-wire ${chargeB ? 'wire-charged' : 'wire-live'}"
-                                 style="--charge-color:${chargeB ? '#22c55e' : '#6366f1'}">
+                            <div class="charge-wire ${chargeB ? 'wire-charged' : 'wire-live'}" style="--charge-color:${col.accent}">
                                 ${chargeB ? `
                                     <div class="wire-segment left"></div>
                                     <div class="charge-point">
@@ -15718,31 +15832,35 @@ function renderTodayPhase(challenge, config) {
                                         <div class="charge-sparks"><span></span><span></span><span></span></div>
                                     </div>
                                     <div class="wire-segment right"></div>
-                                ` : `
-                                    <div class="wire-flow"></div>
-                                `}
+                                ` : `<div class="wire-flow"></div>`}
                             </div>
                         </div>
                         
                         <div class="team-charge-bar">
                             <div class="tcb-track">
-                                <div class="tcb-fill ${chargeB ? 'tcb-complete' : ''}" style="width:${teamPct}%"></div>
+                                <div class="tcb-fill ${chargeB ? 'tcb-complete' : ''}" style="width:${teamPct}%;background:linear-gradient(90deg,${col.accent}88,${col.accent})"></div>
                             </div>
                             <span class="charge-unit-status">
                                 ${chargeB
-                                    ? `<span class="status-done">✓ Goal reached</span>`
-                                    : `<span class="status-pending">${fmt(challenge.collectiveStreams)} / ${fmt(challenge.targetStreams)}</span>`
-                                }
+                                    ? `<span class="status-done" style="color:${col.accent}">✓ Goal reached</span>`
+                                    : `<span class="status-pending">${fmt(challenge.collectiveStreams)} / ${fmt(challenge.targetStreams)}</span>`}
                             </span>
                         </div>
                     </div>
                 </div>
                 
-                <!-- Qualification -->
-                <div class="phase-result-box ${bothCharged ? 'result-charged' : ''}">
+                <!-- Result -->
+                <div class="phase-result-box ${bothCharged ? 'result-charged' : ''}" style="--result-accent:${col.accent}">
                     ${bothCharged ? `
-                        <span class="result-icon">⚡</span>
-                        <span class="result-msg">Phase Charged! Claim your reward in the vault below.</span>
+                        <span class="result-icon">💜</span>
+                        <div class="result-content">
+                            <span class="result-msg">PHASE CHARGED! 💜</span>
+                            <button class="surprise-btn" style="background:linear-gradient(135deg,${col.accent},${col.accent}99)" onclick="launchSurprise(${challenge.phase})">
+                                <span class="surprise-icon">💜</span>
+                                <span>Tap for a Surprise!</span>
+                                <span class="surprise-sparkle">✨</span>
+                            </button>
+                        </div>
                     ` : `
                         <span class="result-icon">💜</span>
                         <span class="result-msg">
@@ -15753,11 +15871,18 @@ function renderTodayPhase(challenge, config) {
                     `}
                 </div>
                 
+                ${bothCharged ? `
+                    <div class="xp-reward-preview" style="background:${col.bg}">
+                        <span class="xp-icon">⭐</span>
+                        <span class="xp-text" style="color:${col.accent}">+5 XP earned for this phase!</span>
+                    </div>
+                ` : ''}
+                
                 <!-- Track Checklist -->
                 <details class="track-checklist-details" ${!chargeA ? 'open' : ''}>
                     <summary class="checklist-summary">
                         <span>📋 Track Checklist</span>
-                        <span class="checklist-count ${chargeA ? 'all-done' : ''}">${completedTracks}/${totalTracks}</span>
+                        <span class="checklist-count ${chargeA ? 'all-done' : ''}" style="color:${col.accent}">${completedTracks}/${totalTracks}</span>
                     </summary>
                     <div class="track-list">
                         ${(challenge.tracks || []).map((track, i) => {
@@ -15765,10 +15890,10 @@ function renderTodayPhase(challenge, config) {
                             const required = track.required || config.requiredStreams;
                             const done = track.passed || (count >= required);
                             return `
-                                <div class="track-row ${done ? 'done' : ''}">
-                                    <span class="track-idx">${done ? '✓' : (i + 1)}</span>
+                                <div class="track-row ${done ? 'done' : ''}" style="--track-accent:${col.accent}">
+                                    <span class="track-idx" ${done ? `style="background:${col.accent}"` : ''}>${done ? '✓' : (i + 1)}</span>
                                     <span class="track-name">${sanitize(track.name)}</span>
-                                    <span class="track-count ${done ? 'complete' : ''}">${count}/${required}</span>
+                                    <span class="track-count ${done ? 'complete' : ''}" ${done ? `style="color:${col.accent};background:${col.bg}"` : ''}>${count}/${required}</span>
                                 </div>
                             `;
                         }).join('')}
@@ -15780,13 +15905,20 @@ function renderTodayPhase(challenge, config) {
 }
 
 // =============================================
-// OTHER RENDERERS
+// SURPRISE LAUNCHER (no song info leaked)
 // =============================================
+function launchSurprise(phaseNum) {
+    const song = _WAVE_SONGS.find(s => s.day === phaseNum);
+    if (!song) { showToast('Surprise not available yet', 'info'); return; }
+    launchDailyWaveExperience(song);
+}
 
+// =============================================
+// NO PHASE CARD
+// =============================================
 function renderNoPhaseCard(phases) {
-    const nextPhase = (phases || []).find(p => p.state === 'locked');
-    const allDone = (phases || []).every(p => p.state === 'charged' || p.state === 'missed');
-    
+    const nextPhase = phases.find(p => p.state === 'locked');
+    const allDone = phases.every(p => p.state === 'charged' || p.state === 'missed');
     return `
         <div class="card arirang-rest-card">
             <div class="card-body">
@@ -15795,11 +15927,10 @@ function renderNoPhaseCard(phases) {
                     <div class="rest-text">
                         <h3>${allDone ? 'All Phases Complete' : 'No Active Phase Today'}</h3>
                         <p>${allDone
-                            ? 'Every phase has been addressed. Check if your Army Bomb is fully charged!'
+                            ? 'Every phase has been addressed. Check your Army Bomb power!'
                             : nextPhase
-                                ? `Next phase: ${sanitize(nextPhase.codename)} — ${(nextPhase.albums || []).join(' + ')} (${nextPhase.date})`
-                                : 'Stand by for further instructions, Agent.'
-                        }</p>
+                                ? `Next phase: ${sanitize(nextPhase.codename)} (${nextPhase.date})`
+                                : 'Stand by for further instructions, Agent.'}</p>
                     </div>
                 </div>
             </div>
@@ -15807,6 +15938,9 @@ function renderNoPhaseCard(phases) {
     `;
 }
 
+// =============================================
+// REWARDS VAULT
+// =============================================
 function renderArirangVault(phases, stats) {
     return `
         <div class="card arirang-vault-card">
@@ -15816,36 +15950,23 @@ function renderArirangVault(phases, stats) {
             </div>
             <div class="card-body">
                 <div class="vault-grid">
-                    ${(phases || []).map(phase => {
+                    ${phases.map(phase => {
+                        const col = getPhaseColor(phase.phase);
                         let boxClass = 'vault-box';
                         let icon = '🔒';
                         let clickable = false;
                         
-                        if (phase.state === 'locked') {
-                            boxClass += ' locked';
-                        } else if (phase.claimed) {
-                            boxClass += ' claimed';
-                            icon = '⚡';
-                        } else if (phase.qualified) {
-                            boxClass += ' claimable';
-                            icon = '🎁';
-                            clickable = true;
-                        } else if (phase.state === 'missed') {
-                            boxClass += ' missed';
-                            icon = '○';
-                        } else if (phase.state === 'active') {
-                            boxClass += ' active';
-                            icon = '◐';
-                        } else if (phase.state === 'charged') {
-                            boxClass += ' claimed';
-                            icon = '⚡';
-                        } else {
-                            boxClass += ' pending';
-                            icon = '○';
-                        }
+                        if (phase.state === 'locked') { boxClass += ' locked'; }
+                        else if (phase.claimed) { boxClass += ' claimed'; icon = '⚡'; }
+                        else if (phase.qualified) { boxClass += ' claimable'; icon = '🎁'; clickable = true; }
+                        else if (phase.state === 'missed') { boxClass += ' missed'; icon = '○'; }
+                        else if (phase.state === 'active') { boxClass += ' active'; icon = '◐'; }
+                        else if (phase.state === 'charged') { boxClass += ' claimed'; icon = '⚡'; }
+                        else { boxClass += ' pending'; icon = '○'; }
                         
                         return `
                             <div class="${boxClass}"
+                                 style="--vault-accent:${col.accent};--vault-bg:${col.bg};--vault-border:${col.border}"
                                  ${clickable ? `onclick="claimArirangReward('${phase.date}')"` : ''}
                                  title="Phase ${phase.phase}: ${sanitize(phase.codename)}">
                                 <span class="box-icon">${icon}</span>
@@ -15859,6 +15980,9 @@ function renderArirangVault(phases, stats) {
     `;
 }
 
+// =============================================
+// FULL ACTIVATION
+// =============================================
 function renderFullActivation(fullyCharged, stats) {
     return `
         <div class="card arirang-activation-card ${fullyCharged ? 'activated' : ''}">
@@ -15871,7 +15995,7 @@ function renderFullActivation(fullyCharged, stats) {
                         <h3 class="activation-title">${fullyCharged ? '💜 ARMY BOMB ACTIVATED' : 'Full Activation'}</h3>
                         <p class="activation-desc">
                             ${fullyCharged
-                                ? 'Congratulations! Your Army Bomb is at full power! Ready for ARIRANG! 💜'
+                                ? 'Your Army Bomb is at full power! Ready for ARIRANG! 💜'
                                 : `Charge all ${stats.totalPhases} phases to fully activate`}
                         </p>
                         ${!fullyCharged ? `
@@ -15889,193 +16013,9 @@ function renderFullActivation(fullyCharged, stats) {
     `;
 }
 
-function getTodayPhaseNumber(phases) {
-    const today = (phases || []).find(p => p.state === 'active');
-    return today ? today.phase : (phases || []).length;
-}
-
 // =============================================
-// INTERACTIONS
+// GUIDE & HELP (NO SONG MENTIONS)
 // =============================================
-
-function showEraDetail(eraName) {
-    const eraData = _eraDataCache[eraName];
-    if (!eraData) {
-        showToast('Era data not found', 'error');
-        return;
-    }
-    showToast(`${eraData.icon} ${eraName}: ${eraData.charged}/${eraData.total} phases charged`, 'info');
-}
-
-function showPhaseInfo(phase) {
-    const stateLabels = {
-        'charged': { text: 'CHARGED ⚡', cls: 'state-charged' },
-        'active': { text: 'ACTIVE NOW', cls: 'state-active' },
-        'missed': { text: 'MISSED', cls: 'state-missed' },
-        'locked': { text: 'LOCKED', cls: 'state-locked' }
-    };
-    const stateInfo = stateLabels[phase.state] || stateLabels.locked;
-    
-    const modal = document.createElement('div');
-    modal.className = 'phase-detail-modal';
-    modal.innerHTML = `
-        <div class="modal-bg" onclick="this.parentElement.remove()"></div>
-        <div class="phase-detail-card">
-            <div class="phase-detail-header">
-                <div>
-                    <h3>${sanitize(phase.codename)}</h3>
-                    <span class="phase-detail-era">${sanitize(phase.era || '')}</span>
-                    <span class="phase-detail-date">${sanitize(phase.date)}</span>
-                </div>
-                <span class="phase-state-badge ${stateInfo.cls}">${stateInfo.text}</span>
-            </div>
-            
-            <div class="phase-detail-albums">
-                ${(phase.albums || []).map((album, i) => `
-                    <div class="phase-album-row">
-                        <span class="album-disc">💿</span>
-                        <span class="album-label">${sanitize(album)}</span>
-                        ${phase.spotifyLinks && phase.spotifyLinks[i] && phase.spotifyLinks[i].url ? `
-                            <a href="${phase.spotifyLinks[i].url}" target="_blank" rel="noopener"
-                               class="spotify-pill" onclick="event.stopPropagation()">
-                                ▶ Spotify
-                            </a>
-                        ` : ''}
-                    </div>
-                `).join('')}
-            </div>
-            
-            ${phase.state !== 'locked' ? `
-                <div class="phase-detail-charges">
-                    <div class="charge-row ${phase.userPassed2x ? 'met' : 'unmet'}">
-                        <span>${phase.userPassed2x ? '⚡' : '○'}</span>
-                        <span>Charge A: Your 2X</span>
-                        <span class="charge-badge">${phase.userPassed2x ? 'CHARGED' : 'UNCHARGED'}</span>
-                    </div>
-                    <div class="charge-row ${phase.teamGoalMet ? 'met' : 'unmet'}">
-                        <span>${phase.teamGoalMet ? '⚡' : '○'}</span>
-                        <span>Charge B: Team Goal</span>
-                        <span class="charge-badge">${phase.teamGoalMet ? 'CHARGED' : 'UNCHARGED'}</span>
-                    </div>
-                </div>
-            ` : ''}
-            
-            <button class="btn-close-phase" onclick="this.closest('.phase-detail-modal').remove()">Close</button>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
-    requestAnimationFrame(() => modal.classList.add('show'));
-}
-
-let _claimingArirang = false;
-
-async function claimArirangReward(date) {
-    if (_claimingArirang) return;
-    _claimingArirang = true;
-    
-    const container = $('operation-defuse-content') || $('arirang-protocol-content');
-    const scrollPos = container?.parentElement?.scrollTop || window.scrollY;
-    
-    try {
-        loading(true);
-        const result = await api('claimDefuseReward', { agentNo: STATE.agentNo, date });
-        loading(false);
-        
-        if (result.success) {
-            showArirangBadgePopup(result.badge, result.xpAwarded);
-            setTimeout(() => {
-                renderArirangProtocol();
-                requestAnimationFrame(() => {
-                    if (container?.parentElement) container.parentElement.scrollTop = scrollPos;
-                    else window.scrollTo(0, scrollPos);
-                });
-            }, 600);
-        } else {
-            showToast(result.error || 'Could not claim reward', 'error');
-        }
-    } catch (e) {
-        loading(false);
-        showToast('Error claiming reward', 'error');
-    } finally {
-        _claimingArirang = false;
-    }
-}
-
-function showArirangBadgePopup(badge, xp) {
-    const popup = document.createElement('div');
-    popup.className = 'arirang-badge-modal';
-    popup.innerHTML = `
-        <div class="modal-bg" onclick="this.parentElement.remove()"></div>
-        <div class="badge-reveal">
-            <div class="badge-sparkle">⚡</div>
-            <div class="badge-img-wrap">
-                <img src="${badge.imageUrl}" alt="${sanitize(badge.name)}" class="badge-img"
-                     onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%237c3aed%22/><text x=%2250%22 y=%2258%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2230%22>⟭⟬</text></svg>'">
-            </div>
-            <h3>Phase Charged!</h3>
-            <p class="badge-name">${sanitize(badge.name)}</p>
-            <p class="badge-desc">${sanitize(badge.description)}</p>
-            ${badge.era ? `<p class="badge-era">${sanitize(badge.era)}</p>` : ''}
-            <div class="badge-xp">+${xp} XP</div>
-            <button class="btn-primary" onclick="this.closest('.arirang-badge-modal').remove()">
-                Let's Go! ⚡
-            </button>
-        </div>
-    `;
-    document.body.appendChild(popup);
-    requestAnimationFrame(() => popup.classList.add('show'));
-}
-
-async function showArirangLeaderboard() {
-    try {
-        loading(true);
-        const data = await api('getDefuseLeaderboard', { limit: 20 });
-        loading(false);
-        
-        const modal = document.createElement('div');
-        modal.className = 'arirang-lb-modal';
-        modal.innerHTML = `
-            <div class="modal-bg" onclick="this.parentElement.remove()"></div>
-            <div class="lb-panel">
-                <div class="lb-header">
-                    <h3>🏆 Charging Champions</h3>
-                    <button onclick="this.closest('.arirang-lb-modal').remove()">✕</button>
-                </div>
-                <div class="lb-body">
-                    ${data.leaderboard?.length > 0 ? data.leaderboard.map((agent, i) => `
-                        <div class="lb-entry" style="--team-color:${teamColor(agent.team)}">
-                            <span class="lb-rank ${i < 3 ? 'top' + (i+1) : ''}">${i + 1}</span>
-                            <div class="lb-info">
-                                <span class="lb-name">${sanitize(agent.name)}</span>
-                                <span class="lb-team">${sanitize(agent.team)}</span>
-                            </div>
-                            <div class="lb-stats">
-                                <span class="lb-phases">${agent.phasesCharged} ⚡</span>
-                                <span class="lb-xp">${agent.xpEarned} XP</span>
-                            </div>
-                        </div>
-                    `).join('') : `
-                        <div class="lb-empty">
-                            <span>🔮</span>
-                            <p>No agents charging yet. Be the first!</p>
-                        </div>
-                    `}
-                </div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-        requestAnimationFrame(() => modal.classList.add('show'));
-    } catch (e) {
-        loading(false);
-        showToast('Could not load leaderboard', 'error');
-    }
-}
-
-// =============================================
-// GUIDE + HELP
-// =============================================
-
 function renderArirangGuide() {
     return `
         <div class="card arirang-guide">
@@ -16087,7 +16027,7 @@ function renderArirangGuide() {
                         <p>Each day has <span class="highlight">2 charges</span> to complete:</p>
                         <p><strong>Charge A</strong> — Stream every track <span class="highlight">2X</span> on Last.fm</p>
                         <p><strong>Charge B</strong> — Help the team reach the collective stream goal</p>
-                        <p style="margin-top:4px;">Both charges complete = phase powered → claim badge + XP!</p>
+                        <p style="margin-top:4px;">Both charges = phase powered → <span class="highlight">+5 XP</span> + a special reward!</p>
                     </div>
                 </div>
             </div>
@@ -16123,14 +16063,14 @@ function showArirangHelp() {
             
             <div class="hobi-body">
                 <p class="hobi-intro">
-                    "We're CHARGING our Army Bombs! Every album adds power! Let me explain!" 
+                    "We're CHARGING our Army Bombs for the ARIRANG comeback! Let me explain!"
                 </p>
                 
                 <div class="hobi-step">
                     <div class="step-num">A</div>
                     <div class="step-text">
                         <strong>Charge A — Your 2X Power!</strong>
-                        <p>Tap the green <span class="highlight">Spotify</span> button, then stream EVERY track at least <span class="highlight">2 times</span>. The checklist shows your progress!</p>
+                        <p>Tap the <span class="highlight">Spotify</span> button, then stream EVERY track at least <span class="highlight">2 times</span>. The checklist shows your progress!</p>
                     </div>
                 </div>
                 
@@ -16138,20 +16078,28 @@ function showArirangHelp() {
                     <div class="step-num">B</div>
                     <div class="step-text">
                         <strong>Charge B — Team Power!</strong>
-                        <p>Everyone's streams add up. When the team bar fills up, Charge B completes! Keep streaming even after your 2X!</p>
+                        <p>Everyone's streams add up. When the team bar fills up, Charge B completes!</p>
                     </div>
                 </div>
                 
                 <div class="hobi-step">
                     <div class="step-num">⚡</div>
                     <div class="step-text">
-                        <strong>Both charged? PHASE POWERED!</strong>
-                        <p>The Army Bomb gets brighter! Go to Power Vault to claim your badge. Each day = new album = more power!</p>
+                        <strong>Both charged? Phase complete!</strong>
+                        <p>Your Army Bomb powers up and you earn <span class="highlight">+5 XP</span>. Don't miss a day — keep that streak going!</p>
+                    </div>
+                </div>
+                
+                <div class="hobi-step">
+                    <div class="step-num">💜</div>
+                    <div class="step-text">
+                        <strong>20 Days → Full Power!</strong>
+                        <p>Charge all 20 phases to fully activate your Army Bomb before the ARIRANG album drops!</p>
                     </div>
                 </div>
                 
                 <div class="hobi-footer-note">
-                    "By ARIRANG day, our bomb will be at FULL POWER! 💜⚡"
+                    "Every day counts! Let's get that full power! 💜⚡"
                 </div>
             </div>
             
@@ -16160,22 +16108,332 @@ function showArirangHelp() {
             </button>
         </div>
     `;
-    
     document.body.appendChild(modal);
     requestAnimationFrame(() => modal.classList.add('show'));
 }
 
 // =============================================
+// ERA DETAIL / PHASE INFO
+// =============================================
+function showEraDetail(eraName) {
+    const eraData = _eraDataCache[eraName];
+    if (!eraData) { showToast('Era data not found', 'error'); return; }
+    showToast(`${eraData.icon} ${eraName}: ${eraData.charged}/${eraData.total} phases charged`, 'info');
+}
+
+function showPhaseInfo(phase) {
+    const stateLabels = {
+        'charged': { text: 'CHARGED ⚡', cls: 'state-charged' },
+        'active': { text: 'ACTIVE NOW', cls: 'state-active' },
+        'missed': { text: 'MISSED', cls: 'state-missed' },
+        'locked': { text: 'LOCKED', cls: 'state-locked' }
+    };
+    const stateInfo = stateLabels[phase.state] || stateLabels.locked;
+    const col = getPhaseColor(phase.phase);
+    
+    const modal = document.createElement('div');
+    modal.className = 'phase-detail-modal';
+    modal.innerHTML = `
+        <div class="modal-bg" onclick="this.parentElement.remove()"></div>
+        <div class="phase-detail-card" style="--pd-accent:${col.accent}">
+            <div class="phase-detail-header">
+                <div>
+                    <h3>Phase ${phase.phase}: ${sanitize(phase.codename)}</h3>
+                    <span class="phase-detail-era" style="color:${col.accent}">${sanitize(phase.era || '')}</span>
+                    <span class="phase-detail-date">${sanitize(phase.date)}</span>
+                </div>
+                <span class="phase-state-badge ${stateInfo.cls}">${stateInfo.text}</span>
+            </div>
+            
+            <div class="phase-detail-albums">
+                ${(phase.albums || []).map((album, i) => `
+                    <div class="phase-album-row" style="border-left:2px solid ${col.accent}">
+                        <span class="album-disc">💿</span>
+                        <span class="album-label">${sanitize(album)}</span>
+                        ${phase.spotifyLinks && phase.spotifyLinks[i] && phase.spotifyLinks[i].url ? `
+                            <a href="${phase.spotifyLinks[i].url}" target="_blank" rel="noopener"
+                               class="spotify-pill" onclick="event.stopPropagation()">▶ Spotify</a>
+                        ` : ''}
+                    </div>
+                `).join('')}
+            </div>
+            
+            ${phase.state !== 'locked' ? `
+                <div class="phase-detail-charges">
+                    <div class="charge-row ${phase.userPassed2x ? 'met' : 'unmet'}" style="--cr-accent:${col.accent}">
+                        <span>${phase.userPassed2x ? '⚡' : '○'}</span>
+                        <span>Charge A: Your 2X</span>
+                        <span class="charge-badge">${phase.userPassed2x ? 'CHARGED' : 'UNCHARGED'}</span>
+                    </div>
+                    <div class="charge-row ${phase.teamGoalMet ? 'met' : 'unmet'}" style="--cr-accent:${col.accent}">
+                        <span>${phase.teamGoalMet ? '⚡' : '○'}</span>
+                        <span>Charge B: Team Goal</span>
+                        <span class="charge-badge">${phase.teamGoalMet ? 'CHARGED' : 'UNCHARGED'}</span>
+                    </div>
+                </div>
+            ` : ''}
+            
+            ${phase.qualified ? `
+                <button class="btn-phase-surprise" style="background:linear-gradient(135deg,${col.accent},${col.accent}88)"
+                        onclick="launchSurprise(${phase.phase}); this.closest('.phase-detail-modal').remove();">
+                    💜 Tap for Surprise
+                </button>
+            ` : ''}
+            
+            <button class="btn-close-phase" onclick="this.closest('.phase-detail-modal').remove()">Close</button>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    requestAnimationFrame(() => modal.classList.add('show'));
+}
+
+// =============================================
+// CLAIM REWARD
+// =============================================
+let _claimingArirang = false;
+
+async function claimArirangReward(date) {
+    if (_claimingArirang) return;
+    _claimingArirang = true;
+    const container = $('operation-defuse-content');
+    const scrollPos = container?.parentElement?.scrollTop || window.scrollY;
+    
+    try {
+        loading(true);
+        const result = await api('claimDefuseReward', { agentNo: STATE.agentNo, date });
+        loading(false);
+        
+        if (result.success) {
+            showArirangBadgePopup(result.badge, result.xpAwarded || 5);
+            setTimeout(() => {
+                renderArirangProtocol();
+                requestAnimationFrame(() => {
+                    if (container?.parentElement) container.parentElement.scrollTop = scrollPos;
+                    else window.scrollTo(0, scrollPos);
+                });
+            }, 600);
+        } else {
+            showToast(result.error || 'Could not claim reward', 'error');
+        }
+    } catch (e) {
+        loading(false);
+        showToast('Error claiming reward', 'error');
+    } finally { _claimingArirang = false; }
+}
+
+function showArirangBadgePopup(badge, xp) {
+    const popup = document.createElement('div');
+    popup.className = 'arirang-badge-modal';
+    popup.innerHTML = `
+        <div class="modal-bg" onclick="this.parentElement.remove()"></div>
+        <div class="badge-reveal">
+            <div class="badge-sparkle">⚡</div>
+            <div class="badge-img-wrap">
+                <img src="${badge.imageUrl}" alt="${sanitize(badge.name)}" class="badge-img"
+                     onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%237c3aed%22/><text x=%2250%22 y=%2258%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2230%22>⟭⟬</text></svg>'">
+            </div>
+            <h3>Phase Charged!</h3>
+            <p class="badge-name">${sanitize(badge.name)}</p>
+            <p class="badge-desc">${sanitize(badge.description)}</p>
+            ${badge.era ? `<p class="badge-era">${sanitize(badge.era)}</p>` : ''}
+            <div class="badge-xp">+${xp} XP</div>
+            <button class="btn-primary" onclick="this.closest('.arirang-badge-modal').remove()">Let's Go! ⚡</button>
+        </div>
+    `;
+    document.body.appendChild(popup);
+    requestAnimationFrame(() => popup.classList.add('show'));
+}
+
+// =============================================
+// LEADERBOARD
+// =============================================
+async function showArirangLeaderboard() {
+    try {
+        loading(true);
+        const data = await api('getDefuseLeaderboard', { limit: 20 });
+        loading(false);
+        
+        const modal = document.createElement('div');
+        modal.className = 'arirang-lb-modal';
+        modal.innerHTML = `
+            <div class="modal-bg" onclick="this.parentElement.remove()"></div>
+            <div class="lb-panel">
+                <div class="lb-header">
+                    <h3>🏆 Charging Champions</h3>
+                    <button onclick="this.closest('.arirang-lb-modal').remove()">✕</button>
+                </div>
+                <div class="lb-body">
+                    ${data.leaderboard?.length > 0 ? data.leaderboard.map((agent, i) => `
+                        <div class="lb-entry" style="--team-color:${teamColor(agent.team)}">
+                            <span class="lb-rank ${i < 3 ? 'top' + (i+1) : ''}">${i + 1}</span>
+                            <div class="lb-info">
+                                <span class="lb-name">${sanitize(agent.name)}</span>
+                                <span class="lb-team">${sanitize(agent.team)}</span>
+                            </div>
+                            <div class="lb-stats">
+                                <span class="lb-phases">${agent.phasesCharged} ⚡</span>
+                                <span class="lb-xp">${agent.xpEarned} XP</span>
+                            </div>
+                        </div>
+                    `).join('') : `<div class="lb-empty"><span>🔮</span><p>No agents charging yet.</p></div>`}
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        requestAnimationFrame(() => modal.classList.add('show'));
+    } catch (e) {
+        loading(false);
+        showToast('Could not load leaderboard', 'error');
+    }
+}
+
+// =============================================
+// DAILY WAVE — IMMERSIVE SURPRISE EXPERIENCE
+// =============================================
+function launchDailyWaveExperience(currentSong, isGrandFinale = false) {
+    if (_dailyWaveActive) return;
+    _dailyWaveActive = true;
+    
+    const existing = document.getElementById('daily-wave-root');
+    if (existing) existing.remove();
+    
+    const root = document.createElement('div');
+    root.id = 'daily-wave-root';
+    root.style.setProperty('--theme-color', currentSong.color);
+    root.style.setProperty('--bg-glow', currentSong.color);
+    
+    const starsHTML = Array(60).fill(0).map(() => `
+        <div class="dw-star" style="
+            left:${Math.random()*100}%;top:${Math.random()*100}%;
+            animation-delay:${Math.random()*3}s;--star-size:${1 + Math.random()*2}px;
+        "></div>
+    `).join('');
+    
+    root.innerHTML = `
+        <div class="dw-bg-layer">
+            <div class="dw-gradient"></div>
+            <div class="dw-stars">${starsHTML}</div>
+            ${isGrandFinale ? '<div class="dw-fireworks"></div>' : ''}
+        </div>
+        
+        <div class="dw-header">
+            <div class="dw-badge">
+                <span class="dw-dot"></span>
+                <span class="dw-badge-text">${isGrandFinale ? 'GRAND FINALE' : 'ARIRANG WAVE'}</span>
+            </div>
+            <button class="dw-close" onclick="closeDailyWave()">✕</button>
+        </div>
+        
+        <div class="dw-main">
+            <div class="dw-info">
+                <span class="dw-era">${currentSong.era}</span>
+                <h1 class="dw-title">${currentSong.title}</h1>
+                <p class="dw-artist">${currentSong.artist} • ${currentSong.album}</p>
+            </div>
+            
+            <div class="dw-stage">
+                <div class="dw-ambient-light"></div>
+                <div class="dw-pivot" id="dw-bomb-pivot">
+                    <div class="dw-bomb">
+                        <div class="dw-sphere ${isGrandFinale ? 'finale-glow' : ''}">
+                            <div class="dw-fill"></div>
+                            <span class="dw-logo">⟭⟬</span>
+                        </div>
+                        <div class="dw-handle"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="dw-lyrics">
+                <div class="dw-lyric-kr">${currentSong.lyric}</div>
+                <div class="dw-lyric-en">${currentSong.lyricEn}</div>
+            </div>
+        </div>
+        
+        <div class="dw-player-bar">
+            <div class="dw-controls">
+                <button class="dw-pat-btn ${currentSong.wave === 'slow-sway' ? 'active' : ''}" onclick="setWavePattern('slow-sway')">〰️ Sway</button>
+                <button class="dw-pat-btn ${currentSong.wave === 'ocean' ? 'active' : ''}" onclick="setWavePattern('ocean')">🌊 Ocean</button>
+                <button class="dw-pat-btn ${currentSong.wave === 'heartbeat' ? 'active' : ''}" onclick="setWavePattern('heartbeat')">💜 Heart</button>
+                <button class="dw-pat-btn ${currentSong.wave === 'stars' ? 'active' : ''}" onclick="setWavePattern('stars')">✨ Stars</button>
+                <button class="dw-pat-btn ${currentSong.wave === 'flutter' ? 'active' : ''}" onclick="setWavePattern('flutter')">🦋 Flutter</button>
+            </div>
+            
+            <div class="dw-color-controls">
+                <span class="color-label">Bomb Color:</span>
+                <button class="dw-color-btn" style="--btn-color:#a855f7" onclick="setBombColor('#a855f7')"></button>
+                <button class="dw-color-btn" style="--btn-color:#e879f9" onclick="setBombColor('#e879f9')"></button>
+                <button class="dw-color-btn" style="--btn-color:#6366f1" onclick="setBombColor('#6366f1')"></button>
+                <button class="dw-color-btn" style="--btn-color:#22c55e" onclick="setBombColor('#22c55e')"></button>
+                <button class="dw-color-btn" style="--btn-color:#fbbf24" onclick="setBombColor('#fbbf24')"></button>
+                <button class="dw-color-btn rainbow" onclick="setBombColor('rainbow')">🌈</button>
+            </div>
+            
+            <div class="dw-spotify-wrap" id="dw-embed-container">
+                <iframe style="border-radius:12px" 
+                    src="https://open.spotify.com/embed/track/${currentSong.spotifyId}?utm_source=generator&theme=0" 
+                    width="100%" height="80" frameBorder="0" allowfullscreen="" 
+                    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
+                    loading="lazy"></iframe>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(root);
+    
+    const pivot = document.getElementById('dw-bomb-pivot');
+    const duration = 60000 / currentSong.bpm * (currentSong.wave === 'slow-sway' ? 2 : 1);
+    pivot.style.animation = `dw-${currentSong.wave} ${duration}ms infinite ease-in-out`;
+    
+    setTimeout(() => root.classList.add('visible'), 50);
+    addDailyWaveStyles();
+}
+
+function closeDailyWave() {
+    if (_rainbowInterval) { clearInterval(_rainbowInterval); _rainbowInterval = null; }
+    const root = document.getElementById('daily-wave-root');
+    if (root) {
+        root.classList.remove('visible');
+        setTimeout(() => { root.remove(); _dailyWaveActive = false; }, 300);
+    }
+}
+
+function setWavePattern(pattern) {
+    const pivot = document.getElementById('dw-bomb-pivot');
+    if (!pivot) return;
+    pivot.style.animationName = `dw-${pattern}`;
+    document.querySelectorAll('.dw-pat-btn').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+}
+
+let _rainbowInterval = null;
+
+function setBombColor(color) {
+    const root = document.getElementById('daily-wave-root');
+    if (!root) return;
+    if (_rainbowInterval) { clearInterval(_rainbowInterval); _rainbowInterval = null; }
+    if (color === 'rainbow') {
+        const colors = ['#a855f7','#e879f9','#6366f1','#22c55e','#fbbf24','#ef4444','#3b82f6'];
+        let idx = 0;
+        _rainbowInterval = setInterval(() => {
+            root.style.setProperty('--theme-color', colors[idx]);
+            root.style.setProperty('--bg-glow', colors[idx]);
+            idx = (idx + 1) % colors.length;
+        }, 500);
+    } else {
+        root.style.setProperty('--theme-color', color);
+        root.style.setProperty('--bg-glow', color);
+    }
+}
+
+// =============================================
 // HOME WIDGET
 // =============================================
-
 function renderArirangHomeWidget(data) {
-    // data can be pre-fetched or we show a static widget
     const pct = data?.stats?.percentComplete || 0;
     const nextAlbum = data?.nextPhase?.albums?.[0] || 'Loading...';
     const phasesCharged = data?.stats?.phasesCharged || 0;
-    const total = data?.stats?.totalPhases || 22;
-    
+    const total = data?.stats?.totalPhases || 20;
     return `
         <div class="arirang-home-widget" onclick="loadPage('operation-defuse')">
             <div class="widget-bomb-charge">
@@ -16201,558 +16459,411 @@ function renderArirangHomeWidget(data) {
 }
 
 // =============================================
-// STYLES (All CSS merged into one injection)
+// STYLES
 // =============================================
-
 function addArirangStyles() {
     if (document.getElementById('arirang-styles')) return;
-    
     const style = document.createElement('style');
     style.id = 'arirang-styles';
     style.textContent = `
-        /* ===== LOADING ===== */
+        :root {
+            --arirang-purple: #a855f7;
+            --arirang-purple-dark: #7c3aed;
+            --arirang-purple-light: #c084fc;
+            --arirang-glow: #e879f9;
+            --arirang-bg: #0a0a12;
+        }
+        
+        /* LOADING */
         .arirang-loading { text-align:center; padding:60px 20px; }
         .arirang-loading p { color:#888; font-size:13px; margin-top:20px; }
         .loading-bomb-charge { display:inline-flex; flex-direction:column; align-items:center; }
         .loading-sphere-charge {
             width:60px; height:60px; border-radius:50%;
-            background:linear-gradient(135deg,rgba(147,51,234,0.3),rgba(168,85,247,0.1));
-            border:2px solid rgba(147,51,234,0.4);
+            background:linear-gradient(135deg,rgba(168,85,247,0.3),rgba(124,58,237,0.1));
+            border:2px solid rgba(168,85,247,0.4);
             animation:loading-pulse 2s ease-in-out infinite;
         }
         .loading-handle-charge { width:20px; height:30px; background:linear-gradient(180deg,#333,#1a1a1a); border-radius:0 0 6px 6px; margin-top:-5px; }
-        @keyframes loading-pulse { 0%,100%{transform:scale(1);box-shadow:0 0 20px rgba(147,51,234,0.3)} 50%{transform:scale(1.05);box-shadow:0 0 40px rgba(147,51,234,0.5)} }
+        @keyframes loading-pulse { 0%,100%{transform:scale(1);box-shadow:0 0 20px rgba(168,85,247,0.3)} 50%{transform:scale(1.05);box-shadow:0 0 40px rgba(168,85,247,0.5)} }
         
-        /* ===== GUIDE ===== */
-        .arirang-guide { background:rgba(147,51,234,0.05); border:1px solid rgba(147,51,234,0.15); border-left:3px solid #9333ea; }
+        /* GUIDE */
+        .arirang-guide { background:rgba(168,85,247,0.05); border:1px solid rgba(168,85,247,0.15); border-left:3px solid #a855f7; }
         .guide-content { display:flex; gap:12px; align-items:flex-start; }
         .guide-icon { font-size:22px; }
-        .guide-text strong { color:#a855f7; font-size:13px; display:block; margin-bottom:4px; }
+        .guide-text strong { color:#c084fc; font-size:13px; display:block; margin-bottom:4px; }
         .guide-text p { color:#888; font-size:12px; margin:3px 0; line-height:1.5; }
-        .guide-text .highlight { color:#fbbf24; font-weight:600; }
-
-        /* ===== HEADER CARD ===== */
-        .arirang-header-card { background: linear-gradient(135deg, #0f0f1a, #161625); border: 1px solid rgba(147, 51, 234, 0.3); border-radius: 16px; padding: 20px; }
-        .arirang-header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .arirang-badge-pill { display: inline-flex; align-items: center; background: rgba(147,51,234,0.15); padding: 5px 12px; border-radius: 20px; border: 1px solid rgba(147,51,234,0.25); }
-        .arirang-badge-pill .badge-text { font-size: 9px; color: #a855f7; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; }
-        .arirang-title { font-size: 22px; font-weight: 900; color: #fff; margin: 0; letter-spacing: 1.5px; }
-        .arirang-subtitle { color: #888; font-size: 12px; margin: 6px 0 0 0; display: flex; align-items: center; gap: 8px; }
+        .guide-text .highlight { color:#e879f9; font-weight:600; }
         
-        /* Power level badge */
+        /* HOBI HELP */
+        .btn-hobi-help { display:inline-flex; align-items:center; gap:8px; background:linear-gradient(135deg,rgba(168,85,247,0.1),rgba(124,58,237,0.05)); border:1px solid rgba(168,85,247,0.3); padding:10px 20px; border-radius:25px; color:#c084fc; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.3s; }
+        .btn-hobi-help:hover { border-color:#a855f7; background:rgba(168,85,247,0.15); transform:scale(1.02); }
+        .hobi-icon { font-size:18px; }
+        .hobi-guide-modal { position:fixed; inset:0; z-index:10000; display:flex; align-items:center; justify-content:center; padding:20px; opacity:0; transition:opacity 0.3s; }
+        .hobi-guide-modal.show { opacity:1; }
+        .hobi-backdrop { position:absolute; inset:0; background:rgba(0,0,0,0.9); }
+        .hobi-card { position:relative; background:#0f0f18; border-radius:20px; border:1px solid rgba(168,85,247,0.3); width:100%; max-width:380px; overflow:hidden; }
+        .hobi-header { display:flex; align-items:center; gap:12px; padding:20px; border-bottom:1px solid rgba(168,85,247,0.1); }
+        .hobi-avatar { font-size:36px; }
+        .hobi-title-group h3 { color:#fff; font-size:15px; margin:0; }
+        .hobi-title-group p { color:#888; font-size:11px; margin:4px 0 0; }
+        .hobi-close { margin-left:auto; background:none; border:none; color:#666; font-size:20px; cursor:pointer; }
+        .hobi-body { padding:20px; max-height:50vh; overflow-y:auto; }
+        .hobi-intro { color:#888; font-size:13px; margin-bottom:20px; padding:10px; background:rgba(168,85,247,0.05); border-radius:10px; }
+        .hobi-step { display:flex; gap:12px; margin-bottom:16px; }
+        .step-num { width:28px; height:28px; border-radius:50%; background:rgba(168,85,247,0.15); border:1px solid rgba(168,85,247,0.3); color:#a855f7; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+        .step-text strong { color:#fff; font-size:12px; display:block; margin-bottom:4px; }
+        .step-text p { color:#888; font-size:11px; margin:0; line-height:1.5; }
+        .hobi-footer-note { color:#666; font-size:11px; text-align:center; padding:15px; background:rgba(168,85,247,0.03); border-radius:10px; margin-top:10px; }
+        .btn-hobi-confirm { width:calc(100% - 40px); margin:20px; padding:14px; background:linear-gradient(135deg,#a855f7,#7c3aed); border:none; border-radius:12px; color:#fff; font-size:14px; font-weight:700; cursor:pointer; }
+        
+        /* HEADER */
+        .arirang-header-card { background:linear-gradient(135deg,#0a0a15,#12121f); border:1px solid rgba(168,85,247,0.2); border-radius:16px; padding:20px; }
+        .arirang-header-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; }
+        .arirang-badge-pill { display:inline-flex; align-items:center; gap:6px; background:rgba(168,85,247,0.1); padding:5px 12px; border-radius:20px; border:1px solid rgba(168,85,247,0.2); }
+        .badge-dot { width:6px; height:6px; border-radius:50%; background:#a855f7; animation:badge-pulse 2s ease-in-out infinite; }
+        @keyframes badge-pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+        .badge-text { font-size:9px; color:#c084fc; font-weight:700; letter-spacing:1.5px; }
+        .arirang-title { font-size:22px; font-weight:900; color:#fff; margin:0; letter-spacing:1px; display:flex; align-items:center; gap:10px; }
+        .title-icon { font-size:20px; }
+        .arirang-subtitle { color:#888; font-size:12px; margin:6px 0 0; display:flex; align-items:center; gap:8px; }
+        .subtitle-dot { width:4px; height:4px; border-radius:50%; background:#a855f7; }
+        
         .power-level-badge { display:flex; align-items:center; gap:6px; padding:4px 10px; border-radius:20px; font-size:10px; font-weight:600; letter-spacing:0.5px; }
         .power-dot { width:6px; height:6px; border-radius:50%; animation:blink 2s ease-in-out infinite; }
         @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
-        .power-dark { background:rgba(30,27,75,0.3); color:#3730a3; }
-        .power-dark .power-dot { background:#3730a3; }
-        .power-dim { background:rgba(55,48,163,0.15); color:#4f46e5; }
-        .power-dim .power-dot { background:#4f46e5; }
-        .power-flickering { background:rgba(79,70,229,0.15); color:#6366f1; }
-        .power-flickering .power-dot { background:#6366f1; }
-        .power-warming { background:rgba(99,102,241,0.15); color:#818cf8; }
-        .power-warming .power-dot { background:#818cf8; }
-        .power-energized { background:rgba(129,140,248,0.15); color:#a855f7; }
+        .power-dark { background:rgba(30,27,75,0.3); color:#4c1d95; }
+        .power-dark .power-dot { background:#4c1d95; }
+        .power-dim { background:rgba(109,40,217,0.15); color:#6d28d9; }
+        .power-dim .power-dot { background:#6d28d9; }
+        .power-flickering { background:rgba(124,58,237,0.15); color:#7c3aed; }
+        .power-flickering .power-dot { background:#7c3aed; animation:blink 1.5s ease-in-out infinite; }
+        .power-warming { background:rgba(139,92,246,0.15); color:#8b5cf6; }
+        .power-warming .power-dot { background:#8b5cf6; }
+        .power-energized { background:rgba(168,85,247,0.15); color:#a855f7; }
         .power-energized .power-dot { background:#a855f7; }
-        .power-blazing { background:rgba(168,85,247,0.15); color:#c084fc; }
+        .power-blazing { background:rgba(192,132,252,0.15); color:#c084fc; }
         .power-blazing .power-dot { background:#c084fc; animation:blink 1s ease-in-out infinite; }
-        .power-fully-charged { background:rgba(232,121,249,0.2); color:#e879f9; }
-        .power-fully-charged .power-dot { background:#e879f9; animation:none; }
+        .power-fully-charged { background:rgba(232,121,249,0.2); color:#f0abfc; }
+        .power-fully-charged .power-dot { background:#f0abfc; animation:none; box-shadow:0 0 10px #f0abfc; }
         
-        /* Power Stats */
         .power-stats-grid { display:flex; justify-content:center; gap:20px; margin-bottom:20px; }
-        .power-stat { text-align:center; padding:12px 20px; background:rgba(255,255,255,0.02); border-radius:12px; border:1px solid rgba(255,255,255,0.05); }
+        .power-stat { text-align:center; padding:12px 20px; background:rgba(168,85,247,0.03); border-radius:12px; border:1px solid rgba(168,85,247,0.1); }
         .power-stat-icon { font-size:16px; margin-bottom:4px; }
         .power-stat-value { font-size:24px; font-weight:700; }
         .power-stat-label { font-size:10px; color:#666; text-transform:uppercase; letter-spacing:0.5px; }
-        .power-stat.charged .power-stat-value { color:#22c55e; }
-        .power-stat.remaining .power-stat-value { color:#a855f7; }
+        .power-stat.charged .power-stat-value { color:#a855f7; }
+        .power-stat.remaining .power-stat-value { color:#c084fc; }
         .power-stat.missed .power-stat-value { color:#ef4444; }
         .power-stat.clean .power-stat-value { color:#888; }
         
-        /* Power Bar */
         .power-bar-section { text-align:center; }
-        .power-bar-track { height:6px; background:rgba(255,255,255,0.1); border-radius:10px; overflow:hidden; position:relative; }
+        .power-bar-track { height:6px; background:rgba(168,85,247,0.08); border-radius:10px; overflow:hidden; }
         .power-bar-fill { height:100%; border-radius:10px; transition:width 0.5s ease; position:relative; overflow:hidden; }
         .power-bar-shimmer { position:absolute; top:0; left:-100%; width:100%; height:100%; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.3),transparent); animation:shimmer 3s infinite; }
         @keyframes shimmer { 0%{left:-100%} 100%{left:200%} }
-        .power-fill-dark { background:#1e1b4b; }
-        .power-fill-dim { background:linear-gradient(90deg,#312e81,#4338ca); }
-        .power-fill-flickering { background:linear-gradient(90deg,#4338ca,#6366f1); }
-        .power-fill-warming { background:linear-gradient(90deg,#4f46e5,#818cf8); }
+        .power-fill-dark { background:linear-gradient(90deg,#1e1b4b,#312e81); }
+        .power-fill-dim { background:linear-gradient(90deg,#312e81,#4c1d95); }
+        .power-fill-flickering { background:linear-gradient(90deg,#4c1d95,#6d28d9); }
+        .power-fill-warming { background:linear-gradient(90deg,#6d28d9,#7c3aed); }
         .power-fill-energized { background:linear-gradient(90deg,#7c3aed,#a855f7); }
-        .power-fill-blazing { background:linear-gradient(90deg,#9333ea,#c084fc); }
-        .power-fill-fully-charged { background:linear-gradient(90deg,#a855f7,#e879f9,#f0abfc); }
-        .power-bar-label { font-size:11px; color:#666; margin-top:8px; }
+        .power-fill-blazing { background:linear-gradient(90deg,#a855f7,#c084fc); }
+        .power-fill-fully-charged { background:linear-gradient(90deg,#c084fc,#e879f9,#f0abfc); }
+        .power-bar-label { font-size:11px; color:#888; margin-top:8px; }
         
-        /* ===== ARMY BOMB (MOTS EDITION) ===== */
-        .arirang-bomb-core { background: #050508; border: 1px solid #1a1a24; overflow: hidden; position: relative; }
-
-        .charging-bomb-display { 
-            position: relative; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            padding: 50px 20px 40px; 
-        }
-
-        /* Ambient Glow */
-        .charge-ambient-glow { 
-            position: absolute; 
-            width: 250px; 
-            height: 250px; 
-            border-radius: 50%; 
-            filter: blur(80px); 
-            top: 20px; 
-            transition: all 0.5s ease; 
-            z-index: 0;
-        }
-
-        /* THE BOMB CONTAINER */
-        .army-bomb { 
-            position: relative; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            z-index: 10; 
-            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5));
-        }
-
-        /* THE RED FUSE */
-        .army-bomb::before {
-            content: '';
-            position: absolute;
-            top: -6px;
-            right: 38px;
-            width: 8px;
-            height: 6px;
-            background: #ef4444;
-            border-radius: 2px;
-            box-shadow: 0 0 5px rgba(239, 68, 68, 0.8);
-            z-index: 5;
-            animation: fuse-pulse 2s infinite;
-        }
-        @keyframes fuse-pulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
-
-        /* THE BLACK CAP */
-        .charge-button { 
-            width: 24px; 
-            height: 8px; 
-            background: #1a1a1a;
-            border-radius: 4px 4px 0 0; 
-            position: relative; 
-            margin-bottom: -2px; 
-            z-index: 4; 
-            box-shadow: inset 0 2px 2px rgba(255,255,255,0.1);
-        }
-
-        /* THE GLASS SPHERE */
-        .charge-sphere { 
-            width: 130px; 
-            height: 130px; 
-            border-radius: 50%; 
-            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 40%, rgba(255,255,255,0.01) 60%, rgba(0,0,0,0.3) 100%);
-            border: 1px solid rgba(255,255,255,0.15); 
-            box-shadow: 
-                inset 0 10px 20px rgba(255,255,255,0.1),
-                inset 0 -10px 30px rgba(0,0,0,0.6),
-                0 0 15px rgba(255,255,255,0.05);
-            position: relative; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            overflow: hidden; 
-            z-index: 3;
-            backdrop-filter: blur(1px);
-        }
-
-        /* Sphere Reflection */
-        .sphere-reflection { 
-            position: absolute; 
-            top: 15px; 
-            right: 20px; 
-            width: 25px; 
-            height: 15px; 
-            background: rgba(255,255,255,0.4); 
-            border-radius: 50%; 
-            transform: rotate(45deg); 
-            filter: blur(2px);
-            z-index: 10;
-        }
-
-        /* BTS LOGO (Frosted Insert) */
-        .charge-core { 
-            position: relative; 
-            z-index: 5; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            width: 100%;
-            height: 100%;
-        }
-
-        .bts-logo { 
-            font-size: 42px;
-            font-weight: 700; 
-            color: rgba(255,255,255,0.85);
-            mix-blend-mode: overlay; 
-            text-shadow: 0 2px 5px rgba(0,0,0,0.3);
-            letter-spacing: -2px;
-            -webkit-font-smoothing: antialiased;
-        }
-
-        /* Logo Glow (When Fully Charged) */
-        .core-fully-charged .bts-logo { 
-            color: #fff;
-            text-shadow: 0 0 15px #e879f9, 0 0 30px #a855f7;
-        }
-
-        /* LIQUID FILL */
-        .energy-fill-level { 
-            position: absolute; 
-            bottom: 0; 
-            left: 0; 
-            right: 0; 
-            width: 100%;
-            border-radius: 0 0 130px 130px;
-            overflow: hidden;
-            transition: height 1s cubic-bezier(0.4, 0, 0.2, 1); 
-            z-index: 1;
-            opacity: 0.9;
-        }
-
-        /* Base energy fill gradient */
-        .energy-fill-gradient { 
-            width: 100%; 
-            height: 100%; 
-            background: linear-gradient(to top, #4c1d95 0%, #7c3aed 50%, #c084fc 100%);
-            opacity: 0.8;
-            position: relative;
-        }
-
-        /* Sparkle bubbles inside liquid */
-        .energy-fill-gradient::after {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-image: 
-                radial-gradient(white 1px, transparent 1px),
-                radial-gradient(white 1px, transparent 1px);
-            background-size: 20px 20px;
-            background-position: 0 0, 10px 10px;
-            opacity: 0.3;
-            animation: liquid-sparkle 4s linear infinite;
-        }
-        @keyframes liquid-sparkle { 0%{background-position:0 0, 10px 10px} 100%{background-position:0 20px, 10px 30px} }
-
-        /* Fill Gradients by tier (combined selector — class is on same element) */
-        .energy-fill-gradient.fill-dark { background: linear-gradient(to top, #1e1b4b, #312e81); }
-        .energy-fill-gradient.fill-dim { background: linear-gradient(to top, #312e81, #4338ca); }
-        .energy-fill-gradient.fill-flickering { background: linear-gradient(to top, #4338ca, #6366f1); }
-        .energy-fill-gradient.fill-warming { background: linear-gradient(to top, #4f46e5, #818cf8); }
-        .energy-fill-gradient.fill-energized { background: linear-gradient(to top, #7c3aed, #a855f7); }
-        .energy-fill-gradient.fill-blazing { background: linear-gradient(to top, #9333ea, #c084fc); }
-        .energy-fill-gradient.fill-fully-charged { background: linear-gradient(to top, #a855f7, #e879f9, #fff); }
-
-        /* Liquid Surface (Wavy Line) */
-        .energy-fill-surface { 
-            position: absolute; 
-            top: 0; 
-            left: 0; 
-            right: 0; 
-            height: 5px; 
-            background: rgba(255,255,255,0.6); 
-            box-shadow: 0 0 10px rgba(255,255,255,0.8);
-            animation: surface-bob 3s ease-in-out infinite; 
-        }
-        @keyframes surface-bob { 
-            0%,100%{transform:translateX(0) rotate(0deg)} 
-            50%{transform:translateX(-10px) rotate(2deg)} 
-        }
-
-        /* PARTICLES (Floating Magic) */
-        .charge-particles { 
-            position: absolute; 
-            inset: 0;
-            pointer-events: none;
-            z-index: 2;
-        }
-        .charge-particles span {
-            position: absolute;
-            width: 4px; 
-            height: 4px;
-            background: #fff;
-            border-radius: 50%;
-            box-shadow: 0 0 6px #fff;
-            animation: particle-float 3s infinite ease-in;
-            opacity: 0;
-        }
-        .charge-particles span:nth-child(1) { left: 30%; bottom: 20%; animation-delay: 0s; }
-        .charge-particles span:nth-child(2) { right: 30%; bottom: 30%; animation-delay: 1s; }
-        .charge-particles span:nth-child(3) { left: 50%; bottom: 40%; animation-delay: 2s; }
-        @keyframes particle-float { 
-            0% { transform: translateY(0) scale(0); opacity: 0; }
-            50% { opacity: 1; }
-            100% { transform: translateY(-40px) scale(1.5); opacity: 0; }
-        }
-
-        /* THE HANDLE */
-        .bomb-handle { 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            margin-top: -5px;
-            z-index: 2;
-        }
-
-        .handle-connector { 
-            width: 44px; 
-            height: 12px; 
-            background: #0f0f0f; 
-            border-radius: 2px;
-            border-top: 1px solid #333;
-            box-shadow: inset 0 -2px 5px rgba(0,0,0,0.8);
-        }
-
-        .handle-grip { 
-            width: 32px; 
-            height: 140px;
-            background: linear-gradient(90deg, #1a1a1a, #2a2a2a 40%, #111);
-            display: flex; 
-            flex-direction: column; 
-            align-items: center;
-            position: relative;
-        }
-
-        .handle-grip::after {
-            content: '';
-            position: absolute;
-            top: 20px;
-            width: 14px;
-            height: 24px;
-            background: #000;
-            border: 1px solid #333;
-            border-radius: 10px;
-            box-shadow: 0 2px 0 rgba(255,255,255,0.05);
-        }
-
-        .handle-base { 
-            width: 36px; 
-            height: 10px; 
-            background: #111; 
-            border-radius: 0 0 4px 4px;
-            margin-top: -2px;
-        }
-
-        /* Glow Colors */
-        .glow-dim { background: #3730a3; opacity: 0.1; }
-        .glow-flickering { background: #4f46e5; opacity: 0.2; }
-        .glow-warming { background: #6366f1; opacity: 0.3; }
-        .glow-energized { background: #a855f7; opacity: 0.5; }
-        .glow-blazing { background: #c084fc; opacity: 0.7; }
-        .glow-fully-charged { background: #e879f9; opacity: 0.9; }
-
-        /* POWER LABEL */
-        .bomb-power-label { 
-            margin-top: 15px; 
-            font-size: 13px; 
-            font-weight: 700;
-            letter-spacing: 1.5px;
-            color: #a855f7;
-            background: rgba(147, 51, 234, 0.1);
-            padding: 6px 16px;
-            border-radius: 20px;
-            border: 1px solid rgba(147, 51, 234, 0.3);
-            text-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
-        }
-        .label-fully-charged { color: #e879f9; text-shadow: 0 0 10px rgba(232,121,249,0.5); }
-
-        /* MOBILE FIX */
-        @media (max-width: 380px) {
-            .charging-bomb-display {
-                transform: scale(0.85);
-                transform-origin: center top;
-                padding: 40px 10px 10px;
-                margin-bottom: -40px;
-            }
-            .charge-ambient-glow {
-                width: 200px;
-                height: 200px;
-                filter: blur(60px);
-            }
-        }
+        /* ARMY BOMB CORE */
+        .arirang-bomb-core { background:#030306; border:1px solid rgba(168,85,247,0.12); overflow:hidden; }
+        .charging-bomb-display { position:relative; display:flex; flex-direction:column; align-items:center; padding:50px 20px 40px; min-height:380px; }
         
-        /* ===== ERA TIMELINE ===== */
-        .era-timeline { margin-top:25px; padding-top:25px; border-top:1px solid #1a1a24; }
+        .concert-stars { position:absolute; inset:0; pointer-events:none; overflow:hidden; }
+        .concert-star { position:absolute; width:var(--star-size,2px); height:var(--star-size,2px); background:var(--star-color,#a855f7); border-radius:50%; animation:star-twinkle 3s ease-in-out infinite; box-shadow:0 0 4px var(--star-color); }
+        @keyframes star-twinkle { 0%,100%{opacity:0.15;transform:scale(0.8)} 50%{opacity:0.9;transform:scale(1.3)} }
+        
+        /* Ambient glow per tier */
+        .charge-ambient-glow { position:absolute; width:280px; height:280px; border-radius:50%; filter:blur(90px); top:10px; z-index:0; transition:all 1s ease; }
+        .charge-ambient-dark { background:radial-gradient(circle,rgba(30,27,75,0.2),transparent 70%); opacity:0.3; }
+        .charge-ambient-dim { background:radial-gradient(circle,rgba(109,40,217,0.25),transparent 70%); opacity:0.35; }
+        .charge-ambient-flickering { background:radial-gradient(circle,rgba(124,58,237,0.3),transparent 70%); opacity:0.4; }
+        .charge-ambient-warming { background:radial-gradient(circle,rgba(139,92,246,0.35),transparent 70%); opacity:0.45; }
+        .charge-ambient-energized { background:radial-gradient(circle,rgba(168,85,247,0.4),transparent 70%); opacity:0.5; }
+        .charge-ambient-blazing { background:radial-gradient(circle,rgba(192,132,252,0.45),transparent 70%); opacity:0.55; animation:ambient-breathe 3s ease-in-out infinite; }
+        .charge-ambient-fully-charged { background:radial-gradient(circle,rgba(232,121,249,0.5),transparent 60%); opacity:0.65; animation:ambient-breathe 2s ease-in-out infinite; }
+        @keyframes ambient-breathe { 0%,100%{transform:scale(1);opacity:var(--o,0.5)} 50%{transform:scale(1.15);opacity:calc(var(--o,0.5) + 0.15)} }
+        
+        .army-bomb { position:relative; display:flex; flex-direction:column; align-items:center; z-index:10; transition:filter 1s ease; }
+        .bomb-tier-dark { filter:drop-shadow(0 5px 10px rgba(30,27,75,0.2)); }
+        .bomb-tier-dim { filter:drop-shadow(0 5px 15px rgba(109,40,217,0.2)); }
+        .bomb-tier-flickering { filter:drop-shadow(0 8px 20px rgba(124,58,237,0.25)); }
+        .bomb-tier-warming { filter:drop-shadow(0 10px 25px rgba(139,92,246,0.3)); }
+        .bomb-tier-energized { filter:drop-shadow(0 10px 30px rgba(168,85,247,0.35)); }
+        .bomb-tier-blazing { filter:drop-shadow(0 12px 40px rgba(192,132,252,0.4)); }
+        .army-bomb.fully-charged { filter:drop-shadow(0 15px 60px rgba(232,121,249,0.5)); }
+        
+        .charge-button { width:24px; height:8px; background:#0f0f0f; border-radius:4px 4px 0 0; position:relative; margin-bottom:-2px; z-index:4; }
+        .charge-btn-dark { box-shadow:none; }
+        .charge-btn-dim { box-shadow:inset 0 1px 2px rgba(109,40,217,0.1); }
+        .charge-btn-flickering { box-shadow:inset 0 1px 3px rgba(124,58,237,0.15); }
+        .charge-btn-warming { box-shadow:inset 0 1px 3px rgba(139,92,246,0.2); }
+        .charge-btn-energized { box-shadow:inset 0 1px 4px rgba(168,85,247,0.25); }
+        .charge-btn-blazing { box-shadow:inset 0 1px 5px rgba(192,132,252,0.3); }
+        .charge-btn-fully-charged { box-shadow:inset 0 1px 6px rgba(232,121,249,0.4); }
+        
+        .charge-sphere { width:130px; height:130px; border-radius:50%; background:radial-gradient(circle at 30% 30%,rgba(168,85,247,0.08) 0%,rgba(0,0,0,0.4) 100%); border:1.5px solid; position:relative; display:flex; align-items:center; justify-content:center; overflow:hidden; z-index:3; transition:box-shadow 1s ease, border-color 1s ease; }
+        .sphere-reflection { position:absolute; top:15px; right:20px; width:25px; height:15px; background:rgba(255,255,255,0.2); border-radius:50%; transform:rotate(45deg); filter:blur(3px); z-index:10; transition:opacity 0.5s; }
+        
+        .charge-core { position:relative; z-index:5; display:flex; align-items:center; justify-content:center; width:100%; height:100%; }
+        .bts-logo { font-size:42px; font-weight:700; transition:all 1s ease; letter-spacing:-2px; }
+        .core-dark .bts-logo { color:rgba(30,27,75,0.5); text-shadow:none; }
+        .core-dim .bts-logo { color:rgba(109,40,217,0.6); text-shadow:0 0 5px rgba(109,40,217,0.2); }
+        .core-flickering .bts-logo { color:rgba(124,58,237,0.7); text-shadow:0 0 8px rgba(124,58,237,0.3); }
+        .core-warming .bts-logo { color:rgba(139,92,246,0.8); text-shadow:0 0 12px rgba(139,92,246,0.4); }
+        .core-energized .bts-logo { color:rgba(168,85,247,0.85); text-shadow:0 0 15px rgba(168,85,247,0.5); }
+        .core-blazing .bts-logo { color:rgba(192,132,252,0.9); text-shadow:0 0 20px rgba(192,132,252,0.6); }
+        .core-fully-charged .bts-logo { color:#fff; text-shadow:0 0 20px #e879f9, 0 0 40px #a855f7; animation:logo-glow 2s ease-in-out infinite; }
+        @keyframes logo-glow { 0%,100%{text-shadow:0 0 20px #e879f9,0 0 40px #a855f7} 50%{text-shadow:0 0 30px #f0abfc,0 0 60px #c084fc} }
+        
+        /* Liquid Fill */
+        .energy-fill-level { position:absolute; bottom:0; left:0; right:0; width:100%; border-radius:0 0 130px 130px; overflow:hidden; transition:height 1.2s cubic-bezier(0.4,0,0.2,1); z-index:1; }
+        .energy-fill-gradient { width:100%; height:100%; position:relative; }
+        .energy-fill-gradient::after { content:''; position:absolute; inset:0; background-image:radial-gradient(rgba(255,255,255,0.4) 1px,transparent 1px); background-size:12px 12px; opacity:0.25; animation:liquid-sparkle 4s linear infinite; }
+        @keyframes liquid-sparkle { 0%{background-position:0 0} 100%{background-position:0 24px} }
+        
+        .fill-dark { background:linear-gradient(to top,#1e1b4b 0%,#312e81 100%); opacity:0.5; }
+        .fill-dim { background:linear-gradient(to top,#312e81 0%,#4c1d95 50%,#6d28d9 100%); opacity:0.6; }
+        .fill-flickering { background:linear-gradient(to top,#4c1d95 0%,#6d28d9 50%,#7c3aed 100%); opacity:0.7; }
+        .fill-warming { background:linear-gradient(to top,#6d28d9 0%,#7c3aed 40%,#8b5cf6 100%); opacity:0.75; }
+        .fill-energized { background:linear-gradient(to top,#7c3aed 0%,#8b5cf6 40%,#a855f7 100%); opacity:0.8; }
+        .fill-blazing { background:linear-gradient(to top,#8b5cf6 0%,#a855f7 30%,#c084fc 70%,#e879f9 100%); opacity:0.85; }
+        .fill-fully-charged { background:linear-gradient(to top,#a855f7 0%,#c084fc 25%,#e879f9 60%,#f0abfc 85%,rgba(255,255,255,0.6) 100%); opacity:0.9; }
+        
+        .energy-fill-surface { position:absolute; top:0; left:0; right:0; height:4px; background:rgba(255,255,255,0.6); box-shadow:0 0 12px rgba(255,255,255,0.8); animation:surface-bob 3s ease-in-out infinite; transition:opacity 0.5s; }
+        @keyframes surface-bob { 0%,100%{transform:translateX(0)} 50%{transform:translateX(-6px)} }
+        
+        .energy-fill-bubbles { position:absolute; inset:0; pointer-events:none; z-index:2; }
+        .fill-bubble { position:absolute; bottom:0; width:var(--bubble-size,3px); height:var(--bubble-size,3px); background:rgba(255,255,255,0.6); border-radius:50%; animation:bubble-rise 4s infinite ease-in; opacity:0; }
+        @keyframes bubble-rise { 0%{transform:translateY(0) scale(0);opacity:0} 20%{opacity:0.8} 100%{transform:translateY(-80px) scale(1.2);opacity:0} }
+        
+        /* Energy Ring */
+        .energy-ring { position:absolute; width:80%; height:80%; border-radius:50%; border:1px solid; z-index:2; animation:ring-pulse 3s ease-in-out infinite; }
+        .ring-warming { border-color:rgba(139,92,246,0.15); }
+        .ring-energized { border-color:rgba(168,85,247,0.2); }
+        .ring-blazing { border-color:rgba(192,132,252,0.25); animation-duration:2s; }
+        .ring-fully-charged { border-color:rgba(232,121,249,0.3); animation-duration:1.5s; box-shadow:0 0 15px rgba(232,121,249,0.15); }
+        @keyframes ring-pulse { 0%,100%{transform:scale(0.95);opacity:0.5} 50%{transform:scale(1.05);opacity:1} }
+        
+        /* Particles */
+        .charge-particles { position:absolute; inset:0; pointer-events:none; z-index:2; }
+        .charge-particles span { position:absolute; width:3px; height:3px; background:#fff; border-radius:50%; animation:particle-float 3s infinite ease-in; opacity:0; }
+        .particles-dim span { box-shadow:0 0 4px rgba(109,40,217,0.6); }
+        .particles-flickering span { box-shadow:0 0 5px rgba(124,58,237,0.7); }
+        .particles-warming span { box-shadow:0 0 6px rgba(139,92,246,0.7); }
+        .particles-energized span { box-shadow:0 0 8px rgba(168,85,247,0.8); }
+        .particles-blazing span { box-shadow:0 0 10px rgba(192,132,252,0.9); width:4px; height:4px; }
+        .particles-fully-charged span { box-shadow:0 0 12px #e879f9; width:4px; height:4px; }
+        @keyframes particle-float { 0%{transform:translateY(0) scale(0);opacity:0} 40%{opacity:0.9} 100%{transform:translateY(-60px) scale(1.5);opacity:0} }
+        
+        /* Handle */
+        .bomb-handle { display:flex; flex-direction:column; align-items:center; margin-top:-5px; z-index:2; }
+        .handle-connector { width:44px; height:12px; background:#0a0a0a; border-radius:2px; border-top:1px solid #222; }
+        .handle-grip { width:32px; height:140px; background:linear-gradient(90deg,#111,#1f1f1f 40%,#0d0d0d); position:relative; }
+        .grip-light { position:absolute; top:50px; left:50%; transform:translateX(-50%); width:4px; height:4px; border-radius:50%; transition:all 1s; }
+        .grip-light-dark { background:#111; box-shadow:none; }
+        .grip-light-dim { background:#4c1d95; box-shadow:0 0 3px #4c1d95; }
+        .grip-light-flickering { background:#6d28d9; box-shadow:0 0 5px #6d28d9; animation:grip-blink 2s infinite; }
+        .grip-light-warming { background:#7c3aed; box-shadow:0 0 8px #7c3aed; }
+        .grip-light-energized { background:#a855f7; box-shadow:0 0 10px #a855f7; }
+        .grip-light-blazing { background:#c084fc; box-shadow:0 0 14px #c084fc; animation:grip-blink 1s infinite; }
+        .grip-light-fully-charged { background:#e879f9; box-shadow:0 0 18px #e879f9; }
+        @keyframes grip-blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
+        .handle-base { width:36px; height:10px; background:#0a0a0a; border-radius:0 0 4px 4px; margin-top:-2px; }
+        
+        .bomb-power-label { margin-top:15px; font-size:13px; font-weight:700; letter-spacing:1.5px; padding:6px 16px; border-radius:20px; transition:all 1s; }
+        .label-dark { color:#4c1d95; background:rgba(30,27,75,0.2); border:1px solid rgba(30,27,75,0.3); }
+        .label-dim { color:#6d28d9; background:rgba(109,40,217,0.1); border:1px solid rgba(109,40,217,0.25); }
+        .label-flickering { color:#7c3aed; background:rgba(124,58,237,0.1); border:1px solid rgba(124,58,237,0.3); }
+        .label-warming { color:#8b5cf6; background:rgba(139,92,246,0.1); border:1px solid rgba(139,92,246,0.3); }
+        .label-energized { color:#a855f7; background:rgba(168,85,247,0.1); border:1px solid rgba(168,85,247,0.3); text-shadow:0 0 8px rgba(168,85,247,0.4); }
+        .label-blazing { color:#c084fc; background:rgba(192,132,252,0.12); border:1px solid rgba(192,132,252,0.35); text-shadow:0 0 12px rgba(192,132,252,0.5); }
+        .label-fully-charged { color:#e879f9; background:rgba(232,121,249,0.12); border:1px solid rgba(232,121,249,0.4); text-shadow:0 0 15px rgba(232,121,249,0.6); animation:label-shine 3s ease-in-out infinite; }
+        @keyframes label-shine { 0%,100%{box-shadow:0 0 10px rgba(232,121,249,0.1)} 50%{box-shadow:0 0 25px rgba(232,121,249,0.3)} }
+        
+        /* ERA TIMELINE */
+        .era-timeline { margin-top:25px; padding-top:25px; border-top:1px solid rgba(168,85,247,0.08); }
         .timeline-header { display:flex; align-items:center; gap:8px; justify-content:center; margin-bottom:15px; }
         .timeline-icon { font-size:14px; }
         .timeline-title { font-size:11px; color:#666; text-transform:uppercase; letter-spacing:1px; }
-        .timeline-current { font-size:10px; color:#a855f7; background:rgba(147,51,234,0.1); padding:2px 8px; border-radius:8px; margin-left:auto; }
-        
+        .timeline-current { font-size:10px; color:#a855f7; background:rgba(168,85,247,0.1); padding:2px 8px; border-radius:8px; margin-left:auto; }
         .era-grid { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-bottom:15px; }
-        .era-cell { padding:8px 12px; border-radius:8px; cursor:pointer; text-align:center; transition:all 0.2s ease; border:1px solid transparent; min-width:70px; }
+        .era-cell { padding:8px 12px; border-radius:8px; cursor:pointer; text-align:center; transition:all 0.2s; border:1px solid transparent; min-width:70px; }
         .era-icon { font-size:14px; display:block; }
         .era-name { font-size:9px; color:#666; display:block; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:80px; }
         .era-progress { font-size:9px; color:#555; display:block; }
-        .era-complete { background:rgba(34,197,94,0.1); border-color:rgba(34,197,94,0.3); }
-        .era-complete .era-name { color:#22c55e; }
-        .era-active { background:rgba(147,51,234,0.15); border-color:rgba(147,51,234,0.4); animation:era-pulse 2s ease-in-out infinite; }
-        .era-active .era-name { color:#a855f7; }
-        @keyframes era-pulse { 0%,100%{box-shadow:0 0 0 rgba(147,51,234,0)} 50%{box-shadow:0 0 10px rgba(147,51,234,0.3)} }
-        .era-partial { background:rgba(255,255,255,0.02); border-color:rgba(255,255,255,0.08); }
+        .era-complete { background:rgba(168,85,247,0.1); border-color:rgba(168,85,247,0.3); }
+        .era-complete .era-name { color:#a855f7; }
+        .era-active { background:rgba(232,121,249,0.15); border-color:rgba(232,121,249,0.4); animation:era-pulse 2s ease-in-out infinite; }
+        .era-active .era-name { color:#e879f9; }
+        @keyframes era-pulse { 0%,100%{box-shadow:0 0 0 rgba(232,121,249,0)} 50%{box-shadow:0 0 15px rgba(232,121,249,0.3)} }
+        .era-partial { background:rgba(168,85,247,0.03); border-color:rgba(168,85,247,0.1); }
         .era-locked { background:rgba(40,40,50,0.3); }
         .era-locked .era-name { color:#444; }
         .era-cell:hover { transform:scale(1.05); }
         
-        /* Phase dots */
+        /* Phase dots — per-phase color */
         .phase-dot-grid { display:flex; flex-wrap:wrap; gap:4px; justify-content:center; margin-bottom:12px; }
-        .phase-dot { width:28px; height:28px; border-radius:6px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:9px; font-weight:700; transition:all 0.2s ease; min-width:44px; min-height:34px; }
-        .dot-charged { background:rgba(34,197,94,0.15); border:1px solid rgba(34,197,94,0.4); color:#22c55e; }
-        .dot-active { background:rgba(147,51,234,0.2); border:1px solid rgba(147,51,234,0.5); color:#a855f7; animation:wire-active-pulse 2s ease-in-out infinite; }
-        @keyframes wire-active-pulse { 0%,100%{box-shadow:0 0 0 rgba(147,51,234,0)} 50%{box-shadow:0 0 10px rgba(147,51,234,0.4)} }
-        .dot-missed { background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); color:#ef4444; }
-        .dot-locked { background:rgba(40,40,50,0.5); border:1px solid #2a2a35; color:#444; }
+        .phase-dot { width:28px; height:28px; border-radius:6px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:9px; font-weight:700; transition:all 0.2s; min-width:44px; min-height:34px; }
+        .dot-charged { background:var(--phase-bg); border:1.5px solid var(--phase-accent); color:var(--phase-accent); box-shadow:0 0 8px color-mix(in srgb,var(--phase-glow) 30%,transparent); }
+        .dot-active { background:var(--phase-bg); border:1.5px solid var(--phase-accent); color:var(--phase-accent); animation:dot-active-pulse 2s ease-in-out infinite; --dot-glow:var(--phase-glow); }
+        @keyframes dot-active-pulse { 0%,100%{box-shadow:0 0 0 transparent} 50%{box-shadow:0 0 14px var(--dot-glow,rgba(232,121,249,0.4))} }
+        .dot-missed { background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.3); color:#ef4444; }
+        .dot-locked { background:rgba(40,40,50,0.4); border:1px solid #222; color:#444; }
         .phase-dot:hover { transform:scale(1.1); }
         
         .phase-legend { display:flex; justify-content:center; gap:12px; flex-wrap:wrap; }
         .legend-item { display:flex; align-items:center; gap:4px; font-size:10px; color:#555; }
         .legend-item .dot { width:6px; height:6px; border-radius:50%; }
-        .dot.charged { background:#22c55e; }
-        .dot.active { background:#a855f7; }
+        .dot.charged { background:#a855f7; }
+        .dot.active { background:#e879f9; }
         .dot.locked { background:#444; }
         .dot.missed { background:#ef4444; }
         
-        /* ===== DUAL CHARGE SECTION ===== */
-        .dual-charge-section { margin:20px 0 15px; padding:16px; background:rgba(0,0,0,0.3); border-radius:12px; border:1px solid rgba(255,255,255,0.05); }
-        .charge-unit { margin-bottom:0; }
+        /* TODAY'S PHASE */
+        .arirang-phase-card { border:1px solid var(--phase-border,rgba(168,85,247,0.2)); transition:all 0.3s; }
+        .arirang-phase-card.phase-charged { border-color:var(--phase-accent,#a855f7); background:linear-gradient(135deg,var(--phase-bg,rgba(168,85,247,0.05)),transparent); box-shadow:0 0 20px color-mix(in srgb,var(--phase-glow) 15%,transparent); }
+        .phase-header-styled { border-bottom:2px solid var(--phase-accent,#a855f7)22; }
+        .phase-header-left { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+        .phase-codename-badge { font-size:10px; padding:3px 10px; border-radius:10px; border:1px solid; font-weight:600; }
+        .era-tag { font-size:9px; padding:2px 6px; border-radius:6px; }
+        .charged-badge { padding:4px 10px; border-radius:10px; font-size:11px; font-weight:600; border:1px solid; }
+        
+        .phase-identity-strip { display:flex; justify-content:space-between; align-items:center; padding:10px 14px; border-radius:8px; margin-bottom:14px; }
+        .phase-day-label { font-size:11px; color:#888; font-weight:500; }
+        .phase-era-label { font-size:10px; font-weight:700; }
+        
+        .album-spotify-row { display:flex; flex-direction:column; gap:8px; margin-bottom:15px; }
+        .album-spotify-item { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; background:rgba(168,85,247,0.02); border-radius:10px; border:1px solid rgba(168,85,247,0.08); transition:border-color 0.3s; }
+        .album-info { display:flex; align-items:center; gap:8px; flex:1; min-width:0; }
+        .album-disc { font-size:16px; flex-shrink:0; }
+        .album-title { font-size:13px; color:#ccc; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .spotify-btn { display:inline-flex; align-items:center; gap:5px; padding:6px 12px; background:#1DB954; color:#fff; border-radius:20px; font-size:11px; font-weight:600; text-decoration:none; white-space:nowrap; flex-shrink:0; transition:all 0.2s; }
+        .spotify-btn:hover { background:#1ed760; transform:scale(1.03); }
+        .spotify-pill { display:inline-flex; align-items:center; gap:4px; padding:4px 10px; background:rgba(29,185,84,0.15); color:#1DB954; border-radius:12px; font-size:10px; font-weight:600; text-decoration:none; flex-shrink:0; }
+        
+        /* Dual Charge */
+        .dual-charge-section { margin:20px 0 15px; padding:16px; background:rgba(168,85,247,0.02); border-radius:12px; border:1px solid; }
         .charge-unit-header { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
-        .charge-letter { width:22px; height:22px; border-radius:50%; background:rgba(147,51,234,0.2); border:1.5px solid rgba(147,51,234,0.5); color:#a855f7; font-size:10px; font-weight:800; display:flex; align-items:center; justify-content:center; }
-        .charge-letter.letter-charged { background:rgba(34,197,94,0.2); border-color:rgba(34,197,94,0.5); color:#22c55e; }
+        .charge-letter { width:22px; height:22px; border-radius:50%; background:color-mix(in srgb,var(--letter-color,#a855f7) 15%,transparent); border:1.5px solid color-mix(in srgb,var(--letter-color,#a855f7) 50%,transparent); color:var(--letter-color,#a855f7); font-size:10px; font-weight:800; display:flex; align-items:center; justify-content:center; }
+        .charge-letter.letter-charged { background:color-mix(in srgb,var(--letter-color,#a855f7) 25%,transparent); border-color:var(--letter-color,#a855f7); color:#fff; }
         .charge-unit-label { flex:1; font-size:12px; font-weight:600; color:#ccc; }
         .charge-status { font-size:10px; font-weight:700; padding:3px 8px; border-radius:8px; letter-spacing:0.5px; }
-        .cs-live { background:rgba(168,85,247,0.12); color:#a855f7; }
-        .cs-charged { background:rgba(34,197,94,0.12); color:#22c55e; }
+        .cs-live { background:color-mix(in srgb,var(--cs-color,#a855f7) 10%,transparent); color:var(--cs-color,#a855f7); }
+        .cs-charged { background:color-mix(in srgb,var(--cs-color,#a855f7) 18%,transparent); color:var(--cs-color,#a855f7); }
         
-        /* Charge wire visual */
         .charge-wire-container { padding:12px 0; }
         .charge-wire { position:relative; height:4px; display:flex; align-items:center; border-radius:2px; }
-        .charge-wire.wire-live { background:var(--charge-color); box-shadow:0 0 10px var(--charge-color,rgba(168,85,247,0.4)); animation:wire-pulse 2s ease-in-out infinite; }
-        @keyframes wire-pulse { 0%,100%{box-shadow:0 0 8px var(--charge-color)} 50%{box-shadow:0 0 16px var(--charge-color)} }
-        .charge-wire.wire-live .wire-segment { display:none; }
-        .wire-flow { position:absolute; top:0; left:0; height:100%; width:40px; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.4),transparent); border-radius:2px; animation:energy-slide 2s linear infinite; }
+        .charge-wire.wire-live { background:var(--charge-color,#7c3aed); box-shadow:0 0 10px var(--charge-color); animation:wire-pulse 2s ease-in-out infinite; }
+        @keyframes wire-pulse { 0%,100%{box-shadow:0 0 8px var(--charge-color)} 50%{box-shadow:0 0 18px var(--charge-color)} }
+        .wire-flow { position:absolute; top:0; left:0; height:100%; width:40px; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.5),transparent); border-radius:2px; animation:energy-slide 2s linear infinite; }
         @keyframes energy-slide { 0%{left:-40px} 100%{left:calc(100% + 40px)} }
         .charge-wire.wire-charged { background:none; justify-content:center; }
-        .charge-wire.wire-charged .wire-segment { height:4px; border-radius:2px; flex:1; }
-        .charge-wire.wire-charged .wire-segment.left { background:linear-gradient(90deg,var(--charge-color),rgba(34,197,94,0.2)); transform-origin:right; transform:rotate(1.5deg); }
-        .charge-wire.wire-charged .wire-segment.right { background:linear-gradient(270deg,var(--charge-color),rgba(34,197,94,0.2)); transform-origin:left; transform:rotate(-1.5deg); }
+        .wire-segment { height:4px; border-radius:2px; flex:1; }
+        .wire-segment.left { background:linear-gradient(90deg,var(--charge-color),color-mix(in srgb,var(--charge-color) 20%,transparent)); }
+        .wire-segment.right { background:linear-gradient(270deg,var(--charge-color),color-mix(in srgb,var(--charge-color) 20%,transparent)); }
         .charge-point { position:relative; width:30px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-        .charge-bolt { font-size:16px; z-index:2; filter:drop-shadow(0 0 4px rgba(34,197,94,0.6)); animation:bolt-appear 0.6s ease-out; }
+        .charge-bolt { font-size:16px; z-index:2; filter:drop-shadow(0 0 6px var(--charge-color)); animation:bolt-appear 0.6s ease-out; }
         @keyframes bolt-appear { 0%{transform:scale(1.8) rotate(-20deg);opacity:0} 40%{transform:scale(1.2) rotate(5deg);opacity:1} 100%{transform:scale(1) rotate(0)} }
         .charge-sparks { position:absolute; width:100%; height:100%; pointer-events:none; }
-        .charge-sparks span { position:absolute; width:3px; height:3px; background:#fbbf24; border-radius:50%; box-shadow:0 0 4px #fbbf24; }
+        .charge-sparks span { position:absolute; width:3px; height:3px; background:#e879f9; border-radius:50%; box-shadow:0 0 4px #e879f9; }
         .charge-sparks span:nth-child(1) { top:-8px; left:6px; animation:spark-fly 1.5s ease-out infinite; --sx:-8px; --sy:-12px; }
         .charge-sparks span:nth-child(2) { top:-4px; right:4px; animation:spark-fly 1.5s ease-out 0.3s infinite; --sx:10px; --sy:-8px; }
         .charge-sparks span:nth-child(3) { bottom:-6px; left:10px; animation:spark-fly 1.5s ease-out 0.6s infinite; --sx:-5px; --sy:10px; }
-        @keyframes spark-fly { 0%{opacity:1;transform:translate(0,0) scale(1)} 50%{opacity:0.8} 100%{opacity:0;transform:translate(var(--sx,5px),var(--sy,-10px)) scale(0)} }
+        @keyframes spark-fly { 0%{opacity:1;transform:translate(0,0) scale(1)} 50%{opacity:0.8} 100%{opacity:0;transform:translate(var(--sx),var(--sy)) scale(0)} }
         
-        .charge-unit-status, .status-done, .status-pending { font-size:11px; margin-top:4px; }
-        .status-done { color:#22c55e; font-weight:600; }
+        .charge-unit-status,.status-done,.status-pending { font-size:11px; margin-top:4px; }
+        .status-done { font-weight:600; }
         .status-pending { color:#888; }
-        
         .team-charge-bar { margin-top:6px; }
-        .tcb-track { height:4px; background:rgba(255,255,255,0.1); border-radius:10px; overflow:hidden; margin-bottom:6px; }
-        .tcb-fill { height:100%; background:linear-gradient(90deg,#4f46e5,#6366f1); border-radius:10px; transition:width 0.5s ease; }
-        .tcb-fill.tcb-complete { background:linear-gradient(90deg,#16a34a,#22c55e); }
-        
+        .tcb-track { height:4px; background:rgba(168,85,247,0.08); border-radius:10px; overflow:hidden; margin-bottom:6px; }
+        .tcb-fill { height:100%; border-radius:10px; transition:width 0.5s; }
         .charge-connector { display:flex; align-items:center; gap:10px; margin:14px 0; }
-        .conn-line { flex:1; height:1px; background:rgba(255,255,255,0.08); }
-        .conn-label { font-size:9px; color:#555; text-transform:uppercase; letter-spacing:1px; white-space:nowrap; }
+        .conn-line { flex:1; height:1px; }
+        .conn-label { font-size:9px; color:#666; text-transform:uppercase; letter-spacing:1px; white-space:nowrap; }
         
-        /* ===== PHASE CARD ===== */
-        .arirang-phase-card { border:1px solid rgba(147,51,234,0.2); }
-        .arirang-phase-card.phase-charged { border-color:rgba(34,197,94,0.3); background:linear-gradient(135deg,rgba(34,197,94,0.03),transparent); }
-        .phase-header-left { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-        .phase-codename-badge { font-size:10px; color:#a855f7; background:rgba(147,51,234,0.1); padding:3px 8px; border-radius:10px; }
-        .era-tag { font-size:9px; color:#818cf8; background:rgba(129,140,248,0.1); padding:2px 6px; border-radius:6px; }
-        .charged-badge { background:rgba(34,197,94,0.15); color:#22c55e; padding:4px 10px; border-radius:10px; font-size:11px; font-weight:600; }
+        .phase-result-box { display:flex; align-items:center; justify-content:center; gap:10px; padding:15px; margin-top:15px; border-radius:12px; background:rgba(168,85,247,0.03); border:1px solid rgba(168,85,247,0.1); }
+        .phase-result-box.result-charged { background:linear-gradient(135deg,color-mix(in srgb,var(--result-accent) 10%,transparent),transparent); border-color:color-mix(in srgb,var(--result-accent) 30%,transparent); flex-direction:column; }
+        .result-icon { font-size:22px; }
+        .result-msg { font-size:14px; color:#888; }
+        .result-content { display:flex; flex-direction:column; align-items:center; gap:10px; }
+        .phase-result-box.result-charged .result-msg { color:var(--result-accent,#e879f9); font-weight:700; font-size:16px; }
         
-        /* Album + Spotify */
-        .album-spotify-row { display:flex; flex-direction:column; gap:8px; margin-bottom:15px; }
-        .album-spotify-item { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; background:rgba(255,255,255,0.02); border-radius:10px; border:1px solid rgba(255,255,255,0.05); }
-        .album-info { display:flex; align-items:center; gap:8px; flex:1; min-width:0; }
-        .album-disc { font-size:16px; flex-shrink:0; }
-        .album-title { font-size:13px; color:#ccc; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
-        .spotify-btn { display:inline-flex; align-items:center; gap:5px; padding:6px 12px; background:#1DB954; color:#fff; border-radius:20px; font-size:11px; font-weight:600; text-decoration:none; white-space:nowrap; flex-shrink:0; transition:all 0.2s ease; }
-        .spotify-btn:hover { background:#1ed760; transform:scale(1.03); }
-        .spotify-pill { display:inline-flex; align-items:center; gap:4px; padding:4px 10px; background:rgba(29,185,84,0.15); color:#1DB954; border-radius:12px; font-size:10px; font-weight:600; text-decoration:none; flex-shrink:0; }
-        .spotify-pill:hover { background:rgba(29,185,84,0.25); }
+        .surprise-btn { display:flex; align-items:center; gap:8px; border:none; padding:12px 24px; border-radius:25px; color:#fff; font-size:14px; font-weight:700; cursor:pointer; transition:all 0.3s; animation:surprise-pulse 2s ease-in-out infinite; }
+        .surprise-btn:hover { transform:scale(1.05); box-shadow:0 0 20px rgba(168,85,247,0.5); }
+        @keyframes surprise-pulse { 0%,100%{box-shadow:0 0 10px rgba(168,85,247,0.3)} 50%{box-shadow:0 0 25px rgba(168,85,247,0.6)} }
+        .surprise-icon { font-size:18px; }
+        .surprise-sparkle { font-size:16px; animation:sparkle-rotate 2s linear infinite; }
+        @keyframes sparkle-rotate { 0%{transform:rotate(0)} 100%{transform:rotate(360deg)} }
         
-        /* Qualification / Result box */
-        .phase-result-box { display:flex; align-items:center; justify-content:center; gap:10px; padding:12px; margin-top:15px; border-radius:8px; background:rgba(255,255,255,0.02); border:1px solid #222; }
-        .phase-result-box.result-charged { background:rgba(34,197,94,0.08); border-color:rgba(34,197,94,0.2); }
-        .result-icon { font-size:18px; }
-        .result-msg { font-size:12px; color:#888; }
-        .phase-result-box.result-charged .result-msg { color:#22c55e; }
+        .xp-reward-preview { display:flex; align-items:center; justify-content:center; gap:8px; margin-top:12px; padding:10px; border-radius:10px; }
+        .xp-icon { font-size:18px; }
+        .xp-text { font-size:12px; font-weight:600; }
         
-        /* Track Checklist */
-        .track-checklist-details { border-top:1px solid rgba(255,255,255,0.05); margin-top:10px; }
+        .track-checklist-details { border-top:1px solid rgba(168,85,247,0.06); margin-top:10px; }
         .checklist-summary { display:flex; justify-content:space-between; align-items:center; padding:12px 0; font-size:12px; color:#888; cursor:pointer; list-style:none; user-select:none; }
         .checklist-summary::-webkit-details-marker { display:none; }
-        .checklist-summary::before { content:'▸'; margin-right:6px; transition:transform 0.2s; }
+        .checklist-summary::before { content:'▸'; margin-right:6px; transition:transform 0.2s; color:#a855f7; }
         details[open] .checklist-summary::before { transform:rotate(90deg); }
-        .checklist-count { color:#a855f7; font-weight:600; }
-        .checklist-count.all-done { color:#22c55e; }
+        .checklist-count { font-weight:600; }
         .track-list { display:flex; flex-direction:column; gap:5px; max-height:200px; overflow-y:auto; }
-        .track-row { display:flex; align-items:center; padding:8px 10px; background:rgba(255,255,255,0.02); border-radius:6px; border-left:2px solid #333; }
-        .track-row.done { background:rgba(34,197,94,0.05); border-left-color:#22c55e; }
-        .track-idx { width:20px; height:20px; border-radius:50%; background:#222; color:#666; font-size:10px; font-weight:600; display:flex; align-items:center; justify-content:center; margin-right:10px; flex-shrink:0; }
-        .track-row.done .track-idx { background:#22c55e; color:#000; }
+        .track-row { display:flex; align-items:center; padding:8px 10px; background:rgba(168,85,247,0.02); border-radius:6px; border-left:2px solid #222; }
+        .track-row.done { background:color-mix(in srgb,var(--track-accent,#a855f7) 5%,transparent); border-left-color:var(--track-accent,#a855f7); }
+        .track-idx { width:20px; height:20px; border-radius:50%; background:#1a1a1a; color:#666; font-size:10px; font-weight:600; display:flex; align-items:center; justify-content:center; margin-right:10px; flex-shrink:0; }
+        .track-row.done .track-idx { color:#fff; }
         .track-name { flex:1; min-width:0; font-size:12px; color:#ccc; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-        .track-count { font-size:11px; color:#666; padding:2px 8px; background:rgba(255,255,255,0.05); border-radius:8px; margin-left:8px; }
-        .track-count.complete { color:#22c55e; background:rgba(34,197,94,0.1); }
+        .track-count { font-size:11px; color:#666; padding:2px 8px; border-radius:8px; margin-left:8px; }
+        .track-count.complete { font-weight:500; }
         
-        /* ===== REST CARD ===== */
-        .arirang-rest-card { background:linear-gradient(135deg,rgba(50,50,70,0.1),transparent); }
+        /* REST CARD */
+        .arirang-rest-card { background:linear-gradient(135deg,rgba(168,85,247,0.03),transparent); }
         .rest-content { display:flex; align-items:center; gap:15px; padding:10px; }
         .rest-icon { font-size:36px; opacity:0.6; }
         .rest-text h3 { font-size:14px; color:#888; margin:0; }
         .rest-text p { font-size:12px; color:#555; margin:4px 0 0; }
         
-        /* ===== VAULT ===== */
+        /* VAULT */
         .arirang-vault-card .card-header { display:flex; justify-content:space-between; align-items:center; }
-        .unclaimed-count { background:rgba(251,191,36,0.15); color:#fbbf24; padding:3px 8px; border-radius:8px; font-size:10px; font-weight:600; }
+        .unclaimed-count { background:rgba(232,121,249,0.15); color:#e879f9; padding:3px 8px; border-radius:8px; font-size:10px; font-weight:600; }
         .vault-grid { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; }
-        .vault-box { width:40px; height:40px; border-radius:8px; display:flex; flex-direction:column; align-items:center; justify-content:center; transition:all 0.2s ease; min-width:44px; min-height:44px; }
+        .vault-box { width:40px; height:40px; border-radius:8px; display:flex; flex-direction:column; align-items:center; justify-content:center; transition:all 0.2s; min-width:44px; min-height:44px; }
         .box-icon { font-size:14px; }
         .box-day { font-size:8px; color:#666; margin-top:2px; }
-        .vault-box.locked { background:rgba(40,40,50,0.3); border:1px dashed #2a2a35; }
-        .vault-box.claimed { background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.3); }
-        .vault-box.claimable { background:rgba(251,191,36,0.15); border:1px solid rgba(251,191,36,0.4); cursor:pointer; animation:claimable-glow 2s ease-in-out infinite; }
-        .vault-box.claimable:hover { transform:scale(1.1); box-shadow:0 0 15px rgba(251,191,36,0.3); }
-        @keyframes claimable-glow { 0%,100%{box-shadow:0 0 0 rgba(251,191,36,0)} 50%{box-shadow:0 0 12px rgba(251,191,36,0.3)} }
-        .vault-box.missed { background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.2); opacity:0.6; }
-        .vault-box.active { background:rgba(147,51,234,0.1); border:1px solid rgba(147,51,234,0.3); }
-        .vault-box.pending { background:rgba(60,60,70,0.1); border:1px solid #2a2a35; }
+        .vault-box.locked { background:rgba(40,40,50,0.3); border:1px dashed #222; }
+        .vault-box.claimed { background:var(--vault-bg,rgba(168,85,247,0.1)); border:1px solid var(--vault-border,rgba(168,85,247,0.3)); }
+        .vault-box.claimable { background:rgba(232,121,249,0.12); border:1px solid rgba(232,121,249,0.35); cursor:pointer; animation:claimable-glow 2s ease-in-out infinite; }
+        .vault-box.claimable:hover { transform:scale(1.1); box-shadow:0 0 15px rgba(232,121,249,0.3); }
+        @keyframes claimable-glow { 0%,100%{box-shadow:0 0 0 transparent} 50%{box-shadow:0 0 15px rgba(232,121,249,0.3)} }
+        .vault-box.missed { background:rgba(239,68,68,0.06); border:1px solid rgba(239,68,68,0.15); opacity:0.5; }
+        .vault-box.active { background:var(--vault-bg,rgba(168,85,247,0.05)); border:1px solid var(--vault-border,rgba(168,85,247,0.2)); }
+        .vault-box.pending { background:rgba(60,60,70,0.08); border:1px solid #1f1f25; }
         
-        /* ===== ACTIVATION CARD ===== */
-        .arirang-activation-card { background:linear-gradient(135deg,rgba(147,51,234,0.05),rgba(168,85,247,0.02)); border:1px dashed rgba(147,51,234,0.2); }
-        .arirang-activation-card.activated { border:1px solid rgba(232,121,249,0.3); animation:activation-shine 3s ease-in-out infinite; }
-        @keyframes activation-shine { 0%,100%{box-shadow:0 0 20px rgba(232,121,249,0.1)} 50%{box-shadow:0 0 30px rgba(232,121,249,0.2)} }
+        /* ACTIVATION */
+        .arirang-activation-card { background:linear-gradient(135deg,rgba(168,85,247,0.04),rgba(124,58,237,0.02)); border:1px dashed rgba(168,85,247,0.2); }
+        .arirang-activation-card.activated { border:1px solid rgba(232,121,249,0.4); animation:activation-shine 3s ease-in-out infinite; }
+        @keyframes activation-shine { 0%,100%{box-shadow:0 0 20px rgba(232,121,249,0.1)} 50%{box-shadow:0 0 40px rgba(232,121,249,0.2)} }
         .activation-content { display:flex; align-items:center; gap:15px; }
         .activation-icon-wrap { font-size:36px; }
         .activation-icon-wrap.glow { animation:icon-glow 2s ease-in-out infinite; }
-        @keyframes icon-glow { 0%,100%{filter:drop-shadow(0 0 5px rgba(232,121,249,0.3))} 50%{filter:drop-shadow(0 0 15px rgba(232,121,249,0.6))} }
+        @keyframes icon-glow { 0%,100%{filter:drop-shadow(0 0 5px rgba(232,121,249,0.3))} 50%{filter:drop-shadow(0 0 20px rgba(232,121,249,0.6))} }
         .activation-info { flex:1; }
         .activation-title { font-size:14px; font-weight:600; color:#a855f7; margin:0; }
         .arirang-activation-card.activated .activation-title { color:#e879f9; }
         .activation-desc { font-size:12px; color:#666; margin:4px 0 0; }
         .activation-progress { display:flex; align-items:center; gap:10px; margin-top:8px; }
-        .activation-bar { flex:1; height:4px; background:rgba(255,255,255,0.1); border-radius:10px; overflow:hidden; }
-        .activation-fill { height:100%; background:#7c3aed; border-radius:10px; }
+        .activation-bar { flex:1; height:4px; background:rgba(168,85,247,0.08); border-radius:10px; overflow:hidden; }
+        .activation-fill { height:100%; background:linear-gradient(90deg,#7c3aed,#a855f7); border-radius:10px; }
         .activation-count { font-size:11px; color:#666; }
         
-        /* ===== ACTION CARD ===== */
-        .arirang-action-card { cursor:pointer; transition:all 0.2s ease; }
-        .arirang-action-card:hover { border-color:rgba(147,51,234,0.3); }
+        /* ACTION CARD */
+        .arirang-action-card { cursor:pointer; transition:all 0.2s; }
+        .arirang-action-card:hover { border-color:rgba(168,85,247,0.3); }
         .action-content { display:flex; align-items:center; gap:12px; }
         .action-icon { font-size:22px; }
         .action-text { flex:1; }
@@ -16760,109 +16871,250 @@ function addArirangStyles() {
         .action-subtitle { font-size:11px; color:#666; }
         .action-arrow { font-size:18px; color:#555; }
         
-        /* ===== HOME WIDGET ===== */
-        .arirang-home-widget { display:flex; align-items:center; gap:12px; padding:15px; background:linear-gradient(135deg,rgba(147,51,234,0.08),rgba(168,85,247,0.03)); border:1px solid rgba(147,51,234,0.2); border-radius:12px; margin-bottom:15px; cursor:pointer; transition:all 0.3s ease; }
-        .arirang-home-widget:hover { border-color:rgba(147,51,234,0.4); transform:translateY(-2px); }
+        /* HOME WIDGET */
+        .arirang-home-widget { display:flex; align-items:center; gap:12px; padding:15px; background:linear-gradient(135deg,rgba(168,85,247,0.08),rgba(124,58,237,0.03)); border:1px solid rgba(168,85,247,0.2); border-radius:12px; margin-bottom:15px; cursor:pointer; transition:all 0.3s; }
+        .arirang-home-widget:hover { border-color:rgba(168,85,247,0.4); transform:translateY(-2px); }
         .widget-bomb-charge { display:flex; flex-direction:column; align-items:center; }
-        .widget-sphere-charge { width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg,rgba(147,51,234,0.1),rgba(30,27,75,0.2)); border:1px solid rgba(147,51,234,0.4); display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; }
-        .widget-fill { position:absolute; bottom:0; left:0; right:0; background:linear-gradient(0deg,rgba(147,51,234,0.6),rgba(168,85,247,0.2)); transition:height 0.5s ease; }
+        .widget-sphere-charge { width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg,rgba(168,85,247,0.1),rgba(76,29,149,0.2)); border:1px solid rgba(168,85,247,0.4); display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; }
+        .widget-fill { position:absolute; bottom:0; left:0; right:0; background:linear-gradient(0deg,rgba(168,85,247,0.6),rgba(124,58,237,0.2)); transition:height 0.5s; }
         .widget-logo { font-size:14px; color:#a855f7; position:relative; z-index:1; }
         .widget-handle-c { width:12px; height:16px; background:linear-gradient(180deg,#2a2a2a,#1a1a1a); border-radius:0 0 4px 4px; margin-top:-4px; }
         .widget-info { flex:1; }
         .widget-header { display:flex; align-items:center; gap:8px; }
         .widget-title { font-size:12px; font-weight:700; color:#a855f7; letter-spacing:0.5px; }
-        .widget-live-dot { width:6px; height:6px; background:#22c55e; border-radius:50%; animation:blink 2s ease-in-out infinite; }
-        .widget-progress-bar { height:3px; background:rgba(255,255,255,0.1); border-radius:10px; overflow:hidden; margin:4px 0; }
-        .widget-progress-fill { height:100%; background:linear-gradient(90deg,#7c3aed,#a855f7); border-radius:10px; transition:width 0.5s ease; }
+        .widget-live-dot { width:6px; height:6px; background:#a855f7; border-radius:50%; animation:blink 2s ease-in-out infinite; }
+        .widget-progress-bar { height:3px; background:rgba(168,85,247,0.1); border-radius:10px; overflow:hidden; margin:4px 0; }
+        .widget-progress-fill { height:100%; background:linear-gradient(90deg,#7c3aed,#a855f7); border-radius:10px; transition:width 0.5s; }
         .widget-sub { font-size:10px; color:#666; }
         .widget-arrow { font-size:16px; color:#555; }
         
-        /* ===== MODALS ===== */
-        .phase-detail-modal, .arirang-badge-modal, .arirang-lb-modal { position:fixed; top:0; left:0; right:0; bottom:0; z-index:10000; display:flex; align-items:center; justify-content:center; padding:20px; opacity:0; transition:opacity 0.3s ease; }
-        .phase-detail-modal.show, .arirang-badge-modal.show, .arirang-lb-modal.show { opacity:1; }
-        .modal-bg { position:absolute; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); }
+        /* MODALS */
+        .phase-detail-modal,.arirang-badge-modal,.arirang-lb-modal { position:fixed; inset:0; z-index:10000; display:flex; align-items:center; justify-content:center; padding:20px; opacity:0; transition:opacity 0.3s; }
+        .phase-detail-modal.show,.arirang-badge-modal.show,.arirang-lb-modal.show { opacity:1; }
+        .modal-bg { position:absolute; inset:0; background:rgba(0,0,0,0.9); }
         
-        .phase-detail-card { position:relative; background:#0f0f18; border-radius:14px; border:1px solid #1a1a24; padding:20px; max-width:320px; width:100%; }
+        .phase-detail-card { position:relative; background:#0a0a12; border-radius:14px; border:1px solid color-mix(in srgb,var(--pd-accent,#a855f7) 25%,transparent); padding:20px; max-width:320px; width:100%; }
         .phase-detail-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px; }
         .phase-detail-header h3 { font-size:15px; color:#fff; margin:0; }
-        .phase-detail-era { font-size:10px; color:#818cf8; display:block; margin-top:2px; }
+        .phase-detail-era { font-size:10px; display:block; margin-top:2px; }
         .phase-detail-date { font-size:11px; color:#666; display:block; }
         .phase-state-badge { font-size:10px; font-weight:700; padding:4px 10px; border-radius:8px; white-space:nowrap; }
-        .state-charged { background:rgba(34,197,94,0.15); color:#22c55e; }
-        .state-active { background:rgba(147,51,234,0.15); color:#a855f7; }
+        .state-charged { background:rgba(168,85,247,0.15); color:#a855f7; }
+        .state-active { background:rgba(232,121,249,0.15); color:#e879f9; }
         .state-missed { background:rgba(239,68,68,0.12); color:#ef4444; }
         .state-locked { background:rgba(100,100,100,0.12); color:#666; }
         .phase-detail-albums { margin-bottom:16px; }
-        .phase-album-row { display:flex; align-items:center; gap:8px; padding:8px 10px; background:rgba(255,255,255,0.02); border-radius:8px; margin-bottom:6px; }
+        .phase-album-row { display:flex; align-items:center; gap:8px; padding:8px 10px; background:rgba(168,85,247,0.03); border-radius:8px; margin-bottom:6px; }
         .album-label { flex:1; font-size:12px; color:#ccc; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .phase-detail-charges { display:flex; flex-direction:column; gap:6px; margin-bottom:16px; }
         .charge-row { display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:8px; font-size:12px; color:#888; }
-        .charge-row.met { background:rgba(34,197,94,0.06); color:#22c55e; }
+        .charge-row.met { background:color-mix(in srgb,var(--cr-accent,#a855f7) 8%,transparent); color:var(--cr-accent,#a855f7); }
         .charge-row.unmet { background:rgba(255,255,255,0.02); }
         .charge-badge { margin-left:auto; font-size:10px; font-weight:700; padding:2px 8px; border-radius:6px; }
-        .charge-row.met .charge-badge { background:rgba(34,197,94,0.15); color:#22c55e; }
+        .charge-row.met .charge-badge { background:color-mix(in srgb,var(--cr-accent,#a855f7) 15%,transparent); color:var(--cr-accent,#a855f7); }
         .charge-row.unmet .charge-badge { background:rgba(239,68,68,0.1); color:#ef4444; }
-        .btn-close-phase { width:100%; padding:10px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:8px; color:#888; font-size:12px; cursor:pointer; }
         
-        .badge-reveal { position:relative; text-align:center; padding:30px; max-width:280px; background:#0f0f18; border-radius:16px; border:1px solid rgba(251,191,36,0.2); }
+        .btn-phase-surprise { width:100%; padding:12px; border:none; border-radius:10px; color:#fff; font-size:13px; font-weight:700; cursor:pointer; margin-bottom:10px; transition:all 0.3s; }
+        .btn-phase-surprise:hover { transform:scale(1.02); box-shadow:0 0 15px rgba(168,85,247,0.4); }
+        
+        .btn-close-phase { width:100%; padding:10px; background:rgba(168,85,247,0.08); border:1px solid rgba(168,85,247,0.15); border-radius:8px; color:#888; font-size:12px; cursor:pointer; transition:all 0.2s; }
+        .btn-close-phase:hover { background:rgba(168,85,247,0.12); color:#fff; }
+        
+        .badge-reveal { position:relative; text-align:center; padding:30px; max-width:280px; background:#0a0a12; border-radius:16px; border:1px solid rgba(232,121,249,0.3); }
         .badge-sparkle { font-size:24px; margin-bottom:10px; animation:sparkle-spin 2s ease-in-out infinite; }
         @keyframes sparkle-spin { 0%,100%{transform:rotate(-5deg) scale(1)} 50%{transform:rotate(5deg) scale(1.1)} }
         .badge-img-wrap { position:relative; display:inline-block; }
-        .badge-img-wrap::before { content:''; position:absolute; top:-10px; left:-10px; right:-10px; bottom:-10px; background:radial-gradient(circle,rgba(251,191,36,0.4),transparent 70%); animation:badge-glow 2s ease-in-out infinite; }
+        .badge-img-wrap::before { content:''; position:absolute; inset:-10px; background:radial-gradient(circle,rgba(232,121,249,0.4),transparent 70%); animation:badge-glow 2s ease-in-out infinite; }
         @keyframes badge-glow { 0%,100%{transform:scale(1);opacity:0.5} 50%{transform:scale(1.1);opacity:1} }
-        .badge-img { width:90px; height:90px; border-radius:50%; border:3px solid #fbbf24; object-fit:cover; position:relative; }
-        .badge-reveal h3 { color:#fbbf24; font-size:16px; margin:15px 0 5px; }
+        .badge-img { width:90px; height:90px; border-radius:50%; border:3px solid #e879f9; object-fit:cover; position:relative; }
+        .badge-reveal h3 { color:#e879f9; font-size:16px; margin:15px 0 5px; }
         .badge-name { color:#fff; font-size:13px; font-weight:600; margin:0; }
         .badge-desc { color:#888; font-size:11px; margin:5px 0 0; }
-        .badge-era { color:#818cf8; font-size:10px; margin:4px 0 0; }
-        .badge-xp { color:#22c55e; font-size:18px; font-weight:700; margin-top:15px; }
+        .badge-era { color:#a855f7; font-size:10px; margin:4px 0 0; }
+        .badge-xp { color:#c084fc; font-size:18px; font-weight:700; margin-top:15px; }
         
-        .lb-panel { position:relative; background:#0f0f15; border-radius:16px; width:100%; max-width:360px; max-height:70vh; overflow:hidden; border:1px solid #1a1a24; }
-        .lb-header { display:flex; justify-content:space-between; align-items:center; padding:15px 20px; border-bottom:1px solid #1a1a24; }
+        .lb-panel { position:relative; background:#0a0a12; border-radius:16px; width:100%; max-width:360px; max-height:70vh; overflow:hidden; border:1px solid rgba(168,85,247,0.2); }
+        .lb-header { display:flex; justify-content:space-between; align-items:center; padding:15px 20px; border-bottom:1px solid rgba(168,85,247,0.1); }
         .lb-header h3 { margin:0; font-size:15px; color:#fff; }
-        .lb-header button { background:none; border:none; color:#666; font-size:18px; cursor:pointer; padding:5px; }
+        .lb-header button { background:none; border:none; color:#666; font-size:18px; cursor:pointer; }
         .lb-body { padding:12px; max-height:55vh; overflow-y:auto; }
-        .lb-entry { display:flex; align-items:center; padding:10px 12px; background:rgba(255,255,255,0.02); border-radius:10px; margin-bottom:6px; border-left:3px solid var(--team-color,#7b2cbf); }
-        .lb-rank { width:26px; height:26px; border-radius:50%; background:#1a1a24; color:#888; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; margin-right:12px; }
-        .lb-rank.top1 { background:#fbbf24; color:#000; }
-        .lb-rank.top2 { background:#94a3b8; color:#000; }
-        .lb-rank.top3 { background:#b45309; color:#fff; }
+        .lb-entry { display:flex; align-items:center; padding:10px 12px; background:rgba(168,85,247,0.03); border-radius:10px; margin-bottom:6px; border-left:3px solid var(--team-color); }
+        .lb-rank { width:26px; height:26px; border-radius:50%; background:rgba(168,85,247,0.1); color:#888; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; margin-right:12px; }
+        .lb-rank.top1 { background:linear-gradient(135deg,#fbbf24,#f59e0b); color:#000; }
+        .lb-rank.top2 { background:linear-gradient(135deg,#94a3b8,#64748b); color:#000; }
+        .lb-rank.top3 { background:linear-gradient(135deg,#c084fc,#a855f7); color:#fff; }
         .lb-info { flex:1; }
         .lb-name { font-size:12px; color:#fff; font-weight:600; display:block; }
         .lb-team { font-size:10px; color:var(--team-color,#888); }
         .lb-stats { text-align:right; }
-        .lb-phases { font-size:11px; color:#22c55e; font-weight:600; }
+        .lb-phases { font-size:11px; color:#a855f7; font-weight:600; }
         .lb-xp { font-size:10px; color:#666; display:block; }
         .lb-empty { text-align:center; padding:40px 20px; color:#555; }
         .lb-empty span { font-size:32px; display:block; margin-bottom:10px; }
         
-        /* ===== RESPONSIVE ===== */
-        @media (max-width:360px) {
-            .charge-sphere { width:90px; height:90px; }
+        @media (max-width:380px) {
+            .charging-bomb-display { transform:scale(0.85); transform-origin:center top; padding:40px 10px 10px; margin-bottom:-40px; }
+            .charge-sphere { width:100px; height:100px; }
+            .bts-logo { font-size:32px; }
             .power-stats-grid { gap:8px; }
             .power-stat { padding:8px 12px; }
             .power-stat-value { font-size:18px; }
-            .phase-dot { min-width:38px; min-height:34px; }
-            .vault-box { width:36px; height:36px; min-width:38px; min-height:38px; }
+            .phase-dot { min-width:38px; min-height:30px; }
+            .vault-box { min-width:38px; min-height:38px; }
             .era-cell { min-width:60px; padding:6px 8px; }
             .spotify-btn span { display:none; }
             .spotify-btn { padding:6px 8px; }
         }
         
         @media (prefers-reduced-motion:reduce) {
-            .wire-flow { animation:none; display:none; }
-            .charge-sparks span { animation:none; display:none; }
-            .charge-particles span { animation:none; }
-            .charge-ambient-glow { animation:none; }
+            .wire-flow,.charge-sparks span,.power-bar-shimmer,.energy-fill-gradient::after,.energy-fill-surface,.concert-star,.fill-bubble,.energy-ring { animation:none !important; }
             .charge-wire.wire-live { animation:none; }
-            .power-bar-shimmer { animation:none; display:none; }
-            .energy-fill-gradient::after { animation:none; }
-            .energy-fill-surface { animation:none; }
+            .charge-ambient-blazing,.charge-ambient-fully-charged { animation:none; }
         }
     `;
-    
     document.head.appendChild(style);
 }
+
+// =============================================
+// DAILY WAVE STYLES
+// =============================================
+function addDailyWaveStyles() {
+    if (document.getElementById('daily-wave-styles')) return;
+    const style = document.createElement('style');
+    style.id = 'daily-wave-styles';
+    style.textContent = `
+        #daily-wave-root { position:fixed; inset:0; z-index:100000; background:#050508; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; overflow:hidden; opacity:0; transition:opacity 0.5s; display:flex; flex-direction:column; align-items:center; }
+        #daily-wave-root.visible { opacity:1; }
+        .dw-bg-layer { position:absolute; inset:0; z-index:0; }
+        .dw-gradient { position:absolute; inset:0; background:radial-gradient(ellipse at center 40%,var(--bg-glow,#a855f7) 0%,transparent 70%); opacity:0.2; transition:background 1s; }
+        .dw-stars { position:absolute; inset:0; }
+        .dw-star { position:absolute; width:var(--star-size,2px); height:var(--star-size,2px); background:#fff; border-radius:50%; opacity:0; animation:dw-twinkle 3s infinite ease-in-out; box-shadow:0 0 4px var(--theme-color); }
+        @keyframes dw-twinkle { 0%,100%{opacity:0.2;transform:scale(0.8)} 50%{opacity:0.9;transform:scale(1.3)} }
+        .dw-fireworks { position:absolute; inset:0; pointer-events:none; background-image:radial-gradient(circle,var(--theme-color) 1px,transparent 1px); background-size:50px 50px; animation:dw-fireworks 2s ease-out infinite; }
+        @keyframes dw-fireworks { 0%{opacity:0.5;transform:scale(0.8)} 100%{opacity:0;transform:scale(1.5)} }
+        .dw-header { position:absolute; top:0; left:0; right:0; z-index:20; display:flex; justify-content:space-between; align-items:center; padding:15px 20px; background:linear-gradient(to bottom,rgba(0,0,0,0.8),transparent); }
+        .dw-badge { display:flex; align-items:center; gap:8px; background:rgba(168,85,247,0.15); backdrop-filter:blur(10px); padding:6px 12px; border-radius:20px; border:1px solid rgba(168,85,247,0.3); }
+        .dw-dot { width:6px; height:6px; border-radius:50%; background:var(--theme-color); animation:dw-pulse 2s infinite; }
+        @keyframes dw-pulse { 0%{box-shadow:0 0 0 0 var(--theme-color)} 70%{box-shadow:0 0 0 8px transparent} }
+        .dw-badge-text { font-size:10px; font-weight:700; color:#fff; letter-spacing:1.5px; }
+        .dw-close { background:rgba(255,255,255,0.1); border:none; color:#fff; width:40px; height:40px; border-radius:50%; font-size:20px; cursor:pointer; transition:all 0.2s; backdrop-filter:blur(10px); }
+        .dw-close:hover { background:rgba(255,255,255,0.2); transform:scale(1.1); }
+        .dw-main { position:relative; z-index:10; flex:1; width:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:80px 20px 200px; }
+        .dw-info { text-align:center; margin-bottom:20px; transform:translateY(20px); opacity:0; animation:dw-fade-up 0.8s forwards 0.2s; }
+        .dw-era { font-size:40px; display:block; margin-bottom:8px; text-shadow:0 0 30px var(--theme-color); animation:dw-era-pulse 3s ease-in-out infinite; }
+        @keyframes dw-era-pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
+        .dw-title { font-size:28px; font-weight:800; color:#fff; margin:0; letter-spacing:-0.5px; text-shadow:0 0 20px rgba(0,0,0,0.5); }
+        .dw-artist { font-size:13px; color:rgba(255,255,255,0.6); margin-top:6px; }
+        @keyframes dw-fade-up { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+        .dw-stage { position:relative; width:100%; height:280px; display:flex; align-items:center; justify-content:center; }
+        .dw-ambient-light { position:absolute; width:250px; height:250px; border-radius:50%; background:var(--theme-color); filter:blur(100px); opacity:0.25; animation:dw-breathe 4s ease-in-out infinite; }
+        @keyframes dw-breathe { 0%,100%{transform:scale(0.9);opacity:0.2} 50%{transform:scale(1.2);opacity:0.3} }
+        .dw-pivot { transform-origin:center bottom; position:relative; }
+        .dw-bomb { display:flex; flex-direction:column; align-items:center; filter:drop-shadow(0 15px 40px rgba(0,0,0,0.6)); }
+        .dw-sphere { width:120px; height:120px; border-radius:50%; background:radial-gradient(circle at 30% 30%,rgba(255,255,255,0.15),rgba(0,0,0,0.4)); border:1px solid rgba(255,255,255,0.2); box-shadow:inset 0 0 30px var(--theme-color),0 0 25px var(--theme-color); position:relative; display:flex; align-items:center; justify-content:center; overflow:hidden; transition:box-shadow 0.5s; }
+        .dw-sphere.finale-glow { box-shadow:inset 0 0 40px var(--theme-color),0 0 50px var(--theme-color),0 0 100px var(--theme-color); animation:dw-finale-glow 1s ease-in-out infinite alternate; }
+        @keyframes dw-finale-glow { 0%{box-shadow:inset 0 0 40px var(--theme-color),0 0 50px var(--theme-color)} 100%{box-shadow:inset 0 0 60px var(--theme-color),0 0 80px var(--theme-color),0 0 120px var(--theme-color)} }
+        .dw-fill { position:absolute; bottom:0; left:0; right:0; height:100%; background:linear-gradient(to top,var(--theme-color),transparent); opacity:0.4; transition:all 0.5s; }
+        .dw-logo { font-size:40px; font-weight:700; color:#fff; z-index:5; text-shadow:0 0 15px var(--theme-color); transition:text-shadow 0.5s; }
+        .dw-handle { width:30px; height:110px; background:linear-gradient(90deg,#1a1a1a,#2a2a2a 40%,#111); margin-top:-6px; border-radius:0 0 15px 15px; position:relative; z-index:2; }
+        .dw-handle::before { content:''; position:absolute; top:15px; left:50%; transform:translateX(-50%); width:14px; height:22px; background:#000; border:1px solid #333; border-radius:8px; }
+        .dw-lyrics { text-align:center; margin-top:25px; padding:0 20px; opacity:0; animation:dw-fade-up 0.8s forwards 0.6s; }
+        .dw-lyric-kr { font-size:16px; color:var(--theme-color); font-weight:500; text-shadow:0 0 15px rgba(0,0,0,0.5); animation:dw-lyric-glow 3s ease-in-out infinite; }
+        @keyframes dw-lyric-glow { 0%,100%{opacity:0.8} 50%{opacity:1} }
+        .dw-lyric-en { font-size:12px; color:rgba(255,255,255,0.5); font-style:italic; margin-top:6px; }
+        @keyframes dw-slow-sway { 0%,100%{transform:rotate(0)} 25%{transform:rotate(-10deg) translateX(-12px)} 75%{transform:rotate(10deg) translateX(12px)} }
+        @keyframes dw-ocean { 0%,100%{transform:translateY(0) rotate(0)} 50%{transform:translateY(-20px) rotate(4deg)} }
+        @keyframes dw-heartbeat { 0%,100%{transform:scale(1)} 15%{transform:scale(1.08)} 30%{transform:scale(1)} 45%{transform:scale(1.05)} }
+        @keyframes dw-stars { 0%,100%{transform:translateY(0) rotate(0)} 25%{transform:translateY(-12px) rotate(3deg)} 75%{transform:translateY(-8px) rotate(-3deg)} }
+        @keyframes dw-flutter { 0%,100%{transform:rotate(0)} 25%{transform:rotate(-5deg) translate(-3px,-3px)} 50%{transform:rotate(0) translate(0,-5px)} 75%{transform:rotate(5deg) translate(3px,-3px)} }
+        .dw-player-bar { position:absolute; bottom:0; left:0; right:0; z-index:30; background:linear-gradient(to top,#000 85%,transparent); padding:15px 20px 35px; display:flex; flex-direction:column; gap:12px; }
+        .dw-controls { display:flex; gap:8px; overflow-x:auto; padding-bottom:5px; justify-content:center; flex-wrap:wrap; }
+        .dw-pat-btn { background:rgba(168,85,247,0.1); border:1px solid rgba(168,85,247,0.2); color:rgba(255,255,255,0.7); padding:8px 14px; border-radius:20px; font-size:11px; white-space:nowrap; cursor:pointer; transition:all 0.2s; }
+        .dw-pat-btn:hover { background:rgba(168,85,247,0.2); border-color:rgba(168,85,247,0.4); }
+        .dw-pat-btn.active { background:linear-gradient(135deg,var(--theme-color),#7c3aed); color:#fff; border-color:var(--theme-color); font-weight:700; box-shadow:0 0 15px rgba(168,85,247,0.4); }
+        .dw-color-controls { display:flex; align-items:center; justify-content:center; gap:8px; }
+        .color-label { font-size:10px; color:#666; }
+        .dw-color-btn { width:24px; height:24px; border-radius:50%; border:2px solid rgba(255,255,255,0.2); background:var(--btn-color); cursor:pointer; transition:all 0.2s; }
+        .dw-color-btn:hover { transform:scale(1.2); border-color:#fff; }
+        .dw-color-btn.rainbow { background:linear-gradient(135deg,#ef4444,#fbbf24,#22c55e,#3b82f6,#a855f7); font-size:10px; display:flex; align-items:center; justify-content:center; }
+        .dw-spotify-wrap { width:100%; border-radius:12px; overflow:hidden; background:#000; box-shadow:0 5px 25px rgba(0,0,0,0.6); border:1px solid rgba(168,85,247,0.2); }
+        
+        @media (max-width:380px) {
+            .dw-sphere { width:100px; height:100px; }
+            .dw-logo { font-size:32px; }
+            .dw-handle { width:26px; height:90px; }
+            .dw-title { font-size:22px; }
+            .dw-era { font-size:32px; }
+            .dw-main { padding:70px 15px 180px; }
+            .dw-stage { height:240px; }
+            .dw-pat-btn { padding:6px 10px; font-size:10px; }
+        }
+        @media (prefers-reduced-motion:reduce) {
+            .dw-pivot { animation:none !important; }
+            .dw-star,.dw-ambient-light,.dw-fireworks,.dw-era,.dw-lyric-kr { animation:none; }
+            .dw-star { opacity:0.5; }
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+// =============================================
+// UTILITIES
+// =============================================
+function $(id) { return document.getElementById(id); }
+
+function loading(show) {
+    const loader = $('global-loader');
+    if (loader) loader.style.display = show ? 'flex' : 'none';
+}
+
+function showToast(message, type = 'info') {
+    const existing = document.querySelector('.toast-notification');
+    if (existing) existing.remove();
+    const toast = document.createElement('div');
+    toast.className = `toast-notification toast-${type}`;
+    toast.innerHTML = `<span class="toast-icon">${type === 'error' ? '⚠️' : type === 'success' ? '✓' : 'ℹ️'}</span><span class="toast-message">${message}</span>`;
+    if (!document.getElementById('toast-styles')) {
+        const s = document.createElement('style'); s.id = 'toast-styles';
+        s.textContent = `.toast-notification{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#1a1a24;border:1px solid rgba(168,85,247,0.3);padding:12px 20px;border-radius:12px;z-index:100001;display:flex;align-items:center;gap:10px;animation:toast-in 0.3s ease-out;box-shadow:0 10px 30px rgba(0,0,0,0.5)}.toast-error{border-color:rgba(239,68,68,0.4)}.toast-success{border-color:rgba(34,197,94,0.4)}.toast-icon{font-size:16px}.toast-message{color:#fff;font-size:13px}@keyframes toast-in{from{opacity:0;transform:translateX(-50%) translateY(20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}`;
+        document.head.appendChild(s);
+    }
+    document.body.appendChild(toast);
+    setTimeout(() => { toast.style.animation = 'toast-in 0.3s ease-out reverse'; setTimeout(() => toast.remove(), 300); }, 3000);
+}
+
+const STATE = window.STATE || { agentNo: 'test-agent' };
+
+// =============================================
+// INIT
+// =============================================
+function initArirangProtocol() {
+    addArirangStyles();
+    addDailyWaveStyles();
+    const container = $('operation-defuse-content');
+    if (container) renderArirangProtocol();
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initArirangProtocol);
+} else {
+    initArirangProtocol();
+}
+
+window.renderArirangProtocol = renderArirangProtocol;
+window.closeDailyWave = closeDailyWave;
+window.setWavePattern = setWavePattern;
+window.setBombColor = setBombColor;
+window.showArirangHelp = showArirangHelp;
+window.showEraDetail = showEraDetail;
+window.showPhaseInfo = showPhaseInfo;
+window.claimArirangReward = claimArirangReward;
+window.showArirangLeaderboard = showArirangLeaderboard;
+window.renderArirangHomeWidget = renderArirangHomeWidget;
+window.launchSurprise = launchSurprise;
+
+console.log('%c💜 OPERATION: ARIRANG PROTOCOL v2.0', 'color:#a855f7; font-weight:bold; font-size:16px;');
+console.log('%c📅 March 1-20, 2025 | 20 Phases | +5 XP per charge', 'color:#c084fc; font-size:12px;');
 // ==================== EXPORTS & INIT ====================
 document.addEventListener('DOMContentLoaded', initApp);
 
