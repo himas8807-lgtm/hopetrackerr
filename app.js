@@ -15437,7 +15437,6 @@ function computeBombPower(phasesCharged, totalPhases) {
 
 function fmt(n) { return n?.toLocaleString?.() || n || '0'; }
 function sanitize(str) { if (!str) return ''; return String(str).replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
-function teamColor(team) { return { 'Hyung Line': '#7c3aed', 'Maknae Line': '#a855f7', 'OT7': '#c084fc' }[team] || '#7c3aed'; }
 
 // =============================================
 // ERROR / CLASSIFIED
