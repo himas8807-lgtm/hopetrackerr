@@ -15245,7 +15245,11 @@ window.renderArirangVault = renderArirangVault;
 // Army Bomb Charging Interface
 // =============================================
 
+let _arirangGeneration = 0;
+const _eraDataCache = {};
+
 async function renderArirangProtocol() {
+    const gen = ++_arirangGeneration;
     const container = $('operation-defuse-content');
     if (!container) return;
     
@@ -15261,6 +15265,9 @@ async function renderArirangProtocol() {
     
     try {
         const data = await api('getDefuseStatus', { agentNo: STATE.agentNo });
+        
+        // Stale response guard
+        if (gen !== _arirangGeneration) return;
         
         if (!data.success) {
             container.innerHTML = `
@@ -15280,48 +15287,44 @@ async function renderArirangProtocol() {
         // DEFENSIVE DATA EXTRACTION WITH FALLBACKS
         // =============================================
         
-        const stats = data.stats || {
-            phasesCharged: data.wiresDefused || 0,
-            phasesMissed: data.wiresFailed || 0,
-            totalPhases: data.totalWires || 22,
-            userQualifiedDays: 0,
-            unclaimedRewards: 0,
-            percentComplete: 0
+        // Normalize raw stats first, then apply defaults
+        const raw = data.stats || {};
+        
+        const stats = {
+            phasesCharged:     raw.phasesCharged  ?? raw.wiresDefused      ?? data.wiresDefused ?? 0,
+            phasesMissed:      raw.phasesMissed   ?? raw.wiresFailed       ?? data.wiresFailed  ?? 0,
+            totalPhases:       raw.totalPhases    ?? raw.totalWires        ?? data.totalWires   ?? 22,
+            userQualifiedDays: raw.userQualifiedDays ?? 0,
+            unclaimedRewards:  raw.unclaimedRewards  ?? 0,
+            percentComplete:   raw.percentComplete   ?? 0
         };
         
-        if (stats.wiresDefused !== undefined && stats.phasesCharged === undefined) {
-            stats.phasesCharged = stats.wiresDefused;
-        }
-        if (stats.wiresFailed !== undefined && stats.phasesMissed === undefined) {
-            stats.phasesMissed = stats.wiresFailed;
-        }
-        if (stats.totalWires !== undefined && stats.totalPhases === undefined) {
-            stats.totalPhases = stats.totalWires;
+        // Calculate percentComplete if missing or zero
+        if (stats.percentComplete === 0 && stats.totalPhases > 0) {
+            stats.percentComplete = Math.round((stats.phasesCharged / stats.totalPhases) * 100);
         }
         
-        if (stats.percentComplete === undefined || stats.percentComplete === 0) {
-            stats.percentComplete = stats.totalPhases > 0 
-                ? Math.round((stats.phasesCharged / stats.totalPhases) * 100) 
-                : 0;
-        }
-        
-        const phases = data.phases || data.wires || [];
-        
-        phases.forEach(p => {
-            if (p.wireNumber !== undefined && p.phase === undefined) p.phase = p.wireNumber;
-            if (p.defused !== undefined && p.charged === undefined) p.charged = p.defused;
-            if (p.state === 'defused') p.state = 'charged';
+        // Phases/Wires - normalize naming
+        const phases = (data.phases || data.wires || []).map(p => {
+            const copy = Object.assign({}, p);
+            if (copy.wireNumber !== undefined && copy.phase === undefined) copy.phase = copy.wireNumber;
+            if (copy.defused !== undefined && copy.charged === undefined) copy.charged = copy.defused;
+            if (copy.state === 'defused') copy.state = 'charged';
+            return copy;
         });
         
+        // Eras - provide default if missing
         const eras = data.eras || {};
         
-        const todayChallenge = data.todayChallenge || null;
+        // Today's challenge - normalize
+        const todayChallenge = data.todayChallenge ? Object.assign({}, data.todayChallenge) : null;
         if (todayChallenge) {
             if (todayChallenge.wireNumber !== undefined && todayChallenge.phase === undefined) {
                 todayChallenge.phase = todayChallenge.wireNumber;
             }
         }
         
+        // Bomb status
         const bombStatus = data.bombStatus || 'CHARGING';
         
         // =============================================
@@ -15329,6 +15332,7 @@ async function renderArirangProtocol() {
         // =============================================
         const bombPower = data.bombPower || computeBombPower(stats.phasesCharged || 0, stats.totalPhases || 22);
         
+        // Other fields
         const timeRemaining = data.timeRemaining || '--';
         const config = data.config || {
             requiredStreams: 2,
@@ -15434,6 +15438,9 @@ async function renderArirangProtocol() {
         addArirangStyles();
         
     } catch (e) {
+        // Stale response guard
+        if (gen !== _arirangGeneration) return;
+        
         console.error('Error loading ARIRANG Protocol:', e);
         container.innerHTML = `
             <div class="card" style="text-align:center;padding:40px;">
@@ -15474,14 +15481,13 @@ function computeBombPower(phasesCharged, totalPhases) {
 function renderChargingBomb(bombPower, stats, fullyCharged) {
     const pct = stats.percentComplete || 0;
     
-    let gradientClass = 'fill-dim';
-    if (pct > 30) gradientClass = 'fill-energized';
-    if (pct > 80) gradientClass = 'fill-blazing';
+    // Use bombPower.tier directly for correct gradient mapping
+    const gradientClass = 'fill-' + bombPower.tier;
     
     return `
         <div class="charging-bomb-display">
             <!-- Background Glow (Pulses) -->
-            <div class="charge-ambient-glow" style="background: radial-gradient(circle, ${pct > 0 ? '#7c3aed' : 'transparent'} 0%, transparent 70%); opacity: ${0.2 + (pct / 200)}"></div>
+            <div class="charge-ambient-glow" style="background: radial-gradient(circle, ${pct > 0 ? '#7c3aed' : 'transparent'} 0%, transparent 70%); opacity: ${0.2 + (pct/200)}"></div>
             
             <div class="army-bomb">
                 <div class="charge-button"></div>
@@ -15502,7 +15508,7 @@ function renderChargingBomb(bombPower, stats, fullyCharged) {
                     </div>` : ''}
                     
                     <!-- Logo (Etched) -->
-                    <div class="charge-core">
+                    <div class="charge-core ${fullyCharged ? 'core-fully-charged' : ''}">
                         <span class="bts-logo">⟭⟬</span>
                     </div>
                 </div>
@@ -15514,7 +15520,7 @@ function renderChargingBomb(bombPower, stats, fullyCharged) {
                 </div>
             </div>
             
-            <div class="bomb-power-label">
+            <div class="bomb-power-label ${fullyCharged ? 'label-fully-charged' : ''}">
                 ${fullyCharged ? '💜 FULLY CHARGED' : `⚡ ${pct}% POWER`}
             </div>
         </div>
@@ -15526,6 +15532,11 @@ function renderChargingBomb(bombPower, stats, fullyCharged) {
 // =============================================
 
 function renderEraTimeline(phases, eras, currentEra) {
+    // Cache era data for safe onclick lookups
+    Object.entries(eras || {}).forEach(function(entry) {
+        _eraDataCache[entry[0]] = entry[1];
+    });
+    
     return `
         <div class="era-timeline">
             <div class="timeline-header">
@@ -15545,17 +15556,19 @@ function renderEraTimeline(phases, eras, currentEra) {
                     else if (isActive) stateClass = 'era-active';
                     else {
                         const eraPhases = (eraData.phases || []);
-                        const anyPast = phases.some((p) => eraPhases.includes(p.phase) && (p.state === 'charged' || p.state === 'missed' || p.state === 'active'));
+                        const anyPast = phases.some(function(p) { return eraPhases.includes(p.phase) && (p.state === 'charged' || p.state === 'missed' || p.state === 'active'); });
                         if (anyPast) stateClass = 'era-partial';
                     }
+                    
+                    const safeEraName = eraName.replace(/'/g, "\\'").replace(/"/g, '&quot;');
                     
                     return `
                         <div class="era-cell ${stateClass}" 
                              style="--era-color:${eraData.color}"
-                             onclick="showEraDetail('${eraName}', ${JSON.stringify(eraData).replace(/'/g, "\\'")})"
-                             title="${eraName}: ${eraData.charged}/${eraData.total}">
+                             onclick="showEraDetail('${safeEraName}')"
+                             title="${sanitize(eraName)}: ${eraData.charged}/${eraData.total}">
                             <span class="era-icon">${eraData.icon}</span>
-                            <span class="era-name">${eraName}</span>
+                            <span class="era-name">${sanitize(eraName)}</span>
                             <span class="era-progress">${eraData.charged}/${eraData.total}</span>
                         </div>
                     `;
@@ -15580,7 +15593,7 @@ function renderEraTimeline(phases, eras, currentEra) {
                                  teamGoalMet: p.teamGoalMet || false,
                                  spotifyLinks: p.spotifyLinks || []
                              }).replace(/"/g, '&quot;')})"
-                             title="Phase ${p.phase}: ${p.codename}">
+                             title="Phase ${p.phase}: ${sanitize(p.codename)}">
                             <span>${p.phase}</span>
                         </div>
                     `;
@@ -15616,8 +15629,8 @@ function renderTodayPhase(challenge, config) {
             <div class="card-header">
                 <div class="phase-header-left">
                     <h3><span class="header-icon">⚡</span> Today's Phase</h3>
-                    <span class="phase-codename-badge">${challenge.codename}</span>
-                    ${challenge.era ? `<span class="era-tag">${challenge.era}</span>` : ''}
+                    <span class="phase-codename-badge">${sanitize(challenge.codename)}</span>
+                    ${challenge.era ? `<span class="era-tag">${sanitize(challenge.era)}</span>` : ''}
                 </div>
                 ${bothCharged ? '<span class="charged-badge">⚡ CHARGED</span>' : ''}
             </div>
@@ -15784,7 +15797,7 @@ function renderNoPhaseCard(phases) {
                         <p>${allDone
                             ? 'Every phase has been addressed. Check if your Army Bomb is fully charged!'
                             : nextPhase
-                                ? `Next phase: ${nextPhase.codename} — ${nextPhase.albums?.join(' + ')} (${nextPhase.date})`
+                                ? `Next phase: ${sanitize(nextPhase.codename)} — ${(nextPhase.albums || []).join(' + ')} (${nextPhase.date})`
                                 : 'Stand by for further instructions, Agent.'
                         }</p>
                     </div>
@@ -15834,7 +15847,7 @@ function renderArirangVault(phases, stats) {
                         return `
                             <div class="${boxClass}"
                                  ${clickable ? `onclick="claimArirangReward('${phase.date}')"` : ''}
-                                 title="Phase ${phase.phase}: ${phase.codename}">
+                                 title="Phase ${phase.phase}: ${sanitize(phase.codename)}">
                                 <span class="box-icon">${icon}</span>
                                 <span class="box-day">P${phase.phase}</span>
                             </div>
@@ -15885,7 +15898,12 @@ function getTodayPhaseNumber(phases) {
 // INTERACTIONS
 // =============================================
 
-function showEraDetail(eraName, eraData) {
+function showEraDetail(eraName) {
+    const eraData = _eraDataCache[eraName];
+    if (!eraData) {
+        showToast('Era data not found', 'error');
+        return;
+    }
     showToast(`${eraData.icon} ${eraName}: ${eraData.charged}/${eraData.total} phases charged`, 'info');
 }
 
@@ -15905,19 +15923,19 @@ function showPhaseInfo(phase) {
         <div class="phase-detail-card">
             <div class="phase-detail-header">
                 <div>
-                    <h3>${phase.codename}</h3>
-                    <span class="phase-detail-era">${phase.era || ''}</span>
-                    <span class="phase-detail-date">${phase.date}</span>
+                    <h3>${sanitize(phase.codename)}</h3>
+                    <span class="phase-detail-era">${sanitize(phase.era || '')}</span>
+                    <span class="phase-detail-date">${sanitize(phase.date)}</span>
                 </div>
                 <span class="phase-state-badge ${stateInfo.cls}">${stateInfo.text}</span>
             </div>
             
             <div class="phase-detail-albums">
-                ${phase.albums.map((album, i) => `
+                ${(phase.albums || []).map((album, i) => `
                     <div class="phase-album-row">
                         <span class="album-disc">💿</span>
                         <span class="album-label">${sanitize(album)}</span>
-                        ${phase.spotifyLinks?.[i]?.url ? `
+                        ${phase.spotifyLinks && phase.spotifyLinks[i] && phase.spotifyLinks[i].url ? `
                             <a href="${phase.spotifyLinks[i].url}" target="_blank" rel="noopener"
                                class="spotify-pill" onclick="event.stopPropagation()">
                                 ▶ Spotify
@@ -15992,13 +16010,13 @@ function showArirangBadgePopup(badge, xp) {
         <div class="badge-reveal">
             <div class="badge-sparkle">⚡</div>
             <div class="badge-img-wrap">
-                <img src="${badge.imageUrl}" alt="${badge.name}" class="badge-img"
+                <img src="${badge.imageUrl}" alt="${sanitize(badge.name)}" class="badge-img"
                      onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%237c3aed%22/><text x=%2250%22 y=%2258%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2230%22>⟭⟬</text></svg>'">
             </div>
             <h3>Phase Charged!</h3>
             <p class="badge-name">${sanitize(badge.name)}</p>
             <p class="badge-desc">${sanitize(badge.description)}</p>
-            ${badge.era ? `<p class="badge-era">${badge.era}</p>` : ''}
+            ${badge.era ? `<p class="badge-era">${sanitize(badge.era)}</p>` : ''}
             <div class="badge-xp">+${xp} XP</div>
             <button class="btn-primary" onclick="this.closest('.arirang-badge-modal').remove()">
                 Let's Go! ⚡
@@ -16027,10 +16045,10 @@ async function showArirangLeaderboard() {
                 <div class="lb-body">
                     ${data.leaderboard?.length > 0 ? data.leaderboard.map((agent, i) => `
                         <div class="lb-entry" style="--team-color:${teamColor(agent.team)}">
-                            <span class="lb-rank ${i < 3 ? 'top' + (i + 1) : ''}">${i + 1}</span>
+                            <span class="lb-rank ${i < 3 ? 'top' + (i+1) : ''}">${i + 1}</span>
                             <div class="lb-info">
                                 <span class="lb-name">${sanitize(agent.name)}</span>
-                                <span class="lb-team">${agent.team}</span>
+                                <span class="lb-team">${sanitize(agent.team)}</span>
                             </div>
                             <div class="lb-stats">
                                 <span class="lb-phases">${agent.phasesCharged} ⚡</span>
@@ -16152,6 +16170,7 @@ function showArirangHelp() {
 // =============================================
 
 function renderArirangHomeWidget(data) {
+    // data can be pre-fetched or we show a static widget
     const pct = data?.stats?.percentComplete || 0;
     const nextAlbum = data?.nextPhase?.albums?.[0] || 'Loading...';
     const phasesCharged = data?.stats?.phasesCharged || 0;
@@ -16174,7 +16193,7 @@ function renderArirangHomeWidget(data) {
                 <div class="widget-progress-bar">
                     <div class="widget-progress-fill" style="width:${pct}%"></div>
                 </div>
-                <div class="widget-sub">${phasesCharged}/${total} phases • Next: ${nextAlbum}</div>
+                <div class="widget-sub">${phasesCharged}/${total} phases • Next: ${sanitize(nextAlbum)}</div>
             </div>
             <span class="widget-arrow">→</span>
         </div>
@@ -16182,7 +16201,7 @@ function renderArirangHomeWidget(data) {
 }
 
 // =============================================
-// STYLES (Injected once)
+// STYLES (All CSS merged into one injection)
 // =============================================
 
 function addArirangStyles() {
@@ -16265,7 +16284,7 @@ function addArirangStyles() {
         .power-fill-fully-charged { background:linear-gradient(90deg,#a855f7,#e879f9,#f0abfc); }
         .power-bar-label { font-size:11px; color:#666; margin-top:8px; }
         
-        /* ===== REALISTIC ARMY BOMB (MOTS EDITION) ===== */
+        /* ===== ARMY BOMB (MOTS EDITION) ===== */
         .arirang-bomb-core { background: #050508; border: 1px solid #1a1a24; overflow: hidden; position: relative; }
 
         .charging-bomb-display { 
@@ -16276,6 +16295,7 @@ function addArirangStyles() {
             padding: 50px 20px 40px; 
         }
 
+        /* Ambient Glow */
         .charge-ambient-glow { 
             position: absolute; 
             width: 250px; 
@@ -16287,14 +16307,17 @@ function addArirangStyles() {
             z-index: 0;
         }
 
+        /* THE BOMB CONTAINER */
         .army-bomb { 
             position: relative; 
             display: flex; 
             flex-direction: column; 
             align-items: center; 
             z-index: 10; 
+            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5));
         }
 
+        /* THE RED FUSE */
         .army-bomb::before {
             content: '';
             position: absolute;
@@ -16306,10 +16329,11 @@ function addArirangStyles() {
             border-radius: 2px;
             box-shadow: 0 0 5px rgba(239, 68, 68, 0.8);
             z-index: 5;
+            animation: fuse-pulse 2s infinite;
         }
-
         @keyframes fuse-pulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
 
+        /* THE BLACK CAP */
         .charge-button { 
             width: 24px; 
             height: 8px; 
@@ -16321,6 +16345,7 @@ function addArirangStyles() {
             box-shadow: inset 0 2px 2px rgba(255,255,255,0.1);
         }
 
+        /* THE GLASS SPHERE */
         .charge-sphere { 
             width: 130px; 
             height: 130px; 
@@ -16340,6 +16365,7 @@ function addArirangStyles() {
             backdrop-filter: blur(1px);
         }
 
+        /* Sphere Reflection */
         .sphere-reflection { 
             position: absolute; 
             top: 15px; 
@@ -16353,6 +16379,7 @@ function addArirangStyles() {
             z-index: 10;
         }
 
+        /* BTS LOGO (Frosted Insert) */
         .charge-core { 
             position: relative; 
             z-index: 5; 
@@ -16373,6 +16400,13 @@ function addArirangStyles() {
             -webkit-font-smoothing: antialiased;
         }
 
+        /* Logo Glow (When Fully Charged) */
+        .core-fully-charged .bts-logo { 
+            color: #fff;
+            text-shadow: 0 0 15px #e879f9, 0 0 30px #a855f7;
+        }
+
+        /* LIQUID FILL */
         .energy-fill-level { 
             position: absolute; 
             bottom: 0; 
@@ -16380,19 +16414,22 @@ function addArirangStyles() {
             right: 0; 
             width: 100%;
             border-radius: 0 0 130px 130px;
-            overflow: hidden; 
+            overflow: hidden;
             transition: height 1s cubic-bezier(0.4, 0, 0.2, 1); 
             z-index: 1;
             opacity: 0.9;
         }
 
+        /* Base energy fill gradient */
         .energy-fill-gradient { 
             width: 100%; 
             height: 100%; 
             background: linear-gradient(to top, #4c1d95 0%, #7c3aed 50%, #c084fc 100%);
             opacity: 0.8;
+            position: relative;
         }
 
+        /* Sparkle bubbles inside liquid */
         .energy-fill-gradient::after {
             content: '';
             position: absolute;
@@ -16407,6 +16444,16 @@ function addArirangStyles() {
         }
         @keyframes liquid-sparkle { 0%{background-position:0 0, 10px 10px} 100%{background-position:0 20px, 10px 30px} }
 
+        /* Fill Gradients by tier (combined selector — class is on same element) */
+        .energy-fill-gradient.fill-dark { background: linear-gradient(to top, #1e1b4b, #312e81); }
+        .energy-fill-gradient.fill-dim { background: linear-gradient(to top, #312e81, #4338ca); }
+        .energy-fill-gradient.fill-flickering { background: linear-gradient(to top, #4338ca, #6366f1); }
+        .energy-fill-gradient.fill-warming { background: linear-gradient(to top, #4f46e5, #818cf8); }
+        .energy-fill-gradient.fill-energized { background: linear-gradient(to top, #7c3aed, #a855f7); }
+        .energy-fill-gradient.fill-blazing { background: linear-gradient(to top, #9333ea, #c084fc); }
+        .energy-fill-gradient.fill-fully-charged { background: linear-gradient(to top, #a855f7, #e879f9, #fff); }
+
+        /* Liquid Surface (Wavy Line) */
         .energy-fill-surface { 
             position: absolute; 
             top: 0; 
@@ -16415,13 +16462,14 @@ function addArirangStyles() {
             height: 5px; 
             background: rgba(255,255,255,0.6); 
             box-shadow: 0 0 10px rgba(255,255,255,0.8);
-            animation: surface-wave 3s ease-in-out infinite; 
+            animation: surface-bob 3s ease-in-out infinite; 
         }
-        @keyframes surface-wave { 
-            0%,100%{transform:translateX(0) scaleY(1)} 
-            50%{transform:translateX(-5px) scaleY(1.3)} 
+        @keyframes surface-bob { 
+            0%,100%{transform:translateX(0) rotate(0deg)} 
+            50%{transform:translateX(-10px) rotate(2deg)} 
         }
 
+        /* PARTICLES (Floating Magic) */
         .charge-particles { 
             position: absolute; 
             inset: 0;
@@ -16447,6 +16495,7 @@ function addArirangStyles() {
             100% { transform: translateY(-40px) scale(1.5); opacity: 0; }
         }
 
+        /* THE HANDLE */
         .bomb-handle { 
             display: flex; 
             flex-direction: column; 
@@ -16494,19 +16543,15 @@ function addArirangStyles() {
             margin-top: -2px;
         }
 
-        /* Fill color states */
-        .fill-dim .energy-fill-gradient { background: linear-gradient(to top, #312e81, #4338ca); }
-        .fill-flickering .energy-fill-gradient { background: linear-gradient(to top, #4338ca, #6366f1); }
-        .fill-warming .energy-fill-gradient { background: linear-gradient(to top, #4f46e5, #818cf8); }
-        .fill-energized .energy-fill-gradient { background: linear-gradient(to top, #7c3aed, #a855f7); }
-        .fill-blazing .energy-fill-gradient { background: linear-gradient(to top, #9333ea, #c084fc); }
-        .fill-fully-charged .energy-fill-gradient { background: linear-gradient(to top, #a855f7, #e879f9, #fff); }
+        /* Glow Colors */
+        .glow-dim { background: #3730a3; opacity: 0.1; }
+        .glow-flickering { background: #4f46e5; opacity: 0.2; }
+        .glow-warming { background: #6366f1; opacity: 0.3; }
+        .glow-energized { background: #a855f7; opacity: 0.5; }
+        .glow-blazing { background: #c084fc; opacity: 0.7; }
+        .glow-fully-charged { background: #e879f9; opacity: 0.9; }
 
-        .core-fully-charged .bts-logo { 
-            color: #fff;
-            text-shadow: 0 0 15px #e879f9, 0 0 30px #a855f7;
-        }
-
+        /* POWER LABEL */
         .bomb-power-label { 
             margin-top: 15px; 
             font-size: 13px; 
@@ -16518,6 +16563,22 @@ function addArirangStyles() {
             border-radius: 20px;
             border: 1px solid rgba(147, 51, 234, 0.3);
             text-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
+        }
+        .label-fully-charged { color: #e879f9; text-shadow: 0 0 10px rgba(232,121,249,0.5); }
+
+        /* MOBILE FIX */
+        @media (max-width: 380px) {
+            .charging-bomb-display {
+                transform: scale(0.85);
+                transform-origin: center top;
+                padding: 40px 10px 10px;
+                margin-bottom: -40px;
+            }
+            .charge-ambient-glow {
+                width: 200px;
+                height: 200px;
+                filter: blur(60px);
+            }
         }
         
         /* ===== ERA TIMELINE ===== */
@@ -16776,18 +16837,7 @@ function addArirangStyles() {
         .lb-empty span { font-size:32px; display:block; margin-bottom:10px; }
         
         /* ===== RESPONSIVE ===== */
-        @media (max-width:380px) {
-            .charging-bomb-display {
-                transform: scale(0.85);
-                transform-origin: center top;
-                padding: 40px 10px 10px;
-                margin-bottom: -40px;
-            }
-            .charge-ambient-glow {
-                width: 200px;
-                height: 200px;
-                filter: blur(60px);
-            }
+        @media (max-width:360px) {
             .charge-sphere { width:90px; height:90px; }
             .power-stats-grid { gap:8px; }
             .power-stat { padding:8px 12px; }
@@ -16806,6 +16856,8 @@ function addArirangStyles() {
             .charge-ambient-glow { animation:none; }
             .charge-wire.wire-live { animation:none; }
             .power-bar-shimmer { animation:none; display:none; }
+            .energy-fill-gradient::after { animation:none; }
+            .energy-fill-surface { animation:none; }
         }
     `;
     
