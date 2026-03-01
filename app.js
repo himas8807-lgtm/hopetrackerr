@@ -5374,10 +5374,11 @@ async function updateActivityFeedUI() {
                 case 'team_surge':
                     tColor = teamColor(data.team);
                     icon = '🚀';
-                    const streams = data.streams || ((data.toXP - data.fromXP) * 10) || 0;
-                    if (!surgeStreams && data.toXP && data.fromXP) {
-                        surgeStreams = (data.toXP - data.fromXP) * 10;
+                    let surgeStreams = data.streams || 0;
+                    if (surgeStreams === 0 && data.toXP && data.fromXP) {
+                        surgeStreams = Math.floor((data.toXP - data.fromXP) * 10);
                         }
+                    if (surgeStreams <= 0) return '';
                     text = `<strong style="color:${tColor}">${sanitize(data.team)}</strong> is surging! <span class="activity-highlight">${fmt(data.streams)} streams/hr</span>`;
                     break;
 
@@ -10798,7 +10799,15 @@ async function renderActivityLog(displayArea) {
             else if(act.type === 'secret_mission') { text = `<strong>${data.team}</strong> finished classified task: ${data.title}`; icon = '🕵️'; }
             else if(act.type === 'xp_milestone') { text = `<strong>${data.name}</strong> reached <strong>${data.xp} XP</strong> milestone!`; icon = '⭐'; }
             else if(act.type === 'sotd_winner') { text = `<strong>${data.team}</strong> solved the Song of the Day!`; icon = '🧠'; }
-            else if(act.type === 'team_surge') { text = `<strong>${data.team}</strong> is on fire! ${data.streams} streams in the last hour!`; icon = '🚀'; }
+            else if(act.type === 'team_surge') { 
+                let surgeStreams = data.streams || 0;
+                if (surgeStreams === 0 && data.toXP && data.fromXP) {
+                    surgeStreams = Math.floor((data.toXP - data.fromXP) * 10);
+                if (surgeStreams <= 0) return;
+           text = `<strong>${data.team}</strong> is on fire! <strong 
+           style="color:#ff6b35;">${surgeStreams.toLocaleString()}</strong> streams in the last hour!`; 
+                icon = '🚀'; 
+            }
             else if(act.type === 'priority_alert') { text = `<strong style="color:#00d4ff;">PRIORITY:</strong> ${data.title}<br>${data.message || ''}`; icon = '🚨'; } // Fixed Priority Alert
             else return;
 
