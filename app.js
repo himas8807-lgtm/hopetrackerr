@@ -16489,29 +16489,67 @@ function setBombColor(color) {
 // =============================================
 // HOME WIDGET
 // =============================================
+// =============================================
+// UPDATED HOME WIDGET WITH TEAM PROGRESS
+// =============================================
 function renderArirangHomeWidget(data) {
-    const pct = data?.stats?.percentComplete || 0;
-    const nextAlbum = data?.nextPhase?.albums?.[0] || 'Loading...';
+    // Overall Mission Stats
+    const overallPct = data?.stats?.percentComplete || 0;
     const phasesCharged = data?.stats?.phasesCharged || 0;
-    const total = data?.stats?.totalPhases || 20;
+    const totalPhases = data?.stats?.totalPhases || 20;
+
+    // Daily Team Goal Stats (Charge B)
+    const today = data?.todayChallenge;
+    const albumName = today?.albums?.[0] || 'Standby';
+    const teamCurrent = today?.collectiveStreams || 0;
+    const teamTarget = today?.targetStreams || 6000;
+    const teamPct = Math.min(100, Math.round((teamCurrent / teamTarget) * 100));
+    
+    // Status colors
+    const isGoalMet = today?.teamGoalMet || false;
+    const accentColor = getPhaseColor(today?.phase || 1).accent;
+
     return `
         <div class="arirang-home-widget" onclick="loadPage('operation-defuse')">
+            <!-- Left: Visual Bomb -->
             <div class="widget-bomb-charge">
-                <div class="widget-sphere-charge" style="--charge-pct:${pct}">
-                    <div class="widget-fill" style="height:${pct}%"></div>
+                <div class="widget-sphere-charge" style="--charge-pct:${overallPct}">
+                    <div class="widget-fill" style="height:${overallPct}%"></div>
                     <span class="widget-logo">⟭⟬</span>
                 </div>
                 <div class="widget-handle-c"></div>
             </div>
+
+            <!-- Center: Progress Info -->
             <div class="widget-info">
                 <div class="widget-header">
                     <span class="widget-title">OPERATION: ARIRANG</span>
-                    <span class="widget-live-dot"></span>
+                    <span class="widget-live-dot" style="background:${accentColor}"></span>
                 </div>
-                <div class="widget-progress-bar">
-                    <div class="widget-progress-fill" style="width:${pct}%"></div>
+
+                <!-- Section 1: Overall Activation -->
+                <div class="widget-row">
+                    <div class="widget-row-label">Core Activation: <span>${phasesCharged}/${totalPhases}</span></div>
+                    <div class="widget-progress-bar">
+                        <div class="widget-progress-fill" style="width:${overallPct}%"></div>
+                    </div>
                 </div>
-                <div class="widget-sub">${phasesCharged}/${total} phases • Next: ${sanitize(nextAlbum)}</div>
+
+                <!-- Section 2: Team Daily Goal (The new addition) -->
+                <div class="widget-row team-goal-row" style="border-top: 1px solid rgba(255,255,255,0.05); margin-top: 8px; padding-top: 6px;">
+                    <div class="widget-row-label">
+                        Team Goal: <span style="color:${accentColor}">${sanitize(albumName)}</span>
+                    </div>
+                    <div class="widget-progress-bar daily-team-bar">
+                        <div class="widget-progress-fill" 
+                             style="width:${teamPct}%; background: ${isGoalMet ? 'linear-gradient(90deg, #22c55e, #4ade80)' : accentColor}">
+                        </div>
+                    </div>
+                    <div class="widget-stats-row">
+                        <span class="widget-sub">${fmt(teamCurrent)} / ${fmt(teamTarget)}</span>
+                        <span class="widget-sub-pct" style="color:${isGoalMet ? '#4ade80' : accentColor}">${teamPct}%</span>
+                    </div>
+                </div>
             </div>
             <span class="widget-arrow">→</span>
         </div>
@@ -16931,22 +16969,27 @@ function addArirangStyles() {
         .action-subtitle { font-size:11px; color:#666; }
         .action-arrow { font-size:18px; color:#555; }
         
-        /* HOME WIDGET */
-        .arirang-home-widget { display:flex; align-items:center; gap:12px; padding:15px; background:linear-gradient(135deg,rgba(168,85,247,0.08),rgba(124,58,237,0.03)); border:1px solid rgba(168,85,247,0.2); border-radius:12px; margin-bottom:15px; cursor:pointer; transition:all 0.3s; }
-        .arirang-home-widget:hover { border-color:rgba(168,85,247,0.4); transform:translateY(-2px); }
-        .widget-bomb-charge { display:flex; flex-direction:column; align-items:center; }
-        .widget-sphere-charge { width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg,rgba(168,85,247,0.1),rgba(76,29,149,0.2)); border:1px solid rgba(168,85,247,0.4); display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; }
-        .widget-fill { position:absolute; bottom:0; left:0; right:0; background:linear-gradient(0deg,rgba(168,85,247,0.6),rgba(124,58,237,0.2)); transition:height 0.5s; }
-        .widget-logo { font-size:14px; color:#a855f7; position:relative; z-index:1; }
-        .widget-handle-c { width:12px; height:16px; background:linear-gradient(180deg,#2a2a2a,#1a1a1a); border-radius:0 0 4px 4px; margin-top:-4px; }
-        .widget-info { flex:1; }
-        .widget-header { display:flex; align-items:center; gap:8px; }
-        .widget-title { font-size:12px; font-weight:700; color:#a855f7; letter-spacing:0.5px; }
-        .widget-live-dot { width:6px; height:6px; background:#a855f7; border-radius:50%; animation:blink 2s ease-in-out infinite; }
-        .widget-progress-bar { height:3px; background:rgba(168,85,247,0.1); border-radius:10px; overflow:hidden; margin:4px 0; }
-        .widget-progress-fill { height:100%; background:linear-gradient(90deg,#7c3aed,#a855f7); border-radius:10px; transition:width 0.5s; }
-        .widget-sub { font-size:10px; color:#666; }
-        .widget-arrow { font-size:16px; color:#555; }
+       /* HOME WIDGET */
+        .arirang-home-widget { display:flex; align-items:flex-start; gap:12px; padding:15px; background:linear-gradient(135deg,rgba(168,85,247,0.1),rgba(124,58,237,0.05)); border:1px solid rgba(168,85,247,0.25); border-radius:12px; margin-bottom:15px; cursor:pointer; transition:all 0.3s; }
+        .arirang-home-widget:hover { border-color:rgba(168,85,247,0.45); transform:translateY(-2px); box-shadow:0 5px 15px rgba(0,0,0,0.3); }
+        .widget-bomb-charge { display:flex; flex-direction:column; align-items:center; flex-shrink:0; margin-top:2px; }
+        .widget-sphere-charge { width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg,rgba(168,85,247,0.15),rgba(76,29,149,0.3)); border:1px solid rgba(168,85,247,0.4); display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; }
+        .widget-fill { position:absolute; bottom:0; left:0; right:0; background:linear-gradient(0deg,rgba(168,85,247,0.7),rgba(124,58,237,0.3)); transition:height 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+        .widget-logo { font-size:15px; color:#a855f7; position:relative; z-index:1; font-weight:bold; }
+        .widget-handle-c { width:14px; height:18px; background:linear-gradient(180deg,#2a2a2a,#111); border-radius:0 0 5px 5px; margin-top:-4px; }
+        .widget-info { flex:1; min-width:0; }
+        .widget-header { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+        .widget-title { font-size:11px; font-weight:800; color:#a855f7; letter-spacing:1px; }
+        .widget-live-dot { width:6px; height:6px; border-radius:50%; animation:blink 2s ease-in-out infinite; }
+        .widget-row { margin-bottom:8px; }
+        .widget-row-label { font-size:10px; color:#888; margin-bottom:4px; display:flex; justify-content:space-between; }
+        .widget-row-label span { font-weight:700; color:#ccc; }
+        .widget-progress-bar { height:4px; background:rgba(255,255,255,0.05); border-radius:10px; overflow:hidden; margin:4px 0; }
+        .widget-progress-fill { height:100%; border-radius:10px; transition:width 0.8s ease; }
+        .widget-stats-row { display:flex; justify-content:space-between; align-items:center; margin-top:2px; }
+        .widget-sub { font-size:9px; color:#666; font-weight:500; }
+        .widget-sub-pct { font-size:10px; font-weight:800; }
+        .widget-arrow { font-size:16px; color:#444; align-self:center; }
         
         /* MODALS */
         .phase-detail-modal,.arirang-badge-modal,.arirang-lb-modal { position:fixed; inset:0; z-index:10000; display:flex; align-items:center; justify-content:center; padding:20px; opacity:0; transition:opacity 0.3s; }
