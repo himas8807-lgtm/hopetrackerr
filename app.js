@@ -10780,6 +10780,7 @@ async function renderHQNews(displayArea) {
 // Tab 2: Mission Log (Real-time activity log)
 async function renderActivityLog(displayArea) {
     displayArea.innerHTML = '<div class="loading-text" style="text-align:center; padding:20px;">📂 Decrypting Mission Logs...</div>';
+    
     try {
         const response = await api('getActivityFeed', { limit: 50 });
         const activities = response.activities || [];
@@ -10790,6 +10791,7 @@ async function renderActivityLog(displayArea) {
         }
 
         let html = '<div style="display:flex; flex-direction:column; gap:10px;">';
+        
         activities.forEach(act => {
             const data = act.data || {};
             let text = '';
@@ -10831,8 +10833,17 @@ async function renderActivityLog(displayArea) {
                 text = `<strong style="color:#00d4ff;">PRIORITY:</strong> ${data.title}<br>${data.message || ''}`; 
                 icon = '🚨'; 
             }
+            else if (act.type === 'agent_retired') {
+                text = `An agent from <strong>${data.team}</strong> has retired from the mission.`;
+                icon = '👋';
+            }
+            else if (act.type === 'results_release') {
+                text = `<strong style="color:#ffd700;">🏆 RESULTS:</strong> ${data.message || (data.winner ? data.winner + ' wins!' : 'Results released!')}`;
+                icon = '🏆';
+            }
             else {
-                return; // Skip unknown types
+                // Skip unknown types
+                return;
             }
 
             html += `
@@ -10844,9 +10855,12 @@ async function renderActivityLog(displayArea) {
                 </div>
             `;
         });
+        
         html += '</div>';
         displayArea.innerHTML = html;
+        
     } catch (e) {
+        console.error('Activity Log Error:', e);
         displayArea.innerHTML = '<p class="error-text">Failed to load mission logs.</p>';
     }
 }
