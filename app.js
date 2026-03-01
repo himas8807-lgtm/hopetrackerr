@@ -5268,14 +5268,13 @@ function renderStreakWidget(s) {
     `;
 
     container.innerHTML = html;
-}
-async function updateActivityFeedUI() {
+}async function updateActivityFeedUI() {
     const container = document.getElementById('activity-widget-container');
     if (!container) return;
 
-    ensureActivityCSS(); // Load CSS
+    ensureActivityCSS();
 
-     try {
+    try {
         // 1. Fetch Activity Feed
         const response = await api('getActivityFeed', { limit: 15 });
         let activities = response.activities || [];
@@ -5283,7 +5282,7 @@ async function updateActivityFeedUI() {
         // 2. Fetch Urgent Announcements
         try {
             const announcementsData = await api('getAnnouncements', { week: STATE.week });
-            const urgentNews = announcementsData.announcements.find(a => a.priority === 'high');
+            const urgentNews = (announcementsData.announcements || []).find(a => a.priority === 'high');
 
             if (urgentNews) {
                 activities.unshift({
@@ -5295,17 +5294,13 @@ async function updateActivityFeedUI() {
             console.warn("Announcement fetch failed", annError);
         }
 
-        // --- 🔥 FIX START: Handle Empty State ---
+        // 3. Handle Empty State
         if (activities.length === 0) {
-            // Instead of hiding, show a placeholder
-            activities.push({
-                type: 'system_msg',
-                data: { text: 'Waiting for live updates...' } 
-            });
+            container.innerHTML = '';
+            return;
         }
-        // --- 🔥 FIX END ---
 
-        // 3. Filter and Format Items
+        // 4. Filter and Format Items
         const itemsHtml = activities.map(act => {
             const data = act.data || {};
             let icon = '⚡';
@@ -5317,43 +5312,43 @@ async function updateActivityFeedUI() {
                 case 'priority_alert':
                     icon = '🗳️';
                     text = `<span style="color:#00d4ff; font-weight:800; text-shadow:0 0 10px #00d4ff;">PRIORITY:</span> ${sanitize(data.title)}`;
-                    ;
+                    break;  // ✅ ADDED
 
                 // --- 🎯 TEAM GOALS ---
                 case 'goal_completed':
                     tColor = teamColor(data.team);
                     icon = data.type === 'album2x' ? '✨' : (data.type === 'album' ? '💿' : '🎵');
                     text = `<strong style="color:${tColor}">${sanitize(data.team)}</strong> completed <span class="activity-highlight">${sanitize(data.goal)}</span>!`;
-                    ;
+                    break;  // ✅ ADDED
 
                 case 'goal_almost':
                     icon = '🚨';
                     text = `<strong style="color:${teamColor(data.team)}">${sanitize(data.team)}</strong> is at <span style="color:#ff4444; font-weight:bold;">${data.percent}%</span> on ${sanitize(data.goal)}! Push!`;
-                    ;
+                    break;  // ✅ ADDED
 
                 // --- 👑 WINNERS & LEADERS ---
                 case 'sotd_winner':
                     tColor = teamColor(data.team);
                     icon = '🧠';
                     text = `<strong style="color:${tColor}">${sanitize(data.team)}</strong> cracked the code for <span class="activity-highlight">${sanitize(data.song)}</span>!`;
-                    ;
+                    break;  // ✅ ADDED
 
                 case 'leader_update':
                     tColor = teamColor(data.team);
                     icon = '👑';
                     text = `<strong style="color:${tColor}">${sanitize(data.team)}</strong> is currently leading the battle with ${fmt(data.xp)} XP!`;
-                    ;
+                    break;  // ✅ ADDED
 
                 // --- 🎖️ BADGES ---
                 case 'xp_milestone':
                     icon = '🎖️';
                     text = `<span class="activity-highlight">${sanitize(data.name)}</span> earned <span style="color:#ffd700;">${fmt(data.xp)} XP Badge</span>`;
-                    ;
+                    break;  // ✅ ADDED
 
-                case 'badge_earned': // Fallback for older events
+                case 'badge_earned':
                     icon = '🎖️';
                     text = `<span class="activity-highlight">${sanitize(data.name)}</span> earned <span style="color:#ffd700;">${sanitize(data.badge)}</span>`;
-                    ;
+                    break;  // ✅ ADDED
 
                 // --- 🕵️ SECRET MISSIONS ---
                 case 'secret_mission':
@@ -5361,14 +5356,14 @@ async function updateActivityFeedUI() {
                     const isFail = (data.title || '').includes('(Failed)');
                     icon = isFail ? '💀' : '🕵️';
                     text = `<strong style="color:${tColor}">${sanitize(data.team)}</strong> ${isFail ? 'failed' : 'completed'}: <span class="activity-highlight">${sanitize(data.title)}</span>`;
-                    ;
+                    break;  // ✅ ADDED
 
                 // --- 🔥 STREAKS ---
                 case 'streak_update':
-                    if (data.streak < 7) return ''; // Only show 1 week+
+                    if (data.streak < 7) return '';
                     icon = '🔥';
                     text = `<span class="activity-highlight">${sanitize(data.name)}</span> hit a <span style="color:#ff6b35; font-weight:bold;">${data.streak}-day</span> streak!`;
-                    ;
+                    break;  // ✅ ADDED
                 
                 // --- 🚀 SURGES ---
                 case 'team_surge':
@@ -5377,18 +5372,28 @@ async function updateActivityFeedUI() {
                     let surgeStreams = data.streams || 0;
                     if (surgeStreams === 0 && data.toXP && data.fromXP) {
                         surgeStreams = Math.floor((data.toXP - data.fromXP) * 10);
-                        }
+                    }
                     if (surgeStreams <= 0) return '';
-                    text = `<strong style="color:${tColor}">${sanitize(data.team)}</strong> is surging! <span class="activity-highlight">${fmt(data.streams)} streams/hr</span>`;
-                    break;
+                    text = `<strong style="color:${tColor}">${sanitize(data.team)}</strong> is surging! <span class="activity-highlight">${fmt(surgeStreams)} streams/hr</span>`;
+                    break;  // ✅ Already had break
 
-               case 'mission_success':
+                case 'mission_success':
                     icon = '📡';
-                    text = `<span style="color:#ff4444; font-weight:800; animation: blinkLive 0.8s infinite;">[HQ OVERRIDE]</span> HQ to Agents: The target took the bait. I repeat, the target took the bait. <span style="color:#00ff88; font-weight:bold;">Operation Rage Bait is successful.</span>`;
-                    break;
-                    
+                    text = `<span style="color:#ff4444; font-weight:800;">[HQ OVERRIDE]</span> <span style="color:#00ff88; font-weight:bold;">Operation Rage Bait is successful.</span>`;
+                    break;  // ✅ Already had break
 
-                default: return '';
+                case 'agent_retired':
+                    icon = '👋';
+                    text = `An agent from <strong style="color:${teamColor(data.team)}">${sanitize(data.team)}</strong> has retired.`;
+                    break;  // ✅ ADDED
+
+                case 'results_release':
+                    icon = '🏆';
+                    text = `<span style="color:#ffd700; font-weight:800;">RESULTS:</span> ${sanitize(data.message || 'Results released!')}`;
+                    break;  // ✅ ADDED
+
+                default: 
+                    return '';
             }
 
             if (!text) return '';
@@ -5399,9 +5404,9 @@ async function updateActivityFeedUI() {
                     <span>${text}</span>
                 </div>
             `;
-        }).join('<span style="margin:0 15px; color:#333;">|</span>'); // Separator
+        }).filter(item => item !== '').join('<span style="margin:0 15px; color:#333;">|</span>');
 
-        if (!itemsHtml) {
+        if (!itemsHtml || itemsHtml.trim() === '') {
             container.innerHTML = '';
             return;
         }
@@ -5415,7 +5420,6 @@ async function updateActivityFeedUI() {
                 <div class="activity-track-wrapper">
                     <div class="activity-track">
                         ${itemsHtml}
-                        <!-- Duplicate for seamless scrolling -->
                         <span style="margin:0 15px; color:#333;">|</span>
                         ${itemsHtml}
                     </div>
@@ -5427,7 +5431,7 @@ async function updateActivityFeedUI() {
         console.error("Activity Feed Error:", e);
     }
 }
-// Export to window
+
 window.updateActivityFeedUI = updateActivityFeedUI;
 // ==================== CLIENT-SIDE ROUTING ====================
 
