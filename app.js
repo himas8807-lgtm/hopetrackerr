@@ -10777,6 +10777,7 @@ async function renderHQNews(displayArea) {
 }
 
 // Tab 2: Mission Log (Real-time activity log)
+// Tab 2: Mission Log (Real-time activity log)
 async function renderActivityLog(displayArea) {
     displayArea.innerHTML = '<div class="loading-text" style="text-align:center; padding:20px;">📂 Decrypting Mission Logs...</div>';
     try {
@@ -10794,22 +10795,45 @@ async function renderActivityLog(displayArea) {
             let text = '';
             let icon = '⚡';
 
-            if(act.type === 'goal_completed') { text = `<strong>${data.team}</strong> completed goal: <strong>${data.goal}</strong>!`; icon = '🎯'; }
-            else if(act.type === 'streak_update') { text = `<strong>${data.name}</strong> reached a <strong style="color:#ff6b35;">${data.streak}-day</strong> streak!`; icon = '🔥'; }
-            else if(act.type === 'secret_mission') { text = `<strong>${data.team}</strong> finished classified task: ${data.title}`; icon = '🕵️'; }
-            else if(act.type === 'xp_milestone') { text = `<strong>${data.name}</strong> reached <strong>${data.xp} XP</strong> milestone!`; icon = '⭐'; }
-            else if(act.type === 'sotd_winner') { text = `<strong>${data.team}</strong> solved the Song of the Day!`; icon = '🧠'; }
-            else if(act.type === 'team_surge') { 
+            if (act.type === 'goal_completed') { 
+                text = `<strong>${data.team}</strong> completed goal: <strong>${data.goal}</strong>!`; 
+                icon = '🎯'; 
+            }
+            else if (act.type === 'streak_update') { 
+                text = `<strong>${data.name}</strong> reached a <strong style="color:#ff6b35;">${data.streak}-day</strong> streak!`; 
+                icon = '🔥'; 
+            }
+            else if (act.type === 'secret_mission') { 
+                text = `<strong>${data.team}</strong> finished classified task: ${data.title}`; 
+                icon = '🕵️'; 
+            }
+            else if (act.type === 'xp_milestone') { 
+                text = `<strong>${data.name}</strong> reached <strong>${data.xp} XP</strong> milestone!`; 
+                icon = '⭐'; 
+            }
+            else if (act.type === 'sotd_winner') { 
+                text = `<strong>${data.team}</strong> solved the Song of the Day!`; 
+                icon = '🧠'; 
+            }
+            else if (act.type === 'team_surge') { 
+                // Calculate streams with fallback
                 let surgeStreams = data.streams || 0;
                 if (surgeStreams === 0 && data.toXP && data.fromXP) {
                     surgeStreams = Math.floor((data.toXP - data.fromXP) * 10);
+                }
+                // Skip if zero or negative
                 if (surgeStreams <= 0) return;
-           text = `<strong>${data.team}</strong> is on fire! <strong 
-           style="color:#ff6b35;">${surgeStreams.toLocaleString()}</strong> streams in the last hour!`; 
+                
+                text = `<strong>${data.team}</strong> is on fire! <strong style="color:#ff6b35;">${surgeStreams.toLocaleString()}</strong> streams in the last hour!`; 
                 icon = '🚀'; 
             }
-            else if(act.type === 'priority_alert') { text = `<strong style="color:#00d4ff;">PRIORITY:</strong> ${data.title}<br>${data.message || ''}`; icon = '🚨'; } // Fixed Priority Alert
-            else return;
+            else if (act.type === 'priority_alert') { 
+                text = `<strong style="color:#00d4ff;">PRIORITY:</strong> ${data.title}<br>${data.message || ''}`; 
+                icon = '🚨'; 
+            }
+            else {
+                return; // Skip unknown types
+            }
 
             html += `
                 <div class="card" style="padding:15px; margin:0; border-left:3px solid #7b2cbf; background: rgba(255,255,255,0.02);">
@@ -10826,7 +10850,6 @@ async function renderActivityLog(displayArea) {
         displayArea.innerHTML = '<p class="error-text">Failed to load mission logs.</p>';
     }
 }
-
 // ==================== JOURNALIST ACTION ====================
 async function submitJournalistNews() {
     const priority = document.getElementById('news-type').value; // Mapped to priority now
