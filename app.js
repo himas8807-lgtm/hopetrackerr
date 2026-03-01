@@ -10778,6 +10778,7 @@ async function renderHQNews(displayArea) {
 
 // Tab 2: Mission Log (Real-time activity log)
 // Tab 2: Mission Log (Real-time activity log)
+// Tab 2: Mission Log (Real-time activity log)
 async function renderActivityLog(displayArea) {
     displayArea.innerHTML = '<div class="loading-text" style="text-align:center; padding:20px;">📂 Decrypting Mission Logs...</div>';
     
@@ -10796,55 +10797,61 @@ async function renderActivityLog(displayArea) {
             const data = act.data || {};
             let text = '';
             let icon = '⚡';
+            let matched = false;
 
             if (act.type === 'goal_completed') { 
                 text = `<strong>${data.team}</strong> completed goal: <strong>${data.goal}</strong>!`; 
-                icon = '🎯'; 
+                icon = '🎯';
+                matched = true;
             }
             else if (act.type === 'streak_update') { 
                 text = `<strong>${data.name}</strong> reached a <strong style="color:#ff6b35;">${data.streak}-day</strong> streak!`; 
-                icon = '🔥'; 
+                icon = '🔥';
+                matched = true;
             }
             else if (act.type === 'secret_mission') { 
                 text = `<strong>${data.team}</strong> finished classified task: ${data.title}`; 
-                icon = '🕵️'; 
+                icon = '🕵️';
+                matched = true;
             }
             else if (act.type === 'xp_milestone') { 
                 text = `<strong>${data.name}</strong> reached <strong>${data.xp} XP</strong> milestone!`; 
-                icon = '⭐'; 
+                icon = '⭐';
+                matched = true;
             }
             else if (act.type === 'sotd_winner') { 
                 text = `<strong>${data.team}</strong> solved the Song of the Day!`; 
-                icon = '🧠'; 
+                icon = '🧠';
+                matched = true;
             }
             else if (act.type === 'team_surge') { 
-                // Calculate streams with fallback
                 let surgeStreams = data.streams || 0;
                 if (surgeStreams === 0 && data.toXP && data.fromXP) {
                     surgeStreams = Math.floor((data.toXP - data.fromXP) * 10);
                 }
-                // Skip if zero or negative
                 if (surgeStreams <= 0) return;
                 
                 text = `<strong>${data.team}</strong> is on fire! <strong style="color:#ff6b35;">${surgeStreams.toLocaleString()}</strong> streams in the last hour!`; 
-                icon = '🚀'; 
+                icon = '🚀';
+                matched = true;
             }
             else if (act.type === 'priority_alert') { 
                 text = `<strong style="color:#00d4ff;">PRIORITY:</strong> ${data.title}<br>${data.message || ''}`; 
-                icon = '🚨'; 
+                icon = '🚨';
+                matched = true;
             }
             else if (act.type === 'agent_retired') {
                 text = `An agent from <strong>${data.team}</strong> has retired from the mission.`;
                 icon = '👋';
+                matched = true;
             }
             else if (act.type === 'results_release') {
-                text = `<strong style="color:#ffd700;">🏆 RESULTS:</strong> ${data.message || (data.winner ? data.winner + ' wins!' : 'Results released!')}`;
+                text = `<strong style="color:#ffd700;">🏆 RESULTS:</strong> ${data.message || 'Results released!'}`;
                 icon = '🏆';
+                matched = true;
             }
-            else {
-                // Skip unknown types
-                return;
-            }
+            
+            if (!matched) return;
 
             html += `
                 <div class="card" style="padding:15px; margin:0; border-left:3px solid #7b2cbf; background: rgba(255,255,255,0.02);">
