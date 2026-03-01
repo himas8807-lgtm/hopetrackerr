@@ -5374,6 +5374,7 @@ async function updateActivityFeedUI() {
                 case 'team_surge':
                     tColor = teamColor(data.team);
                     icon = '🚀';
+                    const streams = data.streams || ((data.toXP - data.fromXP) * 10) || 0;
                     text = `<strong style="color:${tColor}">${sanitize(data.team)}</strong> is surging! <span class="activity-highlight">${fmt(data.streams)} streams/hr</span>`;
                     break;
 
