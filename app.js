@@ -5268,13 +5268,14 @@ function renderStreakWidget(s) {
     `;
 
     container.innerHTML = html;
-}async function updateActivityFeedUI() {
+}
+async function updateActivityFeedUI() {
     const container = document.getElementById('activity-widget-container');
     if (!container) return;
 
-    ensureActivityCSS();
+    ensureActivityCSS(); // Load CSS
 
-    try {
+     try {
         // 1. Fetch Activity Feed
         const response = await api('getActivityFeed', { limit: 15 });
         let activities = response.activities || [];
@@ -5282,7 +5283,7 @@ function renderStreakWidget(s) {
         // 2. Fetch Urgent Announcements
         try {
             const announcementsData = await api('getAnnouncements', { week: STATE.week });
-            const urgentNews = (announcementsData.announcements || []).find(a => a.priority === 'high');
+            const urgentNews = announcementsData.announcements.find(a => a.priority === 'high');
 
             if (urgentNews) {
                 activities.unshift({
@@ -5294,13 +5295,17 @@ function renderStreakWidget(s) {
             console.warn("Announcement fetch failed", annError);
         }
 
-        // 3. Handle Empty State
+        // --- 🔥 FIX START: Handle Empty State ---
         if (activities.length === 0) {
-            container.innerHTML = '';
-            return;
+            // Instead of hiding, show a placeholder
+            activities.push({
+                type: 'system_msg',
+                data: { text: 'Waiting for live updates...' } 
+            });
         }
+        // --- 🔥 FIX END ---
 
-        // 4. Filter and Format Items
+        // 3. Filter and Format Items
         const itemsHtml = activities.map(act => {
             const data = act.data || {};
             let icon = '⚡';
@@ -5312,43 +5317,43 @@ function renderStreakWidget(s) {
                 case 'priority_alert':
                     icon = '🗳️';
                     text = `<span style="color:#00d4ff; font-weight:800; text-shadow:0 0 10px #00d4ff;">PRIORITY:</span> ${sanitize(data.title)}`;
-                    break;  // ✅ ADDED
+                    ;
 
                 // --- 🎯 TEAM GOALS ---
                 case 'goal_completed':
                     tColor = teamColor(data.team);
                     icon = data.type === 'album2x' ? '✨' : (data.type === 'album' ? '💿' : '🎵');
                     text = `<strong style="color:${tColor}">${sanitize(data.team)}</strong> completed <span class="activity-highlight">${sanitize(data.goal)}</span>!`;
-                    break;  // ✅ ADDED
+                    ;
 
                 case 'goal_almost':
                     icon = '🚨';
                     text = `<strong style="color:${teamColor(data.team)}">${sanitize(data.team)}</strong> is at <span style="color:#ff4444; font-weight:bold;">${data.percent}%</span> on ${sanitize(data.goal)}! Push!`;
-                    break;  // ✅ ADDED
+                    ;
 
                 // --- 👑 WINNERS & LEADERS ---
                 case 'sotd_winner':
                     tColor = teamColor(data.team);
                     icon = '🧠';
                     text = `<strong style="color:${tColor}">${sanitize(data.team)}</strong> cracked the code for <span class="activity-highlight">${sanitize(data.song)}</span>!`;
-                    break;  // ✅ ADDED
+                    ;
 
                 case 'leader_update':
                     tColor = teamColor(data.team);
                     icon = '👑';
                     text = `<strong style="color:${tColor}">${sanitize(data.team)}</strong> is currently leading the battle with ${fmt(data.xp)} XP!`;
-                    break;  // ✅ ADDED
+                    ;
 
                 // --- 🎖️ BADGES ---
                 case 'xp_milestone':
                     icon = '🎖️';
                     text = `<span class="activity-highlight">${sanitize(data.name)}</span> earned <span style="color:#ffd700;">${fmt(data.xp)} XP Badge</span>`;
-                    break;  // ✅ ADDED
+                    ;
 
-                case 'badge_earned':
+                case 'badge_earned': // Fallback for older events
                     icon = '🎖️';
                     text = `<span class="activity-highlight">${sanitize(data.name)}</span> earned <span style="color:#ffd700;">${sanitize(data.badge)}</span>`;
-                    break;  // ✅ ADDED
+                    ;
 
                 // --- 🕵️ SECRET MISSIONS ---
                 case 'secret_mission':
@@ -5356,44 +5361,29 @@ function renderStreakWidget(s) {
                     const isFail = (data.title || '').includes('(Failed)');
                     icon = isFail ? '💀' : '🕵️';
                     text = `<strong style="color:${tColor}">${sanitize(data.team)}</strong> ${isFail ? 'failed' : 'completed'}: <span class="activity-highlight">${sanitize(data.title)}</span>`;
-                    break;  // ✅ ADDED
+                    ;
 
                 // --- 🔥 STREAKS ---
                 case 'streak_update':
-                    if (data.streak < 7) return '';
+                    if (data.streak < 7) return ''; // Only show 1 week+
                     icon = '🔥';
                     text = `<span class="activity-highlight">${sanitize(data.name)}</span> hit a <span style="color:#ff6b35; font-weight:bold;">${data.streak}-day</span> streak!`;
-                    break;  // ✅ ADDED
+                    ;
                 
                 // --- 🚀 SURGES ---
                 case 'team_surge':
                     tColor = teamColor(data.team);
                     icon = '🚀';
-                    let surgeStreams = data.streams || 0;
-                    if (surgeStreams === 0 && data.toXP && data.fromXP) {
-                        surgeStreams = Math.floor((data.toXP - data.fromXP) * 10);
-                    }
-                    if (surgeStreams <= 0) return '';
-                    text = `<strong style="color:${tColor}">${sanitize(data.team)}</strong> is surging! <span class="activity-highlight">${fmt(surgeStreams)} streams/hr</span>`;
-                    break;  // ✅ Already had break
+                    text = `<strong style="color:${tColor}">${sanitize(data.team)}</strong> is surging! <span class="activity-highlight">${fmt(data.streams)} streams/hr</span>`;
+                    break;
 
-                case 'mission_success':
+               case 'mission_success':
                     icon = '📡';
-                    text = `<span style="color:#ff4444; font-weight:800;">[HQ OVERRIDE]</span> <span style="color:#00ff88; font-weight:bold;">Operation Rage Bait is successful.</span>`;
-                    break;  // ✅ Already had break
+                    text = `<span style="color:#ff4444; font-weight:800; animation: blinkLive 0.8s infinite;">[HQ OVERRIDE]</span> HQ to Agents: The target took the bait. I repeat, the target took the bait. <span style="color:#00ff88; font-weight:bold;">Operation Rage Bait is successful.</span>`;
+                    break;
+                    
 
-                case 'agent_retired':
-                    icon = '👋';
-                    text = `An agent from <strong style="color:${teamColor(data.team)}">${sanitize(data.team)}</strong> has retired.`;
-                    break;  // ✅ ADDED
-
-                case 'results_release':
-                    icon = '🏆';
-                    text = `<span style="color:#ffd700; font-weight:800;">RESULTS:</span> ${sanitize(data.message || 'Results released!')}`;
-                    break;  // ✅ ADDED
-
-                default: 
-                    return '';
+                default: return '';
             }
 
             if (!text) return '';
@@ -5404,9 +5394,9 @@ function renderStreakWidget(s) {
                     <span>${text}</span>
                 </div>
             `;
-        }).filter(item => item !== '').join('<span style="margin:0 15px; color:#333;">|</span>');
+        }).join('<span style="margin:0 15px; color:#333;">|</span>'); // Separator
 
-        if (!itemsHtml || itemsHtml.trim() === '') {
+        if (!itemsHtml) {
             container.innerHTML = '';
             return;
         }
@@ -5420,6 +5410,7 @@ function renderStreakWidget(s) {
                 <div class="activity-track-wrapper">
                     <div class="activity-track">
                         ${itemsHtml}
+                        <!-- Duplicate for seamless scrolling -->
                         <span style="margin:0 15px; color:#333;">|</span>
                         ${itemsHtml}
                     </div>
@@ -5431,7 +5422,7 @@ function renderStreakWidget(s) {
         console.error("Activity Feed Error:", e);
     }
 }
-
+// Export to window
 window.updateActivityFeedUI = updateActivityFeedUI;
 // ==================== CLIENT-SIDE ROUTING ====================
 
@@ -10781,11 +10772,8 @@ async function renderHQNews(displayArea) {
 }
 
 // Tab 2: Mission Log (Real-time activity log)
-// Tab 2: Mission Log (Real-time activity log)
-// Tab 2: Mission Log (Real-time activity log)
 async function renderActivityLog(displayArea) {
     displayArea.innerHTML = '<div class="loading-text" style="text-align:center; padding:20px;">📂 Decrypting Mission Logs...</div>';
-    
     try {
         const response = await api('getActivityFeed', { limit: 50 });
         const activities = response.activities || [];
@@ -10796,66 +10784,19 @@ async function renderActivityLog(displayArea) {
         }
 
         let html = '<div style="display:flex; flex-direction:column; gap:10px;">';
-        
         activities.forEach(act => {
             const data = act.data || {};
             let text = '';
             let icon = '⚡';
-            let matched = false;
 
-            if (act.type === 'goal_completed') { 
-                text = `<strong>${data.team}</strong> completed goal: <strong>${data.goal}</strong>!`; 
-                icon = '🎯';
-                matched = true;
-            }
-            else if (act.type === 'streak_update') { 
-                text = `<strong>${data.name}</strong> reached a <strong style="color:#ff6b35;">${data.streak}-day</strong> streak!`; 
-                icon = '🔥';
-                matched = true;
-            }
-            else if (act.type === 'secret_mission') { 
-                text = `<strong>${data.team}</strong> finished classified task: ${data.title}`; 
-                icon = '🕵️';
-                matched = true;
-            }
-            else if (act.type === 'xp_milestone') { 
-                text = `<strong>${data.name}</strong> reached <strong>${data.xp} XP</strong> milestone!`; 
-                icon = '⭐';
-                matched = true;
-            }
-            else if (act.type === 'sotd_winner') { 
-                text = `<strong>${data.team}</strong> solved the Song of the Day!`; 
-                icon = '🧠';
-                matched = true;
-            }
-            else if (act.type === 'team_surge') { 
-                let surgeStreams = data.streams || 0;
-                if (surgeStreams === 0 && data.toXP && data.fromXP) {
-                    surgeStreams = Math.floor((data.toXP - data.fromXP) * 10);
-                }
-                if (surgeStreams <= 0) return;
-                
-                text = `<strong>${data.team}</strong> is on fire! <strong style="color:#ff6b35;">${surgeStreams.toLocaleString()}</strong> streams in the last hour!`; 
-                icon = '🚀';
-                matched = true;
-            }
-            else if (act.type === 'priority_alert') { 
-                text = `<strong style="color:#00d4ff;">PRIORITY:</strong> ${data.title}<br>${data.message || ''}`; 
-                icon = '🚨';
-                matched = true;
-            }
-            else if (act.type === 'agent_retired') {
-                text = `An agent from <strong>${data.team}</strong> has retired from the mission.`;
-                icon = '👋';
-                matched = true;
-            }
-            else if (act.type === 'results_release') {
-                text = `<strong style="color:#ffd700;">🏆 RESULTS:</strong> ${data.message || 'Results released!'}`;
-                icon = '🏆';
-                matched = true;
-            }
-            
-            if (!matched) return;
+            if(act.type === 'goal_completed') { text = `<strong>${data.team}</strong> completed goal: <strong>${data.goal}</strong>!`; icon = '🎯'; }
+            else if(act.type === 'streak_update') { text = `<strong>${data.name}</strong> reached a <strong style="color:#ff6b35;">${data.streak}-day</strong> streak!`; icon = '🔥'; }
+            else if(act.type === 'secret_mission') { text = `<strong>${data.team}</strong> finished classified task: ${data.title}`; icon = '🕵️'; }
+            else if(act.type === 'xp_milestone') { text = `<strong>${data.name}</strong> reached <strong>${data.xp} XP</strong> milestone!`; icon = '⭐'; }
+            else if(act.type === 'sotd_winner') { text = `<strong>${data.team}</strong> solved the Song of the Day!`; icon = '🧠'; }
+            else if(act.type === 'team_surge') { text = `<strong>${data.team}</strong> is on fire! ${data.streams} streams in the last hour!`; icon = '🚀'; }
+            else if(act.type === 'priority_alert') { text = `<strong style="color:#00d4ff;">PRIORITY:</strong> ${data.title}<br>${data.message || ''}`; icon = '🚨'; } // Fixed Priority Alert
+            else return;
 
             html += `
                 <div class="card" style="padding:15px; margin:0; border-left:3px solid #7b2cbf; background: rgba(255,255,255,0.02);">
@@ -10866,15 +10807,13 @@ async function renderActivityLog(displayArea) {
                 </div>
             `;
         });
-        
         html += '</div>';
         displayArea.innerHTML = html;
-        
     } catch (e) {
-        console.error('Activity Log Error:', e);
         displayArea.innerHTML = '<p class="error-text">Failed to load mission logs.</p>';
     }
 }
+
 // ==================== JOURNALIST ACTION ====================
 async function submitJournalistNews() {
     const priority = document.getElementById('news-type').value; // Mapped to priority now
@@ -16489,67 +16428,29 @@ function setBombColor(color) {
 // =============================================
 // HOME WIDGET
 // =============================================
-// =============================================
-// UPDATED HOME WIDGET WITH TEAM PROGRESS
-// =============================================
 function renderArirangHomeWidget(data) {
-    // Overall Mission Stats
-    const overallPct = data?.stats?.percentComplete || 0;
+    const pct = data?.stats?.percentComplete || 0;
+    const nextAlbum = data?.nextPhase?.albums?.[0] || 'Loading...';
     const phasesCharged = data?.stats?.phasesCharged || 0;
-    const totalPhases = data?.stats?.totalPhases || 20;
-
-    // Daily Team Goal Stats (Charge B)
-    const today = data?.todayChallenge;
-    const albumName = today?.albums?.[0] || 'Standby';
-    const teamCurrent = today?.collectiveStreams || 0;
-    const teamTarget = today?.targetStreams || 6000;
-    const teamPct = Math.min(100, Math.round((teamCurrent / teamTarget) * 100));
-    
-    // Status colors
-    const isGoalMet = today?.teamGoalMet || false;
-    const accentColor = getPhaseColor(today?.phase || 1).accent;
-
+    const total = data?.stats?.totalPhases || 20;
     return `
         <div class="arirang-home-widget" onclick="loadPage('operation-defuse')">
-            <!-- Left: Visual Bomb -->
             <div class="widget-bomb-charge">
-                <div class="widget-sphere-charge" style="--charge-pct:${overallPct}">
-                    <div class="widget-fill" style="height:${overallPct}%"></div>
+                <div class="widget-sphere-charge" style="--charge-pct:${pct}">
+                    <div class="widget-fill" style="height:${pct}%"></div>
                     <span class="widget-logo">⟭⟬</span>
                 </div>
                 <div class="widget-handle-c"></div>
             </div>
-
-            <!-- Center: Progress Info -->
             <div class="widget-info">
                 <div class="widget-header">
                     <span class="widget-title">OPERATION: ARIRANG</span>
-                    <span class="widget-live-dot" style="background:${accentColor}"></span>
+                    <span class="widget-live-dot"></span>
                 </div>
-
-                <!-- Section 1: Overall Activation -->
-                <div class="widget-row">
-                    <div class="widget-row-label">Core Activation: <span>${phasesCharged}/${totalPhases}</span></div>
-                    <div class="widget-progress-bar">
-                        <div class="widget-progress-fill" style="width:${overallPct}%"></div>
-                    </div>
+                <div class="widget-progress-bar">
+                    <div class="widget-progress-fill" style="width:${pct}%"></div>
                 </div>
-
-                <!-- Section 2: Team Daily Goal (The new addition) -->
-                <div class="widget-row team-goal-row" style="border-top: 1px solid rgba(255,255,255,0.05); margin-top: 8px; padding-top: 6px;">
-                    <div class="widget-row-label">
-                        Team Goal: <span style="color:${accentColor}">${sanitize(albumName)}</span>
-                    </div>
-                    <div class="widget-progress-bar daily-team-bar">
-                        <div class="widget-progress-fill" 
-                             style="width:${teamPct}%; background: ${isGoalMet ? 'linear-gradient(90deg, #22c55e, #4ade80)' : accentColor}">
-                        </div>
-                    </div>
-                    <div class="widget-stats-row">
-                        <span class="widget-sub">${fmt(teamCurrent)} / ${fmt(teamTarget)}</span>
-                        <span class="widget-sub-pct" style="color:${isGoalMet ? '#4ade80' : accentColor}">${teamPct}%</span>
-                    </div>
-                </div>
+                <div class="widget-sub">${phasesCharged}/${total} phases • Next: ${sanitize(nextAlbum)}</div>
             </div>
             <span class="widget-arrow">→</span>
         </div>
@@ -16572,35 +16473,20 @@ function addArirangStyles() {
             --arirang-bg: #0a0a12;
         }
         
-        /* =============================================
-           LOADING STATES
-           ============================================= */
+        /* LOADING */
         .arirang-loading { text-align:center; padding:60px 20px; }
         .arirang-loading p { color:#888; font-size:13px; margin-top:20px; }
         .loading-bomb-charge { display:inline-flex; flex-direction:column; align-items:center; }
         .loading-sphere-charge {
             width:60px; height:60px; border-radius:50%;
-            background:
-                radial-gradient(circle at 25% 25%, rgba(255,255,255,0.1) 0%, transparent 40%),
-                radial-gradient(circle at 50% 50%, rgba(168,85,247,0.1) 0%, rgba(0,0,0,0.4) 100%);
-            border:1.5px solid rgba(168,85,247,0.3);
+            background:linear-gradient(135deg,rgba(168,85,247,0.3),rgba(124,58,237,0.1));
+            border:2px solid rgba(168,85,247,0.4);
             animation:loading-pulse 2s ease-in-out infinite;
-            box-shadow: inset 0 -10px 20px rgba(0,0,0,0.3);
         }
-        .loading-handle-charge { 
-            width:20px; height:30px; 
-            background:linear-gradient(90deg,#111,#222 50%,#111); 
-            border-radius:0 0 6px 6px; 
-            margin-top:-5px; 
-        }
-        @keyframes loading-pulse { 
-            0%,100%{transform:scale(1);box-shadow:inset 0 -10px 20px rgba(0,0,0,0.3), 0 0 20px rgba(168,85,247,0.2)} 
-            50%{transform:scale(1.05);box-shadow:inset 0 -10px 20px rgba(0,0,0,0.3), 0 0 40px rgba(168,85,247,0.4)} 
-        }
+        .loading-handle-charge { width:20px; height:30px; background:linear-gradient(180deg,#333,#1a1a1a); border-radius:0 0 6px 6px; margin-top:-5px; }
+        @keyframes loading-pulse { 0%,100%{transform:scale(1);box-shadow:0 0 20px rgba(168,85,247,0.3)} 50%{transform:scale(1.05);box-shadow:0 0 40px rgba(168,85,247,0.5)} }
         
-        /* =============================================
-           GUIDE SECTION
-           ============================================= */
+        /* GUIDE */
         .arirang-guide { background:rgba(168,85,247,0.05); border:1px solid rgba(168,85,247,0.15); border-left:3px solid #a855f7; }
         .guide-content { display:flex; gap:12px; align-items:flex-start; }
         .guide-icon { font-size:22px; }
@@ -16608,9 +16494,7 @@ function addArirangStyles() {
         .guide-text p { color:#888; font-size:12px; margin:3px 0; line-height:1.5; }
         .guide-text .highlight { color:#e879f9; font-weight:600; }
         
-        /* =============================================
-           HOBI HELP MODAL
-           ============================================= */
+        /* HOBI HELP */
         .btn-hobi-help { display:inline-flex; align-items:center; gap:8px; background:linear-gradient(135deg,rgba(168,85,247,0.1),rgba(124,58,237,0.05)); border:1px solid rgba(168,85,247,0.3); padding:10px 20px; border-radius:25px; color:#c084fc; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.3s; }
         .btn-hobi-help:hover { border-color:#a855f7; background:rgba(168,85,247,0.15); transform:scale(1.02); }
         .hobi-icon { font-size:18px; }
@@ -16632,9 +16516,7 @@ function addArirangStyles() {
         .hobi-footer-note { color:#666; font-size:11px; text-align:center; padding:15px; background:rgba(168,85,247,0.03); border-radius:10px; margin-top:10px; }
         .btn-hobi-confirm { width:calc(100% - 40px); margin:20px; padding:14px; background:linear-gradient(135deg,#a855f7,#7c3aed); border:none; border-radius:12px; color:#fff; font-size:14px; font-weight:700; cursor:pointer; }
         
-        /* =============================================
-           HEADER CARD
-           ============================================= */
+        /* HEADER */
         .arirang-header-card { background:linear-gradient(135deg,#0a0a15,#12121f); border:1px solid rgba(168,85,247,0.2); border-radius:16px; padding:20px; }
         .arirang-header-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; }
         .arirang-badge-pill { display:inline-flex; align-items:center; gap:6px; background:rgba(168,85,247,0.1); padding:5px 12px; border-radius:20px; border:1px solid rgba(168,85,247,0.2); }
@@ -16646,7 +16528,6 @@ function addArirangStyles() {
         .arirang-subtitle { color:#888; font-size:12px; margin:6px 0 0; display:flex; align-items:center; gap:8px; }
         .subtitle-dot { width:4px; height:4px; border-radius:50%; background:#a855f7; }
         
-        /* Power Level Badge */
         .power-level-badge { display:flex; align-items:center; gap:6px; padding:4px 10px; border-radius:20px; font-size:10px; font-weight:600; letter-spacing:0.5px; }
         .power-dot { width:6px; height:6px; border-radius:50%; animation:blink 2s ease-in-out infinite; }
         @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
@@ -16665,7 +16546,6 @@ function addArirangStyles() {
         .power-fully-charged { background:rgba(232,121,249,0.2); color:#f0abfc; }
         .power-fully-charged .power-dot { background:#f0abfc; animation:none; box-shadow:0 0 10px #f0abfc; }
         
-        /* Power Stats Grid */
         .power-stats-grid { display:flex; justify-content:center; gap:20px; margin-bottom:20px; }
         .power-stat { text-align:center; padding:12px 20px; background:rgba(168,85,247,0.03); border-radius:12px; border:1px solid rgba(168,85,247,0.1); }
         .power-stat-icon { font-size:16px; margin-bottom:4px; }
@@ -16676,7 +16556,6 @@ function addArirangStyles() {
         .power-stat.missed .power-stat-value { color:#ef4444; }
         .power-stat.clean .power-stat-value { color:#888; }
         
-        /* Power Bar */
         .power-bar-section { text-align:center; }
         .power-bar-track { height:6px; background:rgba(168,85,247,0.08); border-radius:10px; overflow:hidden; }
         .power-bar-fill { height:100%; border-radius:10px; transition:width 0.5s ease; position:relative; overflow:hidden; }
@@ -16691,18 +16570,15 @@ function addArirangStyles() {
         .power-fill-fully-charged { background:linear-gradient(90deg,#c084fc,#e879f9,#f0abfc); }
         .power-bar-label { font-size:11px; color:#888; margin-top:8px; }
         
-        /* =============================================
-           ARMY BOMB VER.4 - METALLIC & GLASS CORE
-           ============================================= */
+        /* ARMY BOMB CORE */
         .arirang-bomb-core { background:#030306; border:1px solid rgba(168,85,247,0.12); overflow:hidden; }
         .charging-bomb-display { position:relative; display:flex; flex-direction:column; align-items:center; padding:50px 20px 40px; min-height:380px; }
         
-        /* Concert Stars Background */
         .concert-stars { position:absolute; inset:0; pointer-events:none; overflow:hidden; }
         .concert-star { position:absolute; width:var(--star-size,2px); height:var(--star-size,2px); background:var(--star-color,#a855f7); border-radius:50%; animation:star-twinkle 3s ease-in-out infinite; box-shadow:0 0 4px var(--star-color); }
         @keyframes star-twinkle { 0%,100%{opacity:0.15;transform:scale(0.8)} 50%{opacity:0.9;transform:scale(1.3)} }
         
-        /* Ambient Glow per Tier */
+        /* Ambient glow per tier */
         .charge-ambient-glow { position:absolute; width:280px; height:280px; border-radius:50%; filter:blur(90px); top:10px; z-index:0; transition:all 1s ease; }
         .charge-ambient-dark { background:radial-gradient(circle,rgba(30,27,75,0.2),transparent 70%); opacity:0.3; }
         .charge-ambient-dim { background:radial-gradient(circle,rgba(109,40,217,0.25),transparent 70%); opacity:0.35; }
@@ -16713,277 +16589,69 @@ function addArirangStyles() {
         .charge-ambient-fully-charged { background:radial-gradient(circle,rgba(232,121,249,0.5),transparent 60%); opacity:0.65; animation:ambient-breathe 2s ease-in-out infinite; }
         @keyframes ambient-breathe { 0%,100%{transform:scale(1);opacity:var(--o,0.5)} 50%{transform:scale(1.15);opacity:calc(var(--o,0.5) + 0.15)} }
         
-        /* VER.4 BOMB CONTAINER */
-        .army-bomb { 
-            position:relative; 
-            display:flex; 
-            flex-direction:column; 
-            align-items:center; 
-            z-index:10; 
-            transition:filter 1s ease; 
-        }
+        .army-bomb { position:relative; display:flex; flex-direction:column; align-items:center; z-index:10; transition:filter 1s ease; }
+        .bomb-tier-dark { filter:drop-shadow(0 5px 10px rgba(30,27,75,0.2)); }
+        .bomb-tier-dim { filter:drop-shadow(0 5px 15px rgba(109,40,217,0.2)); }
+        .bomb-tier-flickering { filter:drop-shadow(0 8px 20px rgba(124,58,237,0.25)); }
+        .bomb-tier-warming { filter:drop-shadow(0 10px 25px rgba(139,92,246,0.3)); }
+        .bomb-tier-energized { filter:drop-shadow(0 10px 30px rgba(168,85,247,0.35)); }
+        .bomb-tier-blazing { filter:drop-shadow(0 12px 40px rgba(192,132,252,0.4)); }
+        .army-bomb.fully-charged { filter:drop-shadow(0 15px 60px rgba(232,121,249,0.5)); }
         
-        /* Tier-based Drop Shadows */
-        .bomb-tier-dark { filter:drop-shadow(0 8px 15px rgba(20,20,30,0.4)); }
-        .bomb-tier-dim { filter:drop-shadow(0 8px 20px rgba(109,40,217,0.15)); }
-        .bomb-tier-flickering { filter:drop-shadow(0 10px 25px rgba(124,58,237,0.2)); }
-        .bomb-tier-warming { filter:drop-shadow(0 12px 30px rgba(139,92,246,0.25)); }
-        .bomb-tier-energized { filter:drop-shadow(0 12px 35px rgba(168,85,247,0.3)); }
-        .bomb-tier-blazing { filter:drop-shadow(0 15px 45px rgba(192,132,252,0.35)); }
-        .army-bomb.fully-charged { filter:drop-shadow(0 20px 60px rgba(232,121,249,0.45)); }
+        .charge-button { width:24px; height:8px; background:#0f0f0f; border-radius:4px 4px 0 0; position:relative; margin-bottom:-2px; z-index:4; }
+        .charge-btn-dark { box-shadow:none; }
+        .charge-btn-dim { box-shadow:inset 0 1px 2px rgba(109,40,217,0.1); }
+        .charge-btn-flickering { box-shadow:inset 0 1px 3px rgba(124,58,237,0.15); }
+        .charge-btn-warming { box-shadow:inset 0 1px 3px rgba(139,92,246,0.2); }
+        .charge-btn-energized { box-shadow:inset 0 1px 4px rgba(168,85,247,0.25); }
+        .charge-btn-blazing { box-shadow:inset 0 1px 5px rgba(192,132,252,0.3); }
+        .charge-btn-fully-charged { box-shadow:inset 0 1px 6px rgba(232,121,249,0.4); }
         
-        /* Charge Aura Glow (Behind Sphere) */
-        .charge-aura {
-            position:absolute;
-            inset:-15px;
-            border-radius:50%;
-            filter:blur(25px);
-            opacity:0;
-            transition:opacity 1s ease, background 1s ease;
-            z-index:1;
-            pointer-events:none;
-        }
-        .aura-dark { opacity:0; }
-        .aura-dim { background:rgba(109,40,217,0.25); opacity:0.3; }
-        .aura-flickering { background:rgba(124,58,237,0.3); opacity:0.4; animation:aura-flicker 2s ease-in-out infinite; }
-        .aura-warming { background:rgba(139,92,246,0.35); opacity:0.5; }
-        .aura-energized { background:rgba(168,85,247,0.4); opacity:0.6; }
-        .aura-blazing { background:rgba(192,132,252,0.45); opacity:0.7; animation:aura-breathe 2s ease-in-out infinite; }
-        .aura-fully-charged { background:radial-gradient(circle,rgba(232,121,249,0.5),rgba(168,85,247,0.3)); opacity:0.8; animation:aura-pulse 1.5s ease-in-out infinite; }
+        .charge-sphere { width:130px; height:130px; border-radius:50%; background:radial-gradient(circle at 30% 30%,rgba(168,85,247,0.08) 0%,rgba(0,0,0,0.4) 100%); border:1.5px solid; position:relative; display:flex; align-items:center; justify-content:center; overflow:hidden; z-index:3; transition:box-shadow 1s ease, border-color 1s ease; }
+        .sphere-reflection { position:absolute; top:15px; right:20px; width:25px; height:15px; background:rgba(255,255,255,0.2); border-radius:50%; transform:rotate(45deg); filter:blur(3px); z-index:10; transition:opacity 0.5s; }
         
-        @keyframes aura-flicker { 0%,100%{opacity:0.35} 25%{opacity:0.5} 50%{opacity:0.3} 75%{opacity:0.45} }
-        @keyframes aura-breathe { 0%,100%{transform:scale(1);opacity:0.6} 50%{transform:scale(1.1);opacity:0.75} }
-        @keyframes aura-pulse { 0%,100%{transform:scale(1);opacity:0.7} 50%{transform:scale(1.15);opacity:0.9} }
+        .charge-core { position:relative; z-index:5; display:flex; align-items:center; justify-content:center; width:100%; height:100%; }
+        .bts-logo { font-size:42px; font-weight:700; transition:all 1s ease; letter-spacing:-2px; }
+        .core-dark .bts-logo { color:rgba(30,27,75,0.5); text-shadow:none; }
+        .core-dim .bts-logo { color:rgba(109,40,217,0.6); text-shadow:0 0 5px rgba(109,40,217,0.2); }
+        .core-flickering .bts-logo { color:rgba(124,58,237,0.7); text-shadow:0 0 8px rgba(124,58,237,0.3); }
+        .core-warming .bts-logo { color:rgba(139,92,246,0.8); text-shadow:0 0 12px rgba(139,92,246,0.4); }
+        .core-energized .bts-logo { color:rgba(168,85,247,0.85); text-shadow:0 0 15px rgba(168,85,247,0.5); }
+        .core-blazing .bts-logo { color:rgba(192,132,252,0.9); text-shadow:0 0 20px rgba(192,132,252,0.6); }
+        .core-fully-charged .bts-logo { color:#fff; text-shadow:0 0 20px #e879f9, 0 0 40px #a855f7; animation:logo-glow 2s ease-in-out infinite; }
+        @keyframes logo-glow { 0%,100%{text-shadow:0 0 20px #e879f9,0 0 40px #a855f7} 50%{text-shadow:0 0 30px #f0abfc,0 0 60px #c084fc} }
         
-        /* Charge Button (Top) */
-        .charge-button { 
-            width:26px; 
-            height:10px; 
-            background:linear-gradient(180deg,#1a1a1a 0%,#0a0a0a 100%); 
-            border-radius:5px 5px 0 0; 
-            position:relative; 
-            margin-bottom:-3px; 
-            z-index:4; 
-            box-shadow:inset 0 1px 2px rgba(255,255,255,0.05);
-        }
-        .charge-button::after {
-            content:'';
-            position:absolute;
-            top:2px;
-            left:50%;
-            transform:translateX(-50%);
-            width:10px;
-            height:3px;
-            background:rgba(255,255,255,0.05);
-            border-radius:2px;
-        }
-        
-        /* VER.4 GLASS SPHERE */
-        .charge-sphere { 
-            width:130px; 
-            height:130px; 
-            border-radius:50%; 
-            background:
-                radial-gradient(circle at 25% 25%, rgba(255,255,255,0.15) 0%, transparent 40%),
-                radial-gradient(circle at 75% 75%, rgba(0,0,0,0.3) 0%, transparent 50%),
-                radial-gradient(circle at 50% 50%, rgba(168,85,247,0.03) 0%, rgba(0,0,0,0.5) 100%);
-            border:1.5px solid rgba(255,255,255,0.08); 
-            position:relative; 
-            display:flex; 
-            align-items:center; 
-            justify-content:center; 
-            overflow:hidden; 
-            z-index:3; 
-            backdrop-filter:blur(2px);
-            -webkit-backdrop-filter:blur(2px);
-            box-shadow:
-                inset 0 -20px 40px rgba(0,0,0,0.4),
-                inset 0 20px 40px rgba(255,255,255,0.03);
-            transition:box-shadow 1s ease, border-color 1s ease; 
-        }
-        
-        /* Tier-based Sphere Borders */
-        .sphere-dark { border-color:rgba(30,27,75,0.3); }
-        .sphere-dim { border-color:rgba(109,40,217,0.25); }
-        .sphere-flickering { border-color:rgba(124,58,237,0.3); }
-        .sphere-warming { border-color:rgba(139,92,246,0.35); }
-        .sphere-energized { border-color:rgba(168,85,247,0.4); }
-        .sphere-blazing { border-color:rgba(192,132,252,0.5); }
-        .sphere-fully-charged { 
-            border-color:rgba(232,121,249,0.6);
-            box-shadow:
-                inset 0 -20px 40px rgba(0,0,0,0.3),
-                inset 0 20px 40px rgba(255,255,255,0.08),
-                inset 0 0 30px rgba(232,121,249,0.15);
-        }
-        
-        /* VER.4 Glass Reflections */
-        .sphere-reflection { 
-            position:absolute; 
-            top:12px; 
-            left:18px; 
-            width:35px; 
-            height:18px; 
-            background:linear-gradient(135deg, rgba(255,255,255,0.25), rgba(255,255,255,0.05)); 
-            border-radius:50%; 
-            transform:rotate(-30deg); 
-            filter:blur(2px); 
-            z-index:15; 
-            pointer-events:none;
-            transition:opacity 0.5s; 
-        }
-        .sphere-reflection-secondary {
-            position:absolute;
-            top:20px;
-            right:25px;
-            width:12px;
-            height:8px;
-            background:rgba(255,255,255,0.15);
-            border-radius:50%;
-            transform:rotate(45deg);
-            filter:blur(2px);
-            z-index:15;
-            pointer-events:none;
-        }
-        
-        /* VER.4 Charge Core (Logo) */
-        .charge-core { 
-            position:relative; 
-            z-index:10; 
-            display:flex; 
-            align-items:center; 
-            justify-content:center; 
-            width:100%; 
-            height:100%; 
-        }
-        .bts-logo { 
-            font-size:42px; 
-            font-weight:700; 
-            letter-spacing:-2px;
-            color:rgba(255,255,255,0.08);
-            transition:all 0.8s cubic-bezier(0.4, 0, 0.2, 1); 
-            text-shadow:none;
-            z-index:10;
-        }
-        
-        /* Tier-based Logo Styles */
-        .core-dark .bts-logo { color:rgba(30,27,75,0.3); }
-        .core-dim .bts-logo { color:rgba(109,40,217,0.4); text-shadow:0 0 5px rgba(109,40,217,0.2); }
-        .core-flickering .bts-logo { color:rgba(124,58,237,0.5); text-shadow:0 0 8px rgba(124,58,237,0.3); animation:logo-flicker 2s ease-in-out infinite; }
-        .core-warming .bts-logo { color:rgba(139,92,246,0.6); text-shadow:0 0 12px rgba(139,92,246,0.4); }
-        .core-energized .bts-logo { color:rgba(168,85,247,0.75); text-shadow:0 0 15px rgba(168,85,247,0.5); }
-        .core-blazing .bts-logo { color:rgba(192,132,252,0.85); text-shadow:0 0 20px rgba(192,132,252,0.6); }
-        .core-fully-charged .bts-logo { 
-            color:#fff; 
-            text-shadow:
-                0 0 15px var(--pd-accent, #e879f9), 
-                0 0 30px var(--pd-accent, #e879f9),
-                0 0 45px var(--pd-accent, #a855f7);
-            animation:logo-glow 2s ease-in-out infinite; 
-        }
-        
-        /* Logo Lit State (Charge A Complete) */
-        .bts-logo.logo-lit {
-            color:#fff !important;
-            text-shadow:
-                0 0 15px var(--pd-accent, #e879f9), 
-                0 0 30px var(--pd-accent, #e879f9),
-                0 0 50px var(--pd-accent, #a855f7) !important;
-        }
-        
-        @keyframes logo-flicker { 0%,100%{opacity:0.9} 25%{opacity:1} 50%{opacity:0.7} 75%{opacity:0.95} }
-        @keyframes logo-glow { 
-            0%,100%{text-shadow:0 0 15px var(--pd-accent,#e879f9),0 0 30px var(--pd-accent,#e879f9),0 0 45px var(--pd-accent,#a855f7)} 
-            50%{text-shadow:0 0 20px var(--pd-accent,#e879f9),0 0 40px var(--pd-accent,#e879f9),0 0 60px var(--pd-accent,#a855f7)} 
-        }
-        
-        /* VER.4 Liquid Fill */
-        .energy-fill-level { 
-            position:absolute; 
-            bottom:0; 
-            left:0; 
-            right:0; 
-            width:100%; 
-            border-radius:0 0 130px 130px; 
-            overflow:hidden; 
-            transition:height 1.5s cubic-bezier(0.4,0,0.2,1); 
-            z-index:2; 
-            mix-blend-mode:screen;
-        }
+        /* Liquid Fill */
+        .energy-fill-level { position:absolute; bottom:0; left:0; right:0; width:100%; border-radius:0 0 130px 130px; overflow:hidden; transition:height 1.2s cubic-bezier(0.4,0,0.2,1); z-index:1; }
         .energy-fill-gradient { width:100%; height:100%; position:relative; }
-        .energy-fill-gradient::after { 
-            content:''; 
-            position:absolute; 
-            inset:0; 
-            background-image:radial-gradient(rgba(255,255,255,0.5) 1px,transparent 1px); 
-            background-size:10px 10px; 
-            opacity:0.2; 
-            animation:liquid-sparkle 4s linear infinite; 
-        }
-        @keyframes liquid-sparkle { 0%{background-position:0 0} 100%{background-position:0 20px} }
+        .energy-fill-gradient::after { content:''; position:absolute; inset:0; background-image:radial-gradient(rgba(255,255,255,0.4) 1px,transparent 1px); background-size:12px 12px; opacity:0.25; animation:liquid-sparkle 4s linear infinite; }
+        @keyframes liquid-sparkle { 0%{background-position:0 0} 100%{background-position:0 24px} }
         
-        /* Tier Fill Gradients */
-        .fill-dark { background:linear-gradient(to top,#1e1b4b 0%,#312e81 100%); opacity:0.4; }
-        .fill-dim { background:linear-gradient(to top,#312e81 0%,#4c1d95 50%,#6d28d9 100%); opacity:0.5; }
-        .fill-flickering { background:linear-gradient(to top,#4c1d95 0%,#6d28d9 50%,#7c3aed 100%); opacity:0.6; }
-        .fill-warming { background:linear-gradient(to top,#6d28d9 0%,#7c3aed 40%,#8b5cf6 100%); opacity:0.7; }
-        .fill-energized { background:linear-gradient(to top,#7c3aed 0%,#8b5cf6 40%,#a855f7 100%); opacity:0.75; }
-        .fill-blazing { background:linear-gradient(to top,#8b5cf6 0%,#a855f7 30%,#c084fc 70%,#e879f9 100%); opacity:0.8; }
-        .fill-fully-charged { 
-            background:linear-gradient(to top,
-                #a855f7 0%,
-                #c084fc 25%,
-                #e879f9 50%,
-                #f0abfc 75%,
-                rgba(255,255,255,0.8) 100%
-            ); 
-            opacity:0.85; 
-        }
+        .fill-dark { background:linear-gradient(to top,#1e1b4b 0%,#312e81 100%); opacity:0.5; }
+        .fill-dim { background:linear-gradient(to top,#312e81 0%,#4c1d95 50%,#6d28d9 100%); opacity:0.6; }
+        .fill-flickering { background:linear-gradient(to top,#4c1d95 0%,#6d28d9 50%,#7c3aed 100%); opacity:0.7; }
+        .fill-warming { background:linear-gradient(to top,#6d28d9 0%,#7c3aed 40%,#8b5cf6 100%); opacity:0.75; }
+        .fill-energized { background:linear-gradient(to top,#7c3aed 0%,#8b5cf6 40%,#a855f7 100%); opacity:0.8; }
+        .fill-blazing { background:linear-gradient(to top,#8b5cf6 0%,#a855f7 30%,#c084fc 70%,#e879f9 100%); opacity:0.85; }
+        .fill-fully-charged { background:linear-gradient(to top,#a855f7 0%,#c084fc 25%,#e879f9 60%,#f0abfc 85%,rgba(255,255,255,0.6) 100%); opacity:0.9; }
         
-        /* Liquid Surface Highlight */
-        .energy-fill-surface { 
-            position:absolute; 
-            top:0; 
-            left:0; 
-            right:0; 
-            height:3px; 
-            background:linear-gradient(90deg,
-                transparent 10%,
-                rgba(255,255,255,0.7) 30%,
-                rgba(255,255,255,0.9) 50%,
-                rgba(255,255,255,0.7) 70%,
-                transparent 90%
-            ); 
-            animation:surface-shimmer 3s ease-in-out infinite; 
-            filter:blur(1px);
-            transition:opacity 0.5s; 
-        }
-        @keyframes surface-shimmer { 0%,100%{transform:translateX(-10%);opacity:0.8} 50%{transform:translateX(10%);opacity:1} }
+        .energy-fill-surface { position:absolute; top:0; left:0; right:0; height:4px; background:rgba(255,255,255,0.6); box-shadow:0 0 12px rgba(255,255,255,0.8); animation:surface-bob 3s ease-in-out infinite; transition:opacity 0.5s; }
+        @keyframes surface-bob { 0%,100%{transform:translateX(0)} 50%{transform:translateX(-6px)} }
         
-        /* Liquid Bubbles */
-        .energy-fill-bubbles { position:absolute; inset:0; pointer-events:none; z-index:3; }
-        .fill-bubble { 
-            position:absolute; 
-            bottom:5%; 
-            width:var(--bubble-size,4px); 
-            height:var(--bubble-size,4px); 
-            background:radial-gradient(circle, rgba(255,255,255,0.9), rgba(255,255,255,0.3)); 
-            border-radius:50%; 
-            animation:bubble-rise var(--bubble-speed,4s) infinite ease-in; 
-            opacity:0; 
-        }
-        @keyframes bubble-rise { 0%{transform:translateY(0) scale(0.5);opacity:0} 15%{opacity:0.8} 100%{transform:translateY(-100px) scale(1.3);opacity:0} }
+        .energy-fill-bubbles { position:absolute; inset:0; pointer-events:none; z-index:2; }
+        .fill-bubble { position:absolute; bottom:0; width:var(--bubble-size,3px); height:var(--bubble-size,3px); background:rgba(255,255,255,0.6); border-radius:50%; animation:bubble-rise 4s infinite ease-in; opacity:0; }
+        @keyframes bubble-rise { 0%{transform:translateY(0) scale(0);opacity:0} 20%{opacity:0.8} 100%{transform:translateY(-80px) scale(1.2);opacity:0} }
         
         /* Energy Ring */
-        .energy-ring { position:absolute; width:80%; height:80%; border-radius:50%; border:1px solid; z-index:4; animation:ring-pulse 3s ease-in-out infinite; }
+        .energy-ring { position:absolute; width:80%; height:80%; border-radius:50%; border:1px solid; z-index:2; animation:ring-pulse 3s ease-in-out infinite; }
         .ring-warming { border-color:rgba(139,92,246,0.15); }
         .ring-energized { border-color:rgba(168,85,247,0.2); }
         .ring-blazing { border-color:rgba(192,132,252,0.25); animation-duration:2s; }
         .ring-fully-charged { border-color:rgba(232,121,249,0.3); animation-duration:1.5s; box-shadow:0 0 15px rgba(232,121,249,0.15); }
         @keyframes ring-pulse { 0%,100%{transform:scale(0.95);opacity:0.5} 50%{transform:scale(1.05);opacity:1} }
         
-        /* Charge Particles */
-        .charge-particles { position:absolute; inset:0; pointer-events:none; z-index:5; }
+        /* Particles */
+        .charge-particles { position:absolute; inset:0; pointer-events:none; z-index:2; }
         .charge-particles span { position:absolute; width:3px; height:3px; background:#fff; border-radius:50%; animation:particle-float 3s infinite ease-in; opacity:0; }
         .particles-dim span { box-shadow:0 0 4px rgba(109,40,217,0.6); }
         .particles-flickering span { box-shadow:0 0 5px rgba(124,58,237,0.7); }
@@ -16993,98 +16661,21 @@ function addArirangStyles() {
         .particles-fully-charged span { box-shadow:0 0 12px #e879f9; width:4px; height:4px; }
         @keyframes particle-float { 0%{transform:translateY(0) scale(0);opacity:0} 40%{opacity:0.9} 100%{transform:translateY(-60px) scale(1.5);opacity:0} }
         
-        /* VER.4 METALLIC HANDLE */
-        .bomb-handle { display:flex; flex-direction:column; align-items:center; margin-top:-6px; z-index:2; }
-        
-        .handle-connector { 
-            width:46px; 
-            height:14px; 
-            background:linear-gradient(180deg,#0d0d0d 0%,#1a1a1a 50%,#0a0a0a 100%); 
-            border-radius:3px; 
-            border-top:1px solid rgba(255,255,255,0.05);
-            box-shadow:inset 0 -2px 4px rgba(0,0,0,0.5);
-        }
-        
-        .handle-grip { 
-            width:34px; 
-            height:145px; 
-            background:linear-gradient(90deg,
-                #080808 0%,
-                #151515 15%,
-                #222222 35%,
-                #2a2a2a 50%,
-                #222222 65%,
-                #151515 85%,
-                #080808 100%
-            ); 
-            border-left:1px solid rgba(255,255,255,0.04);
-            border-right:1px solid rgba(0,0,0,0.8);
-            position:relative;
-            box-shadow:
-                inset 2px 0 8px rgba(255,255,255,0.02),
-                inset -2px 0 8px rgba(0,0,0,0.5);
-        }
-        
-        /* Grip Texture Lines */
-        .handle-grip::before {
-            content:'';
-            position:absolute;
-            top:20px;
-            left:0;
-            right:0;
-            height:100px;
-            background:repeating-linear-gradient(
-                180deg,
-                transparent 0px,
-                transparent 6px,
-                rgba(0,0,0,0.3) 6px,
-                rgba(0,0,0,0.3) 7px
-            );
-        }
-        
-        /* Grip Indicator Light */
-        .grip-light { 
-            position:absolute; 
-            top:55px; 
-            left:50%; 
-            transform:translateX(-50%); 
-            width:6px; 
-            height:6px; 
-            border-radius:50%; 
-            transition:all 1s ease;
-            z-index:5;
-        }
-        .grip-light::after {
-            content:'';
-            position:absolute;
-            inset:-3px;
-            border-radius:50%;
-            background:inherit;
-            filter:blur(4px);
-            opacity:0.6;
-        }
-        
-        .grip-light-dark { background:#0a0a0a; box-shadow:inset 0 1px 2px rgba(0,0,0,0.8); }
-        .grip-light-dim { background:#4c1d95; box-shadow:0 0 4px #4c1d95; }
-        .grip-light-flickering { background:#6d28d9; box-shadow:0 0 6px #6d28d9; animation:grip-flicker 1.5s ease-in-out infinite; }
+        /* Handle */
+        .bomb-handle { display:flex; flex-direction:column; align-items:center; margin-top:-5px; z-index:2; }
+        .handle-connector { width:44px; height:12px; background:#0a0a0a; border-radius:2px; border-top:1px solid #222; }
+        .handle-grip { width:32px; height:140px; background:linear-gradient(90deg,#111,#1f1f1f 40%,#0d0d0d); position:relative; }
+        .grip-light { position:absolute; top:50px; left:50%; transform:translateX(-50%); width:4px; height:4px; border-radius:50%; transition:all 1s; }
+        .grip-light-dark { background:#111; box-shadow:none; }
+        .grip-light-dim { background:#4c1d95; box-shadow:0 0 3px #4c1d95; }
+        .grip-light-flickering { background:#6d28d9; box-shadow:0 0 5px #6d28d9; animation:grip-blink 2s infinite; }
         .grip-light-warming { background:#7c3aed; box-shadow:0 0 8px #7c3aed; }
         .grip-light-energized { background:#a855f7; box-shadow:0 0 10px #a855f7; }
-        .grip-light-blazing { background:#c084fc; box-shadow:0 0 14px #c084fc; animation:grip-pulse 1s ease-in-out infinite; }
-        .grip-light-fully-charged { background:#e879f9; box-shadow:0 0 18px #e879f9, 0 0 30px #e879f9; }
+        .grip-light-blazing { background:#c084fc; box-shadow:0 0 14px #c084fc; animation:grip-blink 1s infinite; }
+        .grip-light-fully-charged { background:#e879f9; box-shadow:0 0 18px #e879f9; }
+        @keyframes grip-blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
+        .handle-base { width:36px; height:10px; background:#0a0a0a; border-radius:0 0 4px 4px; margin-top:-2px; }
         
-        @keyframes grip-flicker { 0%,100%{opacity:1} 25%{opacity:0.6} 50%{opacity:0.9} 75%{opacity:0.5} }
-        @keyframes grip-pulse { 0%,100%{box-shadow:0 0 10px #c084fc} 50%{box-shadow:0 0 20px #c084fc,0 0 30px #c084fc} }
-        
-        .handle-base { 
-            width:38px; 
-            height:12px; 
-            background:linear-gradient(180deg,#1a1a1a 0%,#0a0a0a 100%); 
-            border-radius:0 0 6px 6px; 
-            margin-top:-2px;
-            box-shadow:0 4px 8px rgba(0,0,0,0.5);
-        }
-        
-        /* Bomb Power Label */
         .bomb-power-label { margin-top:15px; font-size:13px; font-weight:700; letter-spacing:1.5px; padding:6px 16px; border-radius:20px; transition:all 1s; }
         .label-dark { color:#4c1d95; background:rgba(30,27,75,0.2); border:1px solid rgba(30,27,75,0.3); }
         .label-dim { color:#6d28d9; background:rgba(109,40,217,0.1); border:1px solid rgba(109,40,217,0.25); }
@@ -17095,9 +16686,7 @@ function addArirangStyles() {
         .label-fully-charged { color:#e879f9; background:rgba(232,121,249,0.12); border:1px solid rgba(232,121,249,0.4); text-shadow:0 0 15px rgba(232,121,249,0.6); animation:label-shine 3s ease-in-out infinite; }
         @keyframes label-shine { 0%,100%{box-shadow:0 0 10px rgba(232,121,249,0.1)} 50%{box-shadow:0 0 25px rgba(232,121,249,0.3)} }
         
-        /* =============================================
-           ERA TIMELINE
-           ============================================= */
+        /* ERA TIMELINE */
         .era-timeline { margin-top:25px; padding-top:25px; border-top:1px solid rgba(168,85,247,0.08); }
         .timeline-header { display:flex; align-items:center; gap:8px; justify-content:center; margin-bottom:15px; }
         .timeline-icon { font-size:14px; }
@@ -17118,7 +16707,7 @@ function addArirangStyles() {
         .era-locked .era-name { color:#444; }
         .era-cell:hover { transform:scale(1.05); }
         
-        /* Phase Dots */
+        /* Phase dots — per-phase color */
         .phase-dot-grid { display:flex; flex-wrap:wrap; gap:4px; justify-content:center; margin-bottom:12px; }
         .phase-dot { width:28px; height:28px; border-radius:6px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:9px; font-weight:700; transition:all 0.2s; min-width:44px; min-height:34px; }
         .dot-charged { background:var(--phase-bg); border:1.5px solid var(--phase-accent); color:var(--phase-accent); box-shadow:0 0 8px color-mix(in srgb,var(--phase-glow) 30%,transparent); }
@@ -17136,9 +16725,7 @@ function addArirangStyles() {
         .dot.locked { background:#444; }
         .dot.missed { background:#ef4444; }
         
-        /* =============================================
-           TODAY'S PHASE CARD
-           ============================================= */
+        /* TODAY'S PHASE */
         .arirang-phase-card { border:1px solid var(--phase-border,rgba(168,85,247,0.2)); transition:all 0.3s; }
         .arirang-phase-card.phase-charged { border-color:var(--phase-accent,#a855f7); background:linear-gradient(135deg,var(--phase-bg,rgba(168,85,247,0.05)),transparent); box-shadow:0 0 20px color-mix(in srgb,var(--phase-glow) 15%,transparent); }
         .phase-header-styled { border-bottom:2px solid var(--phase-accent,#a855f7)22; }
@@ -17160,7 +16747,7 @@ function addArirangStyles() {
         .spotify-btn:hover { background:#1ed760; transform:scale(1.03); }
         .spotify-pill { display:inline-flex; align-items:center; gap:4px; padding:4px 10px; background:rgba(29,185,84,0.15); color:#1DB954; border-radius:12px; font-size:10px; font-weight:600; text-decoration:none; flex-shrink:0; }
         
-        /* Dual Charge Section */
+        /* Dual Charge */
         .dual-charge-section { margin:20px 0 15px; padding:16px; background:rgba(168,85,247,0.02); border-radius:12px; border:1px solid; }
         .charge-unit-header { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
         .charge-letter { width:22px; height:22px; border-radius:50%; background:color-mix(in srgb,var(--letter-color,#a855f7) 15%,transparent); border:1.5px solid color-mix(in srgb,var(--letter-color,#a855f7) 50%,transparent); color:var(--letter-color,#a855f7); font-size:10px; font-weight:800; display:flex; align-items:center; justify-content:center; }
@@ -17233,18 +16820,14 @@ function addArirangStyles() {
         .track-count { font-size:11px; color:#666; padding:2px 8px; border-radius:8px; margin-left:8px; }
         .track-count.complete { font-weight:500; }
         
-        /* =============================================
-           REST CARD
-           ============================================= */
+        /* REST CARD */
         .arirang-rest-card { background:linear-gradient(135deg,rgba(168,85,247,0.03),transparent); }
         .rest-content { display:flex; align-items:center; gap:15px; padding:10px; }
         .rest-icon { font-size:36px; opacity:0.6; }
         .rest-text h3 { font-size:14px; color:#888; margin:0; }
         .rest-text p { font-size:12px; color:#555; margin:4px 0 0; }
         
-        /* =============================================
-           VAULT CARD
-           ============================================= */
+        /* VAULT */
         .arirang-vault-card .card-header { display:flex; justify-content:space-between; align-items:center; }
         .unclaimed-count { background:rgba(232,121,249,0.15); color:#e879f9; padding:3px 8px; border-radius:8px; font-size:10px; font-weight:600; }
         .vault-grid { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; }
@@ -17260,9 +16843,7 @@ function addArirangStyles() {
         .vault-box.active { background:var(--vault-bg,rgba(168,85,247,0.05)); border:1px solid var(--vault-border,rgba(168,85,247,0.2)); }
         .vault-box.pending { background:rgba(60,60,70,0.08); border:1px solid #1f1f25; }
         
-        /* =============================================
-           ACTIVATION CARD
-           ============================================= */
+        /* ACTIVATION */
         .arirang-activation-card { background:linear-gradient(135deg,rgba(168,85,247,0.04),rgba(124,58,237,0.02)); border:1px dashed rgba(168,85,247,0.2); }
         .arirang-activation-card.activated { border:1px solid rgba(232,121,249,0.4); animation:activation-shine 3s ease-in-out infinite; }
         @keyframes activation-shine { 0%,100%{box-shadow:0 0 20px rgba(232,121,249,0.1)} 50%{box-shadow:0 0 40px rgba(232,121,249,0.2)} }
@@ -17279,9 +16860,7 @@ function addArirangStyles() {
         .activation-fill { height:100%; background:linear-gradient(90deg,#7c3aed,#a855f7); border-radius:10px; }
         .activation-count { font-size:11px; color:#666; }
         
-        /* =============================================
-           ACTION CARD
-           ============================================= */
+        /* ACTION CARD */
         .arirang-action-card { cursor:pointer; transition:all 0.2s; }
         .arirang-action-card:hover { border-color:rgba(168,85,247,0.3); }
         .action-content { display:flex; align-items:center; gap:12px; }
@@ -17291,139 +16870,24 @@ function addArirangStyles() {
         .action-subtitle { font-size:11px; color:#666; }
         .action-arrow { font-size:18px; color:#555; }
         
-        /* =============================================
-           HOME WIDGET VER.4
-           ============================================= */
-        .arirang-home-widget { 
-            display:flex; 
-            align-items:flex-start; 
-            gap:12px; 
-            padding:15px; 
-            background:linear-gradient(135deg,rgba(168,85,247,0.1),rgba(124,58,237,0.05)); 
-            border:1px solid rgba(168,85,247,0.25); 
-            border-radius:12px; 
-            margin-bottom:15px; 
-            cursor:pointer; 
-            transition:all 0.3s; 
-        }
-        .arirang-home-widget:hover { border-color:rgba(168,85,247,0.45); transform:translateY(-2px); box-shadow:0 5px 15px rgba(0,0,0,0.3); }
+        /* HOME WIDGET */
+        .arirang-home-widget { display:flex; align-items:center; gap:12px; padding:15px; background:linear-gradient(135deg,rgba(168,85,247,0.08),rgba(124,58,237,0.03)); border:1px solid rgba(168,85,247,0.2); border-radius:12px; margin-bottom:15px; cursor:pointer; transition:all 0.3s; }
+        .arirang-home-widget:hover { border-color:rgba(168,85,247,0.4); transform:translateY(-2px); }
+        .widget-bomb-charge { display:flex; flex-direction:column; align-items:center; }
+        .widget-sphere-charge { width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg,rgba(168,85,247,0.1),rgba(76,29,149,0.2)); border:1px solid rgba(168,85,247,0.4); display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; }
+        .widget-fill { position:absolute; bottom:0; left:0; right:0; background:linear-gradient(0deg,rgba(168,85,247,0.6),rgba(124,58,237,0.2)); transition:height 0.5s; }
+        .widget-logo { font-size:14px; color:#a855f7; position:relative; z-index:1; }
+        .widget-handle-c { width:12px; height:16px; background:linear-gradient(180deg,#2a2a2a,#1a1a1a); border-radius:0 0 4px 4px; margin-top:-4px; }
+        .widget-info { flex:1; }
+        .widget-header { display:flex; align-items:center; gap:8px; }
+        .widget-title { font-size:12px; font-weight:700; color:#a855f7; letter-spacing:0.5px; }
+        .widget-live-dot { width:6px; height:6px; background:#a855f7; border-radius:50%; animation:blink 2s ease-in-out infinite; }
+        .widget-progress-bar { height:3px; background:rgba(168,85,247,0.1); border-radius:10px; overflow:hidden; margin:4px 0; }
+        .widget-progress-fill { height:100%; background:linear-gradient(90deg,#7c3aed,#a855f7); border-radius:10px; transition:width 0.5s; }
+        .widget-sub { font-size:10px; color:#666; }
+        .widget-arrow { font-size:16px; color:#555; }
         
-        .widget-bomb-charge { display:flex; flex-direction:column; align-items:center; flex-shrink:0; margin-top:2px; }
-        
-        .widget-sphere-charge { 
-            width:42px; 
-            height:42px; 
-            border-radius:50%; 
-            background:
-                radial-gradient(circle at 25% 25%, rgba(255,255,255,0.12) 0%, transparent 40%),
-                radial-gradient(circle at 50% 50%, rgba(168,85,247,0.05) 0%, rgba(0,0,0,0.5) 100%);
-            border:1px solid rgba(168,85,247,0.3); 
-            display:flex; 
-            align-items:center; 
-            justify-content:center; 
-            position:relative; 
-            overflow:hidden;
-            backdrop-filter:blur(1px);
-            box-shadow:
-                inset 0 -8px 15px rgba(0,0,0,0.3),
-                inset 0 8px 15px rgba(255,255,255,0.02);
-            transition:all 0.5s ease;
-        }
-        
-        /* Widget Aura Glow */
-        .widget-aura {
-            position:absolute;
-            inset:-8px;
-            border-radius:50%;
-            filter:blur(12px);
-            opacity:0;
-            transition:opacity 1s ease;
-            z-index:0;
-            pointer-events:none;
-        }
-        .widget-sphere-charge:hover .widget-aura { opacity:0.6; }
-        
-        /* Widget Liquid Fill */
-        .widget-fill { 
-            position:absolute; 
-            bottom:0; 
-            left:0; 
-            right:0; 
-            background:linear-gradient(0deg,
-                rgba(168,85,247,0.8) 0%,
-                rgba(124,58,237,0.4) 60%,
-                transparent 100%
-            ); 
-            transition:height 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-            mix-blend-mode:screen;
-            border-radius:0 0 50% 50%;
-        }
-        
-        /* Widget Reflection */
-        .widget-sphere-charge::before {
-            content:'';
-            position:absolute;
-            top:6px;
-            left:8px;
-            width:12px;
-            height:6px;
-            background:rgba(255,255,255,0.2);
-            border-radius:50%;
-            transform:rotate(-30deg);
-            filter:blur(1px);
-            z-index:10;
-        }
-        
-        .widget-logo { 
-            font-size:15px; 
-            font-weight:bold; 
-            position:relative; 
-            z-index:5; 
-            transition:all 0.5s ease;
-        }
-        .widget-logo.dim { color:rgba(168,85,247,0.4); text-shadow:none; }
-        .widget-logo.medium { color:rgba(168,85,247,0.7); text-shadow:0 0 5px rgba(168,85,247,0.3); }
-        .widget-logo.bright { color:#a855f7; text-shadow:0 0 10px rgba(168,85,247,0.5); }
-        .widget-logo.lit { color:#fff; text-shadow:0 0 10px #e879f9, 0 0 20px #a855f7; }
-        
-        .widget-handle-c { 
-            width:14px; 
-            height:20px; 
-            background:linear-gradient(90deg,#151515,#252525 50%,#151515); 
-            border-radius:0 0 5px 5px; 
-            margin-top:-5px; 
-            position:relative;
-        }
-        .widget-handle-c::before {
-            content:'';
-            position:absolute;
-            top:4px;
-            left:50%;
-            transform:translateX(-50%);
-            width:3px;
-            height:3px;
-            border-radius:50%;
-            background:rgba(168,85,247,0.3);
-            transition:all 0.5s;
-        }
-        
-        .widget-info { flex:1; min-width:0; }
-        .widget-header { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
-        .widget-title { font-size:11px; font-weight:800; color:#a855f7; letter-spacing:1px; }
-        .widget-live-dot { width:6px; height:6px; border-radius:50%; animation:blink 2s ease-in-out infinite; }
-        .widget-row { margin-bottom:8px; }
-        .widget-row-label { font-size:10px; color:#888; margin-bottom:4px; display:flex; justify-content:space-between; }
-        .widget-row-label span { font-weight:700; color:#ccc; }
-        .widget-progress-bar { height:4px; background:rgba(255,255,255,0.05); border-radius:10px; overflow:hidden; margin:4px 0; }
-        .widget-progress-fill { height:100%; border-radius:10px; transition:width 0.8s ease; }
-        .widget-stats-row { display:flex; justify-content:space-between; align-items:center; margin-top:2px; }
-        .widget-sub { font-size:9px; color:#666; font-weight:500; }
-        .widget-sub-pct { font-size:10px; font-weight:800; }
-        .widget-arrow { font-size:16px; color:#444; align-self:center; }
-        
-        /* =============================================
-           MODALS
-           ============================================= */
+        /* MODALS */
         .phase-detail-modal,.arirang-badge-modal,.arirang-lb-modal { position:fixed; inset:0; z-index:10000; display:flex; align-items:center; justify-content:center; padding:20px; opacity:0; transition:opacity 0.3s; }
         .phase-detail-modal.show,.arirang-badge-modal.show,.arirang-lb-modal.show { opacity:1; }
         .modal-bg { position:absolute; inset:0; background:rgba(0,0,0,0.9); }
@@ -17487,15 +16951,10 @@ function addArirangStyles() {
         .lb-empty { text-align:center; padding:40px 20px; color:#555; }
         .lb-empty span { font-size:32px; display:block; margin-bottom:10px; }
         
-        /* =============================================
-           RESPONSIVE ADJUSTMENTS
-           ============================================= */
         @media (max-width:380px) {
             .charging-bomb-display { transform:scale(0.85); transform-origin:center top; padding:40px 10px 10px; margin-bottom:-40px; }
-            .charge-sphere { width:105px; height:105px; }
-            .bts-logo { font-size:34px; }
-            .handle-grip { width:28px; height:120px; }
-            .sphere-reflection { width:28px; height:14px; top:10px; left:14px; }
+            .charge-sphere { width:100px; height:100px; }
+            .bts-logo { font-size:32px; }
             .power-stats-grid { gap:8px; }
             .power-stat { padding:8px 12px; }
             .power-stat-value { font-size:18px; }
@@ -17510,12 +16969,11 @@ function addArirangStyles() {
             .wire-flow,.charge-sparks span,.power-bar-shimmer,.energy-fill-gradient::after,.energy-fill-surface,.concert-star,.fill-bubble,.energy-ring { animation:none !important; }
             .charge-wire.wire-live { animation:none; }
             .charge-ambient-blazing,.charge-ambient-fully-charged { animation:none; }
-            .charge-aura,.grip-light,.bts-logo { animation:none !important; }
-            .fill-bubble { animation:none; opacity:0.5; }
         }
     `;
     document.head.appendChild(style);
 }
+
 // =============================================
 // DAILY WAVE STYLES
 // =============================================
@@ -17551,181 +17009,23 @@ function addDailyWaveStyles() {
         .dw-ambient-light { position:absolute; width:250px; height:250px; border-radius:50%; background:var(--theme-color); filter:blur(100px); opacity:0.25; animation:dw-breathe 4s ease-in-out infinite; }
         @keyframes dw-breathe { 0%,100%{transform:scale(0.9);opacity:0.2} 50%{transform:scale(1.2);opacity:0.3} }
         .dw-pivot { transform-origin:center bottom; position:relative; }
-        
-        /* VER.4 DAILY WAVE BOMB */
-        .dw-bomb { display:flex; flex-direction:column; align-items:center; filter:drop-shadow(0 20px 50px rgba(0,0,0,0.7)); }
-        
-        .dw-sphere { 
-            width:130px; 
-            height:130px; 
-            border-radius:50%; 
-            background:
-                radial-gradient(circle at 25% 25%, rgba(255,255,255,0.18) 0%, transparent 45%),
-                radial-gradient(circle at 75% 75%, rgba(0,0,0,0.35) 0%, transparent 55%),
-                radial-gradient(circle at 50% 50%, rgba(168,85,247,0.05) 0%, rgba(0,0,0,0.5) 100%);
-            border:1.5px solid rgba(255,255,255,0.12); 
-            position:relative; 
-            display:flex; 
-            align-items:center; 
-            justify-content:center; 
-            overflow:hidden;
-            backdrop-filter:blur(2px);
-            box-shadow:
-                inset 0 -25px 50px rgba(0,0,0,0.4),
-                inset 0 25px 50px rgba(255,255,255,0.04),
-                0 0 30px var(--theme-color,#a855f7);
-            transition:box-shadow 0.8s ease; 
-        }
-        
-        .dw-sphere.charged {
-            box-shadow:
-                inset 0 -25px 50px rgba(0,0,0,0.3),
-                inset 0 25px 50px rgba(255,255,255,0.08),
-                inset 0 0 40px var(--theme-color,#a855f7),
-                0 0 50px var(--theme-color,#a855f7),
-                0 0 100px var(--theme-color,#a855f7);
-        }
-        
-        .dw-sphere.finale-glow { 
-            box-shadow:
-                inset 0 -25px 50px rgba(0,0,0,0.2),
-                inset 0 25px 50px rgba(255,255,255,0.1),
-                inset 0 0 50px var(--theme-color),
-                0 0 60px var(--theme-color),
-                0 0 120px var(--theme-color); 
-            animation:dw-finale-glow 1s ease-in-out infinite alternate; 
-        }
-        @keyframes dw-finale-glow { 
-            0%{box-shadow:inset 0 -25px 50px rgba(0,0,0,0.2),inset 0 0 50px var(--theme-color),0 0 60px var(--theme-color)} 
-            100%{box-shadow:inset 0 -25px 50px rgba(0,0,0,0.1),inset 0 0 70px var(--theme-color),0 0 100px var(--theme-color),0 0 150px var(--theme-color)} 
-        }
-        
-        /* DW Glass Reflections */
-        .dw-sphere::before {
-            content:'';
-            position:absolute;
-            top:14px;
-            left:18px;
-            width:35px;
-            height:16px;
-            background:linear-gradient(135deg, rgba(255,255,255,0.28), rgba(255,255,255,0.05));
-            border-radius:50%;
-            transform:rotate(-30deg);
-            filter:blur(2px);
-            z-index:15;
-            pointer-events:none;
-        }
-        .dw-sphere::after {
-            content:'';
-            position:absolute;
-            top:22px;
-            right:24px;
-            width:10px;
-            height:6px;
-            background:rgba(255,255,255,0.12);
-            border-radius:50%;
-            transform:rotate(45deg);
-            filter:blur(1px);
-            z-index:15;
-            pointer-events:none;
-        }
-        
-        .dw-fill { 
-            position:absolute; 
-            bottom:0; 
-            left:0; 
-            right:0; 
-            background:linear-gradient(to top,
-                var(--theme-color,#a855f7) 0%,
-                color-mix(in srgb,var(--theme-color,#a855f7) 60%,transparent) 50%,
-                transparent 100%
-            ); 
-            transition:height 1.2s cubic-bezier(0.4, 0, 0.2, 1);
-            mix-blend-mode:screen;
-            border-radius:0 0 50% 50%;
-        }
-        
-        .dw-logo { 
-            font-size:42px; 
-            font-weight:700;
-            letter-spacing:-2px;
-            z-index:10; 
-            transition:all 0.8s ease; 
-        }
-        .dw-logo.dim { color:rgba(255,255,255,0.15); text-shadow:none; }
-        .dw-logo.medium { color:rgba(255,255,255,0.5); text-shadow:0 0 10px var(--theme-color); }
-        .dw-logo.bright { color:rgba(255,255,255,0.8); text-shadow:0 0 15px var(--theme-color), 0 0 30px var(--theme-color); }
-        .dw-logo.lit { 
-            color:#fff; 
-            text-shadow:
-                0 0 20px var(--theme-color), 
-                0 0 40px var(--theme-color),
-                0 0 60px var(--theme-color); 
-        }
-        
-        /* VER.4 Metallic Handle */
-        .dw-handle { 
-            width:32px; 
-            height:115px; 
-            background:linear-gradient(90deg,
-                #080808 0%,
-                #181818 20%,
-                #282828 45%,
-                #303030 50%,
-                #282828 55%,
-                #181818 80%,
-                #080808 100%
-            ); 
-            margin-top:-7px; 
-            border-radius:0 0 16px 16px; 
-            position:relative; 
-            z-index:2;
-            box-shadow:
-                inset 2px 0 6px rgba(255,255,255,0.03),
-                inset -2px 0 6px rgba(0,0,0,0.6),
-                0 10px 20px rgba(0,0,0,0.5);
-        }
-        .dw-handle::before { 
-            content:''; 
-            position:absolute; 
-            top:18px; 
-            left:50%; 
-            transform:translateX(-50%); 
-            width:14px; 
-            height:24px; 
-            background:#000; 
-            border:1px solid #333; 
-            border-radius:8px;
-            box-shadow:inset 0 2px 4px rgba(0,0,0,0.8);
-        }
-        /* Grip light indicator */
-        .dw-handle::after {
-            content:'';
-            position:absolute;
-            top:55px;
-            left:50%;
-            transform:translateX(-50%);
-            width:5px;
-            height:5px;
-            border-radius:50%;
-            background:var(--theme-color,#a855f7);
-            box-shadow:0 0 10px var(--theme-color,#a855f7), 0 0 20px var(--theme-color,#a855f7);
-            animation:dw-grip-pulse 2s ease-in-out infinite;
-        }
-        @keyframes dw-grip-pulse { 0%,100%{opacity:0.7;box-shadow:0 0 8px var(--theme-color)} 50%{opacity:1;box-shadow:0 0 15px var(--theme-color),0 0 25px var(--theme-color)} }
-        
+        .dw-bomb { display:flex; flex-direction:column; align-items:center; filter:drop-shadow(0 15px 40px rgba(0,0,0,0.6)); }
+        .dw-sphere { width:120px; height:120px; border-radius:50%; background:radial-gradient(circle at 30% 30%,rgba(255,255,255,0.15),rgba(0,0,0,0.4)); border:1px solid rgba(255,255,255,0.2); box-shadow:inset 0 0 30px var(--theme-color),0 0 25px var(--theme-color); position:relative; display:flex; align-items:center; justify-content:center; overflow:hidden; transition:box-shadow 0.5s; }
+        .dw-sphere.finale-glow { box-shadow:inset 0 0 40px var(--theme-color),0 0 50px var(--theme-color),0 0 100px var(--theme-color); animation:dw-finale-glow 1s ease-in-out infinite alternate; }
+        @keyframes dw-finale-glow { 0%{box-shadow:inset 0 0 40px var(--theme-color),0 0 50px var(--theme-color)} 100%{box-shadow:inset 0 0 60px var(--theme-color),0 0 80px var(--theme-color),0 0 120px var(--theme-color)} }
+        .dw-fill { position:absolute; bottom:0; left:0; right:0; height:100%; background:linear-gradient(to top,var(--theme-color),transparent); opacity:0.4; transition:all 0.5s; }
+        .dw-logo { font-size:40px; font-weight:700; color:#fff; z-index:5; text-shadow:0 0 15px var(--theme-color); transition:text-shadow 0.5s; }
+        .dw-handle { width:30px; height:110px; background:linear-gradient(90deg,#1a1a1a,#2a2a2a 40%,#111); margin-top:-6px; border-radius:0 0 15px 15px; position:relative; z-index:2; }
+        .dw-handle::before { content:''; position:absolute; top:15px; left:50%; transform:translateX(-50%); width:14px; height:22px; background:#000; border:1px solid #333; border-radius:8px; }
         .dw-lyrics { text-align:center; margin-top:25px; padding:0 20px; opacity:0; animation:dw-fade-up 0.8s forwards 0.6s; }
         .dw-lyric-kr { font-size:16px; color:var(--theme-color); font-weight:500; text-shadow:0 0 15px rgba(0,0,0,0.5); animation:dw-lyric-glow 3s ease-in-out infinite; }
         @keyframes dw-lyric-glow { 0%,100%{opacity:0.8} 50%{opacity:1} }
         .dw-lyric-en { font-size:12px; color:rgba(255,255,255,0.5); font-style:italic; margin-top:6px; }
-        
-        /* Movement Animations */
         @keyframes dw-slow-sway { 0%,100%{transform:rotate(0)} 25%{transform:rotate(-10deg) translateX(-12px)} 75%{transform:rotate(10deg) translateX(12px)} }
         @keyframes dw-ocean { 0%,100%{transform:translateY(0) rotate(0)} 50%{transform:translateY(-20px) rotate(4deg)} }
         @keyframes dw-heartbeat { 0%,100%{transform:scale(1)} 15%{transform:scale(1.08)} 30%{transform:scale(1)} 45%{transform:scale(1.05)} }
         @keyframes dw-stars { 0%,100%{transform:translateY(0) rotate(0)} 25%{transform:translateY(-12px) rotate(3deg)} 75%{transform:translateY(-8px) rotate(-3deg)} }
         @keyframes dw-flutter { 0%,100%{transform:rotate(0)} 25%{transform:rotate(-5deg) translate(-3px,-3px)} 50%{transform:rotate(0) translate(0,-5px)} 75%{transform:rotate(5deg) translate(3px,-3px)} }
-        
         .dw-player-bar { position:absolute; bottom:0; left:0; right:0; z-index:30; background:linear-gradient(to top,#000 85%,transparent); padding:15px 20px 35px; display:flex; flex-direction:column; gap:12px; }
         .dw-controls { display:flex; gap:8px; overflow-x:auto; padding-bottom:5px; justify-content:center; flex-wrap:wrap; }
         .dw-pat-btn { background:rgba(168,85,247,0.1); border:1px solid rgba(168,85,247,0.2); color:rgba(255,255,255,0.7); padding:8px 14px; border-radius:20px; font-size:11px; white-space:nowrap; cursor:pointer; transition:all 0.2s; }
@@ -17739,9 +17039,9 @@ function addDailyWaveStyles() {
         .dw-spotify-wrap { width:100%; border-radius:12px; overflow:hidden; background:#000; box-shadow:0 5px 25px rgba(0,0,0,0.6); border:1px solid rgba(168,85,247,0.2); }
         
         @media (max-width:380px) {
-            .dw-sphere { width:105px; height:105px; }
-            .dw-logo { font-size:34px; }
-            .dw-handle { width:28px; height:95px; }
+            .dw-sphere { width:100px; height:100px; }
+            .dw-logo { font-size:32px; }
+            .dw-handle { width:26px; height:90px; }
             .dw-title { font-size:22px; }
             .dw-era { font-size:32px; }
             .dw-main { padding:70px 15px 180px; }
@@ -17752,7 +17052,6 @@ function addDailyWaveStyles() {
             .dw-pivot { animation:none !important; }
             .dw-star,.dw-ambient-light,.dw-fireworks,.dw-era,.dw-lyric-kr { animation:none; }
             .dw-star { opacity:0.5; }
-            .dw-handle::after { animation:none; }
         }
     `;
     document.head.appendChild(style);
