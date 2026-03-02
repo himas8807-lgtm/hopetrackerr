@@ -16569,6 +16569,10 @@ function setBombColor(color) {
 function renderArirangHomeWidget(data) {
     const phasesCharged = data?.stats?.phasesCharged || 0;
     const totalPhases = data?.stats?.totalPhases || 20;
+    
+    // Liquid level is now tied to Phase Progress (e.g. 1/20 = 5%)
+    const phasePct = Math.round((phasesCharged / totalPhases) * 100);
+    
     const teamStreams = data?.todayChallenge?.collectiveStreams || 0;
     const teamTarget = data?.todayChallenge?.targetStreams || 10000;
     const dailyPct = Math.min(100, Math.round((teamStreams / teamTarget) * 100));
@@ -16579,7 +16583,8 @@ function renderArirangHomeWidget(data) {
             <div class="widget-left">
                 <div class="widget-bomb-charge">
                     <div class="widget-sphere-charge">
-                        <div class="widget-fill" style="height:${dailyPct}%"></div>
+                        <!-- Liquid tied to overall Phase progress -->
+                        <div class="widget-fill" style="height:${phasePct}%"></div>
                         <span class="widget-logo">⟭⟬</span>
                     </div>
                     <div class="widget-handle-c"></div>
@@ -16588,12 +16593,12 @@ function renderArirangHomeWidget(data) {
 
             <div class="widget-info">
                 <div class="widget-header">
-                    <span class="widget-label">PROTOCOL: ARIRANG</span>
+                    <span class="widget-label">ARIRANG MISSION</span>
                     <span class="widget-timer">⏱ ${timeRemaining}</span>
                 </div>
                 
                 <div class="widget-goal-row">
-                    <span class="widget-goal-text">Team Goal: <strong>${fmt(teamStreams)}</strong> <small>/ ${fmt(teamTarget)}</small></span>
+                    <span class="widget-goal-text">Daily Goal: <strong>${fmt(teamStreams)}</strong> <small>/ ${fmt(teamTarget)}</small></span>
                     <span class="widget-pct-text">${dailyPct}%</span>
                 </div>
                 
@@ -16602,7 +16607,6 @@ function renderArirangHomeWidget(data) {
                 </div>
 
                 <div class="widget-footer">
-                    <span class="status-indicator">● LIVE UPLINK</span>
                     <span class="protocol-status">PHASE ${phasesCharged}/${totalPhases} CHARGED</span>
                 </div>
             </div>
@@ -16610,7 +16614,6 @@ function renderArirangHomeWidget(data) {
         </div>
     `;
 }
-
 // =============================================
 // STYLES
 // =============================================
@@ -17024,32 +17027,160 @@ function addArirangStyles() {
         .action-subtitle { font-size:11px; color:#666; }
         .action-arrow { font-size:18px; color:#555; }
         
-       /* HOME WIDGET */
-        .arirang-home-widget { display: flex; align-items: center; gap: 16px; padding: 20px; background: rgba(123, 44, 191, 0.05); border: 1px solid rgba(123, 44, 191, 0.2); border-radius: 14px; margin-bottom: 20px; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); position: relative; overflow: hidden; }
-        .arirang-home-widget:hover { background: rgba(123, 44, 191, 0.1); border-color: rgba(168, 85, 247, 0.5); transform: translateY(-2px); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
-        .widget-left { flex-shrink: 0; }
-        .widget-bomb-charge { display: flex; flex-direction: column; align-items: center; }
-        .widget-sphere-charge { width: 42px; height: 42px; border-radius: 50%; background: #000; border: 2px solid rgba(168, 85, 247, 0.4); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; box-shadow: inset 0 0 10px rgba(168, 85, 247, 0.2); }
-        .widget-fill { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(0deg, #7c3aed, #e879f9); opacity: 0.8; transition: height 1s; }
-        .widget-logo { font-size: 16px; color: #fff; position: relative; z-index: 1; font-weight: bold; text-shadow: 0 0 10px #e879f9; }
-        .widget-handle-c { width: 14px; height: 18px; background: #1a1a2a; border-radius: 0 0 4px 4px; margin-top: -4px; border: 1px solid #333; }
-        .widget-info { flex: 1; min-width: 0; }
-        .widget-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        .widget-label { font-size: 10px; font-weight: 800; color: #a855f7; letter-spacing: 2px; }
-        .widget-timer { font-size: 10px; color: #ffd700; font-weight: 700; background: rgba(255, 215, 0, 0.1); padding: 3px 8px; border-radius: 6px; border: 1px solid rgba(255, 215, 0, 0.2); }
-        .widget-goal-row { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 6px; }
-        .widget-goal-text { font-size: 15px; color: #eee; font-weight: 500; }
-        .widget-goal-text strong { color: #fff; font-size: 18px; font-family: 'Courier New', monospace; }
-        .widget-goal-text small { color: #666; font-size: 12px; }
-        .widget-pct-text { font-size: 12px; font-weight: 800; color: #e879f9; }
-        .widget-progress-bar { height: 8px; background: rgba(255, 255, 255, 0.03); border-radius: 4px; overflow: hidden; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.05); }
-        .widget-progress-fill { height: 100%; background: linear-gradient(90deg, #7c3aed, #e879f9); border-radius: 4px; transition: width 1s ease-in-out; box-shadow: 0 0 15px rgba(168, 85, 247, 0.6); }
-        .widget-footer { display: flex; justify-content: space-between; align-items: center; }
-        .status-indicator { font-size: 8px; font-weight: 700; color: #00ff88; letter-spacing: 1px; display: flex; align-items: center; gap: 4px; }
-        .status-indicator::before { content: ''; width: 4px; height: 4px; background: #00ff88; border-radius: 50%; animation: blink 1s infinite; }
-        .protocol-status { font-size: 9px; color: #555; font-weight: 700; letter-spacing: 1px; }
-        .widget-arrow { font-size: 24px; color: #333; margin-left: 10px; transition: 0.3s; }
-        .arirang-home-widget:hover .widget-arrow { color: #7b2cbf; transform: translateX(3px); }
+       
+                /* ARIRANG MISSION WIDGET */
+                .arirang-home-widget {
+                    display: flex;
+                    align-items: center;
+                    gap: 16px;
+                    padding: 18px;
+                    background: rgba(123, 44, 191, 0.04);
+                    border: 1px solid rgba(123, 44, 191, 0.15);
+                    border-radius: 12px;
+                    margin-bottom: 20px;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    position: relative;
+                }
+        
+                .arirang-home-widget:hover {
+                    background: rgba(123, 44, 191, 0.08);
+                    border-color: rgba(168, 85, 247, 0.4);
+                    transform: translateY(-1px);
+                }
+        
+                .widget-left {
+                    flex-shrink: 0;
+                }
+        
+                .widget-bomb-charge {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                }
+        
+                .widget-sphere-charge {
+                    width: 38px;
+                    height: 38px;
+                    border-radius: 50%;
+                    background: #08080a;
+                    border: 1.5px solid rgba(168, 85, 247, 0.3);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    position: relative;
+                    overflow: hidden;
+                }
+        
+                .widget-fill {
+                    position: absolute;
+                    bottom: 0;
+                    left: 0;
+                    right: 0;
+                    background: linear-gradient(0deg, #7c3aed, #e879f9);
+                    opacity: 0.7;
+                    transition: height 1.5s ease-out;
+                }
+        
+                . widget-logo {
+                    font-size: 14px;
+                    color: rgba(255, 255, 255, 0.5);
+                    position: relative;
+                    z-index: 1;
+                    font-weight: bold;
+                }
+        
+                .widget-handle-c {
+                    width: 12px;
+                    height: 16px;
+                    background: #15151a;
+                    border-radius: 0 0 3px 3px;
+                    margin-top: -3px;
+                    border: 1px solid #222;
+                }
+        
+                .widget-info {
+                    flex: 1;
+                    min-width: 0;
+                }
+        
+                .widget-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 8px;
+                }
+        
+                .widget-label {
+                    font-size: 10px;
+                    font-weight: 800;
+                    color: #7b2cbf;
+                    letter-spacing: 1.5px;
+                }
+        
+                .widget-timer {
+                    font-size: 9px;
+                    color: #ffd700;
+                    font-weight: 700;
+                    opacity: 0.8;
+                }
+        
+                .widget-goal-row {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-end;
+                    margin-bottom: 5px;
+                }
+        
+                .widget-goal-text {
+                    font-size: 13px;
+                    color: #888;
+                }
+        
+                .widget-goal-text strong {
+                    color: #fff;
+                    font-size: 15px;
+                    font-family: monospace;
+                }
+        
+                .widget-pct-text {
+                    font-size: 11px;
+                    font-weight: 700;
+                    color: #aaa;
+                }
+        
+                .widget-progress-bar {
+                    height: 5px;
+                    background: rgba(255, 255, 255, 0.03);
+                    border-radius: 10px;
+                    overflow: hidden;
+                    margin-bottom: 8px;
+                }
+        
+                .widget-progress-fill {
+                    height: 100%;
+                    background: linear-gradient(90deg, #7c3aed, #e879f9);
+                    transition: width 1s ease-in-out;
+                    box-shadow: 0 0 8px rgba(168, 85, 247, 0.3);
+                }
+        
+                .widget-footer {
+                    display: flex;
+                    justify-content: flex-start;
+                }
+        
+                .protocol-status {
+                    font-size: 9px;
+                    color: #444;
+                    font-weight: 800;
+                    letter-spacing: 1px;
+                }
+        
+                .widget-arrow {
+                    font-size: 20px;
+                    color: #222;
+                    margin-left: 8px;
+                }
         
         /* MODALS */
         .phase-detail-modal,.arirang-badge-modal,.arirang-lb-modal { position:fixed; inset:0; z-index:10000; display:flex; align-items:center; justify-content:center; padding:20px; opacity:0; transition:opacity 0.3s; }
