@@ -2550,6 +2550,7 @@ function showAdminPanel() {
             <button type="button" class="admin-tab" data-tab="active">Active</button>
             <button type="button" class="admin-tab" data-tab="confirm">📋 Confirm</button>
             <button type="button" class="admin-tab" data-tab="sotd">🎵 SOTD</button>
+            <button type="button" class="admin-tab" data-tab="arirang">🎆 Arirang Ops</button>
             <button type="button" class="admin-tab" data-tab="debug">🔧 Diagnostics</button>
             <button type="button" class="admin-tab" data-tab="system">⚙️ System</button>
             <button type="button" class="admin-tab" data-tab="leaves">🛑 On Leave</button> 
@@ -2561,6 +2562,7 @@ function showAdminPanel() {
             <div id="admin-tab-active" class="admin-tab-content"></div>
             <div id="admin-tab-confirm" class="admin-tab-content"></div>
             <div id="admin-tab-sotd" class="admin-tab-content"></div>
+            <div id="admin-tab-arirang" class="admin-tab-content"></div>
             <div id="admin-tab-debug" class="admin-tab-content"></div>
             <div id="admin-tab-system" class="admin-tab-content"></div>
             <div id="admin-tab-leaves" class="admin-tab-content"></div>
@@ -2640,6 +2642,9 @@ function switchAdminTab(tabName) {
         case 'sotd': 
             renderAdminSOTD(); 
             break; 
+       case 'arirang':
+            renderAdminArirangTab();
+            break;
         case 'debug': 
             renderAdminDebugTab(); 
             break;
@@ -3556,6 +3561,81 @@ async function loadMissionHistory() {
         `; 
     }
 }
+async function renderAdminArirangTab() {
+    const container = document.getElementById('admin-tab-arirang');
+    if (!container) return;
+    const todayKST = getKSTDateString();
+
+    container.innerHTML = '<div class="loading-text">📡 Intercepting Protocol Data...</div>';
+
+    let currentStats = { total_streams: 0, target: 10000 };
+    try {
+        const data = await api('getArirangStatus', { agentNo: STATE.agentNo });
+        if (data.todayChallenge) {
+            currentStats.total_streams = data.todayChallenge.collectiveStreams;
+            currentStats.target = data.todayChallenge.targetStreams;
+        }
+    } catch(e) {}
+
+    container.innerHTML = `
+        <div class="card" style="border-color: #e879f9; background: rgba(232, 121, 249, 0.05);">
+            <div class="card-header"><h3>🎆 Arirang Daily Target</h3></div>
+            <div class="card-body">
+                <div style="background:rgba(0,0,0,0.3); padding:15px; border-radius:10px; margin-bottom:20px; border:1px dashed #e879f9;">
+                    <div style="font-size:10px; color:#aaa; margin-bottom:5px;">CURRENT STATUS (${todayKST})</div>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <div style="color:#fff; font-size:18px; font-weight:bold;">${fmt(currentStats.total_streams)}</div>
+                            <div style="color:#666; font-size:10px;">TOTAL STREAMS</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="color:#e879f9; font-size:18px; font-weight:bold;">${fmt(currentStats.target)}</div>
+                            <div style="color:#666; font-size:10px;">CURRENT GOAL</div>
+                        </div>
+                    </div>
+                </div>
+
+                <label style="color:#aaa; font-size:11px;">SET NEW TEAM GOAL (STREAMS)</label>
+                <div style="display:flex; gap:10px; margin-top:5px;">
+                    <input type="number" id="new-arirang-target" class="form-input" value="${currentStats.target}" style="flex:1;">
+                    <button onclick="submitArirangTarget()" class="btn-primary" style="background:#e879f9; color:#000;">
+                        Update
+                    </button>
+                </div>
+                <p style="color:#555; font-size:10px; margin-top:10px;">
+                    Note: Changing this will instantly recalculate if the team goal is "Met" for today.
+                </p>
+            </div>
+        </div>
+    `;
+}
+
+async function submitArirangTarget() {
+    const val = document.getElementById('new-arirang-target').value;
+    if (!val || val < 1) return;
+
+    loading(true);
+    try {
+        const res = await api('updateArirangDailyStats', {
+            adminKey: 'BTSSYNC2024', // Ensure this matches your backend env key
+            date: getKSTDateString(),
+            streams: 0, // We aren't adding streams, just updating target
+            newTarget: val
+        });
+
+        if (res.success) {
+            showToast(`✅ Daily target updated to ${fmt(val)}`, 'success');
+            renderAdminArirangTab();
+        }
+    } catch(e) {
+        showToast("Error: " + e.message, 'error');
+    } finally {
+        loading(false);
+    }
+}
+
+window.renderAdminArirangTab = renderAdminArirangTab;
+window.submitArirangTarget = submitArirangTarget;
 async function renderWeekConfirmation() {
     const container = document.getElementById('admin-tab-confirm');
     if (!container) return;
@@ -10813,6 +10893,47 @@ async function renderActivityLog(displayArea) {
         displayArea.innerHTML = '<p class="error-text">Failed to load mission logs.</p>';
     }
 }
+async function renderActivityLog(displayArea) {
+    displayArea.innerHTML = '<div class="loading-text" style="text-align:center; padding:20px;">📂 Decrypting Mission Logs...</div>';
+    try {
+        const response = await api('getActivityFeed', { limit: 50 });
+        const activities = response.activities || [];
+        
+        if (activities.length === 0) {
+            displayArea.innerHTML = '<div class="card"><div class="card-body" style="text-align:center; color:#888;">No recent activity recorded in logs.</div></div>';
+            return;
+        }
+
+        let html = '<div style="display:flex; flex-direction:column; gap:10px;">';
+        activities.forEach(act => {
+            const data = act.data || {};
+            let text = '';
+            let icon = '⚡';
+
+            if(act.type === 'goal_completed') { text = `<strong>${data.team}</strong> completed goal: <strong>${data.goal}</strong>!`; icon = '🎯'; }
+            else if(act.type === 'streak_update') { text = `<strong>${data.name}</strong> reached a <strong style="color:#ff6b35;">${data.streak}-day</strong> streak!`; icon = '🔥'; }
+            else if(act.type === 'secret_mission') { text = `<strong>${data.team}</strong> finished classified task: ${data.title}`; icon = '🕵️'; }
+            else if(act.type === 'xp_milestone') { text = `<strong>${data.name}</strong> reached <strong>${data.xp} XP</strong> milestone!`; icon = '⭐'; }
+            else if(act.type === 'sotd_winner') { text = `<strong>${data.team}</strong> solved the Song of the Day!`; icon = '🧠'; }
+            else if(act.type === 'team_surge') { text = `<strong>${data.team}</strong> is on fire! ${data.streams} streams in the last hour!`; icon = '🚀'; }
+            else if(act.type === 'priority_alert') { text = `<strong style="color:#00d4ff;">PRIORITY:</strong> ${data.title}<br>${data.message || ''}`; icon = '🚨'; } // Fixed Priority Alert
+            else return;
+
+            html += `
+                <div class="card" style="padding:15px; margin:0; border-left:3px solid #7b2cbf; background: rgba(255,255,255,0.02);">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <span style="font-size:20px;">${icon}</span>
+                        <div style="font-size:13px; color:#ccc; line-height:1.4;">${text}</div>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        displayArea.innerHTML = html;
+    } catch (e) {
+        displayArea.innerHTML = '<p class="error-text">Failed to load mission logs.</p>';
+    }
+}
 
 // ==================== JOURNALIST ACTION ====================
 async function submitJournalistNews() {
@@ -15545,8 +15666,26 @@ function renderChargingBomb(bombPower, stats, fullyCharged) {
     const pct = stats.percentComplete || 0;
     const tier = bombPower.tier;
 
-    // sphereGlows REMOVED — now .sphere-dark through .sphere-fully-charged in CSS
-    // sphereBorder REMOVED — now .sphere-dark through .sphere-fully-charged in CSS
+    // dim-to-purple gradient tiers
+    const sphereGlows = {
+        'dark':          'inset 0 0 15px rgba(30,27,75,0.4), 0 0 5px rgba(30,27,75,0.1)',
+        'dim':           'inset 0 0 20px rgba(109,40,217,0.15), 0 0 10px rgba(109,40,217,0.1)',
+        'flickering':    'inset 0 0 25px rgba(124,58,237,0.25), 0 0 15px rgba(124,58,237,0.15)',
+        'warming':       'inset 0 0 30px rgba(139,92,246,0.35), 0 0 20px rgba(139,92,246,0.2)',
+        'energized':     'inset 0 0 35px rgba(168,85,247,0.45), 0 0 30px rgba(168,85,247,0.25)',
+        'blazing':       'inset 0 0 40px rgba(192,132,252,0.55), 0 0 40px rgba(192,132,252,0.3)',
+        'fully-charged': 'inset 0 0 50px rgba(232,121,249,0.6), 0 0 60px rgba(232,121,249,0.4), 0 0 100px rgba(232,121,249,0.2)'
+    };
+
+    const sphereBorder = {
+        'dark': 'rgba(30,27,75,0.3)',
+        'dim': 'rgba(109,40,217,0.3)',
+        'flickering': 'rgba(124,58,237,0.35)',
+        'warming': 'rgba(139,92,246,0.4)',
+        'energized': 'rgba(168,85,247,0.5)',
+        'blazing': 'rgba(192,132,252,0.6)',
+        'fully-charged': 'rgba(232,121,249,0.7)'
+    };
 
     return `
         <div class="charging-bomb-display">
@@ -15564,15 +15703,17 @@ function renderChargingBomb(bombPower, stats, fullyCharged) {
                 `).join('')}
             </div>
             
-            <!-- Ambient Glow -->
+            <!-- Ambient Glow — scales with tier -->
             <div class="charge-ambient-glow charge-ambient-${tier}"></div>
             
             <div class="army-bomb ${fullyCharged ? 'fully-charged' : ''} bomb-tier-${tier}">
-                <!-- Red Fuse Button -->
                 <div class="charge-button charge-btn-${tier}"></div>
                 
-                <!-- Glass Sphere — class handles glow + border + glass highlight -->
-                <div class="charge-sphere sphere-${tier}">
+                <div class="charge-sphere" style="
+                    box-shadow:${sphereGlows[tier] || sphereGlows.dark};
+                    border-color:${sphereBorder[tier] || sphereBorder.dark};
+                ">
+                    <div class="sphere-reflection" style="opacity:${0.1 + pct/200}"></div>
                     
                     <!-- Multi-layer Liquid Fill -->
                     <div class="energy-fill-level" style="height:${pct}%">
@@ -15606,9 +15747,9 @@ function renderChargingBomb(bombPower, stats, fullyCharged) {
                         `).join('')}
                     </div>` : ''}
                     
-                    <!-- 3D BTS Door Logo -->
+                    <!-- BTS Logo -->
                     <div class="charge-core core-${tier}">
-                        <span class="bts-logo">⟭⟬</span>
+                        <span class="bts-logo"  style="opacity:${0.4 + pct/170}">⟭⟬</span>
                     </div>
                 </div>
                 
@@ -16283,8 +16424,6 @@ async function showArirangLeaderboard() {
         showToast('Could not load leaderboard', 'error');
     }
 }
-
-// =============================================
 // =============================================
 // DAILY WAVE — IMMERSIVE SURPRISE EXPERIENCE
 // =============================================
@@ -16333,13 +16472,8 @@ function launchDailyWaveExperience(currentSong, isGrandFinale = false) {
                 <div class="dw-ambient-light"></div>
                 <div class="dw-pivot" id="dw-bomb-pivot">
                     <div class="dw-bomb">
-                        <!-- Red Fuse Button -->
-                        <div class="dw-button"></div>
-                        
-                        <!-- Glass Sphere -->
                         <div class="dw-sphere ${isGrandFinale ? 'finale-glow' : ''}">
                             <div class="dw-fill"></div>
-                            <!-- 3D BTS Door Logo -->
                             <span class="dw-logo">⟭⟬</span>
                         </div>
                         <div class="dw-handle"></div>
@@ -16428,34 +16562,51 @@ function setBombColor(color) {
         root.style.setProperty('--bg-glow', color);
     }
 }
+
 // =============================================
 // HOME WIDGET
 // =============================================
 function renderArirangHomeWidget(data) {
-    const pct = data?.stats?.percentComplete || 0;
-    const nextAlbum = data?.nextPhase?.albums?.[0] || 'Loading...';
     const phasesCharged = data?.stats?.phasesCharged || 0;
-    const total = data?.stats?.totalPhases || 20;
+    const totalPhases = data?.stats?.totalPhases || 20;
+    const teamStreams = data?.todayChallenge?.collectiveStreams || 0;
+    const teamTarget = data?.todayChallenge?.targetStreams || 10000;
+    const dailyPct = Math.min(100, Math.round((teamStreams / teamTarget) * 100));
+    const timeRemaining = data?.timeRemaining || '--';
+
     return `
         <div class="arirang-home-widget" onclick="loadPage('operation-defuse')">
-            <div class="widget-bomb-charge">
-                <div class="widget-sphere-charge" style="--charge-pct:${pct}">
-                    <div class="widget-fill" style="height:${pct}%"></div>
-                    <span class="widget-logo">⟭⟬</span>
+            <div class="widget-left">
+                <div class="widget-bomb-charge">
+                    <div class="widget-sphere-charge">
+                        <div class="widget-fill" style="height:${dailyPct}%"></div>
+                        <span class="widget-logo">⟭⟬</span>
+                    </div>
+                    <div class="widget-handle-c"></div>
                 </div>
-                <div class="widget-handle-c"></div>
             </div>
+
             <div class="widget-info">
                 <div class="widget-header">
-                    <span class="widget-title">OPERATION: ARIRANG</span>
-                    <span class="widget-live-dot"></span>
+                    <span class="widget-label">PROTOCOL: ARIRANG</span>
+                    <span class="widget-timer">⏱ ${timeRemaining}</span>
                 </div>
+                
+                <div class="widget-goal-row">
+                    <span class="widget-goal-text">Team Goal: <strong>${fmt(teamStreams)}</strong> <small>/ ${fmt(teamTarget)}</small></span>
+                    <span class="widget-pct-text">${dailyPct}%</span>
+                </div>
+                
                 <div class="widget-progress-bar">
-                    <div class="widget-progress-fill" style="width:${pct}%"></div>
+                    <div class="widget-progress-fill" style="width:${dailyPct}%"></div>
                 </div>
-                <div class="widget-sub">${phasesCharged}/${total} phases • Next: ${sanitize(nextAlbum)}</div>
+
+                <div class="widget-footer">
+                    <span class="status-indicator">● LIVE UPLINK</span>
+                    <span class="protocol-status">PHASE ${phasesCharged}/${totalPhases} CHARGED</span>
+                </div>
             </div>
-            <span class="widget-arrow">→</span>
+            <div class="widget-arrow">›</div>
         </div>
     `;
 }
@@ -16474,7 +16625,6 @@ function addArirangStyles() {
             --arirang-purple-light: #c084fc;
             --arirang-glow: #e879f9;
             --arirang-bg: #0a0a12;
-            --theme-color: #a855f7;
         }
         
         /* LOADING */
@@ -16602,170 +16752,28 @@ function addArirangStyles() {
         .bomb-tier-blazing { filter:drop-shadow(0 12px 40px rgba(192,132,252,0.4)); }
         .army-bomb.fully-charged { filter:drop-shadow(0 15px 60px rgba(232,121,249,0.5)); }
         
-        /* ============================================ */
-        /* UPGRADED RED FUSE BUTTON                     */
-        /* ============================================ */
-        .charge-button {
-            width:22px;
-            height:12px;
-            background:#444;
-            border-radius:6px 6px 0 0;
-            position:relative;
-            margin-bottom:-2px;
-            z-index:4;
-            overflow:hidden;
-            border:none;
-            box-shadow:inset 0 -1px 2px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.05);
-        }
-        .charge-button::after {
-            content:'';
-            position:absolute;
-            top:2px;
-            left:50%;
-            transform:translateX(-50%);
-            width:8px;
-            height:4px;
-            background:#ff0000;
-            border-radius:2px;
-            box-shadow:0 0 5px #ff0000, 0 0 10px rgba(255,0,0,0.4);
-        }
-        /* Tier-specific fuse glow */
-        .charge-btn-dark::after { box-shadow:0 0 3px #ff0000; opacity:0.4; }
-        .charge-btn-dim::after { box-shadow:0 0 4px #ff0000; opacity:0.5; }
-        .charge-btn-flickering::after { box-shadow:0 0 5px #ff0000; opacity:0.6; animation:fuse-flicker 2s infinite; }
-        .charge-btn-warming::after { box-shadow:0 0 6px #ff0000, 0 0 12px rgba(255,0,0,0.3); opacity:0.7; }
-        .charge-btn-energized::after { box-shadow:0 0 7px #ff0000, 0 0 14px rgba(255,0,0,0.4); opacity:0.85; }
-        .charge-btn-blazing::after { box-shadow:0 0 8px #ff0000, 0 0 18px rgba(255,0,0,0.5); opacity:1; animation:fuse-flicker 1s infinite; }
-        .charge-btn-fully-charged::after { box-shadow:0 0 10px #ff0000, 0 0 22px rgba(255,0,0,0.6); opacity:1; }
-        @keyframes fuse-flicker { 0%,100%{opacity:1} 50%{opacity:0.5} }
+        .charge-button { width:24px; height:8px; background:#0f0f0f; border-radius:4px 4px 0 0; position:relative; margin-bottom:-2px; z-index:4; }
+        .charge-btn-dark { box-shadow:none; }
+        .charge-btn-dim { box-shadow:inset 0 1px 2px rgba(109,40,217,0.1); }
+        .charge-btn-flickering { box-shadow:inset 0 1px 3px rgba(124,58,237,0.15); }
+        .charge-btn-warming { box-shadow:inset 0 1px 3px rgba(139,92,246,0.2); }
+        .charge-btn-energized { box-shadow:inset 0 1px 4px rgba(168,85,247,0.25); }
+        .charge-btn-blazing { box-shadow:inset 0 1px 5px rgba(192,132,252,0.3); }
+        .charge-btn-fully-charged { box-shadow:inset 0 1px 6px rgba(232,121,249,0.4); }
         
-        /* ============================================ */
-        /* UPGRADED GLASS SPHERE                        */
-        /* ============================================ */
-        .charge-sphere {
-            width:130px;
-            height:130px;
-            border-radius:50%;
-            background:radial-gradient(circle at 50% 10%, rgba(255,255,255,0.15) 0%, rgba(0,0,0,0.6) 100%);
-            border:1px solid rgba(255,255,255,0.2);
-            position:relative;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            overflow:hidden;
-            z-index:3;
-            box-shadow:
-                inset 0 0 20px rgba(255,255,255,0.1),
-                inset 0 -20px 40px rgba(0,0,0,0.3);
-            transition:box-shadow 1s ease, border-color 1s ease;
-        }
-        /* Glass highlight crescent */
-        .charge-sphere::before {
-            content:'';
-            position:absolute;
-            top:10%;
-            left:15%;
-            width:40%;
-            height:25%;
-            background:linear-gradient(to bottom, rgba(255,255,255,0.4), transparent);
-            border-radius:50% 50% 40% 40%;
-            transform:rotate(-15deg);
-            filter:blur(2px);
-            z-index:10;
-            pointer-events:none;
-        }
-        .sphere-reflection { display:none; } /* replaced by ::before */
-
-        /* Tier-specific sphere glow */
-        .sphere-dark { border-color:rgba(30,27,75,0.4); box-shadow:inset 0 0 20px rgba(255,255,255,0.05), 0 0 8px rgba(30,27,75,0.2); }
-        .sphere-dim { border-color:rgba(109,40,217,0.3); box-shadow:inset 0 0 20px rgba(255,255,255,0.08), 0 0 12px rgba(109,40,217,0.15); }
-        .sphere-flickering { border-color:rgba(124,58,237,0.35); box-shadow:inset 0 0 20px rgba(255,255,255,0.1), 0 0 16px rgba(124,58,237,0.2); }
-        .sphere-warming { border-color:rgba(139,92,246,0.4); box-shadow:inset 0 0 22px rgba(255,255,255,0.12), 0 0 20px rgba(139,92,246,0.25); }
-        .sphere-energized { border-color:rgba(168,85,247,0.45); box-shadow:inset 0 0 25px rgba(255,255,255,0.14), 0 0 25px rgba(168,85,247,0.3); }
-        .sphere-blazing { border-color:rgba(192,132,252,0.5); box-shadow:inset 0 0 28px rgba(255,255,255,0.16), 0 0 30px rgba(192,132,252,0.35); }
-        .sphere-fully-charged { border-color:rgba(232,121,249,0.6); box-shadow:inset 0 0 30px rgba(255,255,255,0.2), 0 0 40px rgba(232,121,249,0.45), 0 0 80px rgba(232,121,249,0.15); }
+        .charge-sphere { width:130px; height:130px; border-radius:50%; background:radial-gradient(circle at 30% 30%,rgba(168,85,247,0.08) 0%,rgba(0,0,0,0.4) 100%); border:1.5px solid; position:relative; display:flex; align-items:center; justify-content:center; overflow:hidden; z-index:3; transition:box-shadow 1s ease, border-color 1s ease; }
+        .sphere-reflection { position:absolute; top:15px; right:20px; width:25px; height:15px; background:rgba(255,255,255,0.2); border-radius:50%; transform:rotate(45deg); filter:blur(3px); z-index:10; transition:opacity 0.5s; }
         
-        /* ============================================ */
-        /* UPGRADED 3D BTS DOOR LOGO                    */
-        /* ============================================ */
-        .charge-core {
-            position:relative;
-            z-index:5;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            width:100%;
-            height:100%;
-        }
-        /* Base light reflection under logo */
-        .charge-core::after {
-            content:'';
-            position:absolute;
-            bottom:5px;
-            width:60%;
-            height:10px;
-            background:rgba(255,255,255,0.1);
-            border-radius:50%;
-            filter:blur(5px);
-            pointer-events:none;
-        }
-        .bts-logo {
-            font-size:55px;
-            font-family:serif;
-            font-weight:100;
-            letter-spacing:-8px;
-            display:inline-block;
-            color:#fff;
-            transform:perspective(100px) rotateX(10deg);
-            transition:all 1s ease;
-        }
-        /* Tier-specific logo glow — overrides old .core-* rules */
-        .core-dark .bts-logo {
-            color:rgba(30,27,75,0.5);
-            filter:drop-shadow(0 0 5px rgba(30,27,75,0.2)) brightness(0.6);
-            --theme-color:#1e1b4b;
-        }
-        .core-dim .bts-logo {
-            color:rgba(109,40,217,0.65);
-            filter:drop-shadow(0 0 8px rgba(109,40,217,0.3)) brightness(0.8);
-            --theme-color:#6d28d9;
-        }
-        .core-flickering .bts-logo {
-            color:rgba(124,58,237,0.75);
-            filter:drop-shadow(0 0 10px rgba(124,58,237,0.4)) brightness(0.9);
-            --theme-color:#7c3aed;
-        }
-        .core-warming .bts-logo {
-            color:rgba(139,92,246,0.85);
-            filter:drop-shadow(0 0 12px rgba(139,92,246,0.5)) brightness(1.0);
-            --theme-color:#8b5cf6;
-        }
-        .core-energized .bts-logo {
-            color:rgba(168,85,247,0.9);
-            filter:drop-shadow(0 0 15px rgba(168,85,247,0.6)) brightness(1.2);
-            --theme-color:#a855f7;
-        }
-        .core-blazing .bts-logo {
-            color:rgba(192,132,252,0.95);
-            filter:drop-shadow(0 0 20px rgba(192,132,252,0.7)) brightness(1.4);
-            --theme-color:#c084fc;
-        }
-        .core-fully-charged .bts-logo {
-            color:#fff;
-            filter:drop-shadow(0 0 15px #e879f9) drop-shadow(0 0 30px #a855f7) brightness(1.5);
-            animation:logo-glow-3d 2s ease-in-out infinite;
-            --theme-color:#e879f9;
-        }
-        @keyframes logo-glow-3d {
-            0%,100% {
-                filter:drop-shadow(0 0 15px #e879f9) drop-shadow(0 0 30px #a855f7) brightness(1.5);
-                transform:perspective(100px) rotateX(10deg) scale(1);
-            }
-            50% {
-                filter:drop-shadow(0 0 25px #f0abfc) drop-shadow(0 0 50px #c084fc) brightness(1.7);
-                transform:perspective(100px) rotateX(10deg) scale(1.05);
-            }
-        }
+        .charge-core { position:relative; z-index:5; display:flex; align-items:center; justify-content:center; width:100%; height:100%; }
+        .bts-logo { font-size:42px; font-weight:700; transition:all 1s ease; letter-spacing:-2px; }
+        .core-dark .bts-logo { color:rgba(30,27,75,0.5); text-shadow:none; }
+        .core-dim .bts-logo { color:rgba(109,40,217,0.6); text-shadow:0 0 5px rgba(109,40,217,0.2); }
+        .core-flickering .bts-logo { color:rgba(124,58,237,0.7); text-shadow:0 0 8px rgba(124,58,237,0.3); }
+        .core-warming .bts-logo { color:rgba(139,92,246,0.8); text-shadow:0 0 12px rgba(139,92,246,0.4); }
+        .core-energized .bts-logo { color:rgba(168,85,247,0.85); text-shadow:0 0 15px rgba(168,85,247,0.5); }
+        .core-blazing .bts-logo { color:rgba(192,132,252,0.9); text-shadow:0 0 20px rgba(192,132,252,0.6); }
+        .core-fully-charged .bts-logo { color:#fff; text-shadow:0 0 20px #e879f9, 0 0 40px #a855f7; animation:logo-glow 2s ease-in-out infinite; }
+        @keyframes logo-glow { 0%,100%{text-shadow:0 0 20px #e879f9,0 0 40px #a855f7} 50%{text-shadow:0 0 30px #f0abfc,0 0 60px #c084fc} }
         
         /* Liquid Fill */
         .energy-fill-level { position:absolute; bottom:0; left:0; right:0; width:100%; border-radius:0 0 130px 130px; overflow:hidden; transition:height 1.2s cubic-bezier(0.4,0,0.2,1); z-index:1; }
@@ -16853,7 +16861,7 @@ function addArirangStyles() {
         .era-locked .era-name { color:#444; }
         .era-cell:hover { transform:scale(1.05); }
         
-        /* Phase dots */
+        /* Phase dots — per-phase color */
         .phase-dot-grid { display:flex; flex-wrap:wrap; gap:4px; justify-content:center; margin-bottom:12px; }
         .phase-dot { width:28px; height:28px; border-radius:6px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:9px; font-weight:700; transition:all 0.2s; min-width:44px; min-height:34px; }
         .dot-charged { background:var(--phase-bg); border:1.5px solid var(--phase-accent); color:var(--phase-accent); box-shadow:0 0 8px color-mix(in srgb,var(--phase-glow) 30%,transparent); }
@@ -17016,22 +17024,32 @@ function addArirangStyles() {
         .action-subtitle { font-size:11px; color:#666; }
         .action-arrow { font-size:18px; color:#555; }
         
-        /* HOME WIDGET */
-        .arirang-home-widget { display:flex; align-items:center; gap:12px; padding:15px; background:linear-gradient(135deg,rgba(168,85,247,0.08),rgba(124,58,237,0.03)); border:1px solid rgba(168,85,247,0.2); border-radius:12px; margin-bottom:15px; cursor:pointer; transition:all 0.3s; }
-        .arirang-home-widget:hover { border-color:rgba(168,85,247,0.4); transform:translateY(-2px); }
-        .widget-bomb-charge { display:flex; flex-direction:column; align-items:center; }
-        .widget-sphere-charge { width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg,rgba(168,85,247,0.1),rgba(76,29,149,0.2)); border:1px solid rgba(168,85,247,0.4); display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; }
-        .widget-fill { position:absolute; bottom:0; left:0; right:0; background:linear-gradient(0deg,rgba(168,85,247,0.6),rgba(124,58,237,0.2)); transition:height 0.5s; }
-        .widget-logo { font-size:14px; color:#a855f7; position:relative; z-index:1; }
-        .widget-handle-c { width:12px; height:16px; background:linear-gradient(180deg,#2a2a2a,#1a1a1a); border-radius:0 0 4px 4px; margin-top:-4px; }
-        .widget-info { flex:1; }
-        .widget-header { display:flex; align-items:center; gap:8px; }
-        .widget-title { font-size:12px; font-weight:700; color:#a855f7; letter-spacing:0.5px; }
-        .widget-live-dot { width:6px; height:6px; background:#a855f7; border-radius:50%; animation:blink 2s ease-in-out infinite; }
-        .widget-progress-bar { height:3px; background:rgba(168,85,247,0.1); border-radius:10px; overflow:hidden; margin:4px 0; }
-        .widget-progress-fill { height:100%; background:linear-gradient(90deg,#7c3aed,#a855f7); border-radius:10px; transition:width 0.5s; }
-        .widget-sub { font-size:10px; color:#666; }
-        .widget-arrow { font-size:16px; color:#555; }
+       /* HOME WIDGET */
+        .arirang-home-widget { display: flex; align-items: center; gap: 16px; padding: 20px; background: rgba(123, 44, 191, 0.05); border: 1px solid rgba(123, 44, 191, 0.2); border-radius: 14px; margin-bottom: 20px; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); position: relative; overflow: hidden; }
+        .arirang-home-widget:hover { background: rgba(123, 44, 191, 0.1); border-color: rgba(168, 85, 247, 0.5); transform: translateY(-2px); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .widget-left { flex-shrink: 0; }
+        .widget-bomb-charge { display: flex; flex-direction: column; align-items: center; }
+        .widget-sphere-charge { width: 42px; height: 42px; border-radius: 50%; background: #000; border: 2px solid rgba(168, 85, 247, 0.4); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; box-shadow: inset 0 0 10px rgba(168, 85, 247, 0.2); }
+        .widget-fill { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(0deg, #7c3aed, #e879f9); opacity: 0.8; transition: height 1s; }
+        .widget-logo { font-size: 16px; color: #fff; position: relative; z-index: 1; font-weight: bold; text-shadow: 0 0 10px #e879f9; }
+        .widget-handle-c { width: 14px; height: 18px; background: #1a1a2a; border-radius: 0 0 4px 4px; margin-top: -4px; border: 1px solid #333; }
+        .widget-info { flex: 1; min-width: 0; }
+        .widget-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .widget-label { font-size: 10px; font-weight: 800; color: #a855f7; letter-spacing: 2px; }
+        .widget-timer { font-size: 10px; color: #ffd700; font-weight: 700; background: rgba(255, 215, 0, 0.1); padding: 3px 8px; border-radius: 6px; border: 1px solid rgba(255, 215, 0, 0.2); }
+        .widget-goal-row { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 6px; }
+        .widget-goal-text { font-size: 15px; color: #eee; font-weight: 500; }
+        .widget-goal-text strong { color: #fff; font-size: 18px; font-family: 'Courier New', monospace; }
+        .widget-goal-text small { color: #666; font-size: 12px; }
+        .widget-pct-text { font-size: 12px; font-weight: 800; color: #e879f9; }
+        .widget-progress-bar { height: 8px; background: rgba(255, 255, 255, 0.03); border-radius: 4px; overflow: hidden; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.05); }
+        .widget-progress-fill { height: 100%; background: linear-gradient(90deg, #7c3aed, #e879f9); border-radius: 4px; transition: width 1s ease-in-out; box-shadow: 0 0 15px rgba(168, 85, 247, 0.6); }
+        .widget-footer { display: flex; justify-content: space-between; align-items: center; }
+        .status-indicator { font-size: 8px; font-weight: 700; color: #00ff88; letter-spacing: 1px; display: flex; align-items: center; gap: 4px; }
+        .status-indicator::before { content: ''; width: 4px; height: 4px; background: #00ff88; border-radius: 50%; animation: blink 1s infinite; }
+        .protocol-status { font-size: 9px; color: #555; font-weight: 700; letter-spacing: 1px; }
+        .widget-arrow { font-size: 24px; color: #333; margin-left: 10px; transition: 0.3s; }
+        .arirang-home-widget:hover .widget-arrow { color: #7b2cbf; transform: translateX(3px); }
         
         /* MODALS */
         .phase-detail-modal,.arirang-badge-modal,.arirang-lb-modal { position:fixed; inset:0; z-index:10000; display:flex; align-items:center; justify-content:center; padding:20px; opacity:0; transition:opacity 0.3s; }
@@ -17100,7 +17118,7 @@ function addArirangStyles() {
         @media (max-width:380px) {
             .charging-bomb-display { transform:scale(0.85); transform-origin:center top; padding:40px 10px 10px; margin-bottom:-40px; }
             .charge-sphere { width:100px; height:100px; }
-            .bts-logo { font-size:42px; }
+            .bts-logo { font-size:32px; }
             .power-stats-grid { gap:8px; }
             .power-stat { padding:8px 12px; }
             .power-stat-value { font-size:18px; }
@@ -17156,128 +17174,11 @@ function addDailyWaveStyles() {
         @keyframes dw-breathe { 0%,100%{transform:scale(0.9);opacity:0.2} 50%{transform:scale(1.2);opacity:0.3} }
         .dw-pivot { transform-origin:center bottom; position:relative; }
         .dw-bomb { display:flex; flex-direction:column; align-items:center; filter:drop-shadow(0 15px 40px rgba(0,0,0,0.6)); }
-        
-        /* ============================================ */
-        /* DAILY WAVE — RED FUSE BUTTON                 */
-        /* ============================================ */
-        .dw-button {
-            width:22px;
-            height:12px;
-            background:#444;
-            border-radius:6px 6px 0 0;
-            position:relative;
-            margin-bottom:-2px;
-            z-index:4;
-            overflow:hidden;
-            box-shadow:inset 0 -1px 2px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.05);
-        }
-        .dw-button::after {
-            content:'';
-            position:absolute;
-            top:2px;
-            left:50%;
-            transform:translateX(-50%);
-            width:8px;
-            height:4px;
-            background:#ff0000;
-            border-radius:2px;
-            box-shadow:0 0 8px #ff0000, 0 0 16px rgba(255,0,0,0.4);
-        }
-        
-        /* ============================================ */
-        /* DAILY WAVE — GLASS SPHERE                    */
-        /* ============================================ */
-        .dw-sphere {
-            width:120px;
-            height:120px;
-            border-radius:50%;
-            background:radial-gradient(circle at 50% 10%, rgba(255,255,255,0.15) 0%, rgba(0,0,0,0.6) 100%);
-            border:1px solid rgba(255,255,255,0.2);
-            box-shadow:
-                inset 0 0 20px rgba(255,255,255,0.1),
-                inset 0 -20px 40px rgba(0,0,0,0.3),
-                inset 0 0 30px var(--theme-color),
-                0 0 25px var(--theme-color);
-            position:relative;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            overflow:hidden;
-            transition:box-shadow 0.5s;
-        }
-        /* Glass highlight crescent */
-        .dw-sphere::before {
-            content:'';
-            position:absolute;
-            top:10%;
-            left:15%;
-            width:40%;
-            height:25%;
-            background:linear-gradient(to bottom, rgba(255,255,255,0.4), transparent);
-            border-radius:50% 50% 40% 40%;
-            transform:rotate(-15deg);
-            filter:blur(2px);
-            z-index:10;
-            pointer-events:none;
-        }
-        .dw-sphere.finale-glow {
-            box-shadow:
-                inset 0 0 20px rgba(255,255,255,0.15),
-                inset 0 -20px 40px rgba(0,0,0,0.2),
-                inset 0 0 40px var(--theme-color),
-                0 0 50px var(--theme-color),
-                0 0 100px var(--theme-color);
-            animation:dw-finale-glow 1s ease-in-out infinite alternate;
-        }
-        @keyframes dw-finale-glow {
-            0% {
-                box-shadow:
-                    inset 0 0 20px rgba(255,255,255,0.15),
-                    inset 0 -20px 40px rgba(0,0,0,0.2),
-                    inset 0 0 40px var(--theme-color),
-                    0 0 50px var(--theme-color);
-            }
-            100% {
-                box-shadow:
-                    inset 0 0 25px rgba(255,255,255,0.2),
-                    inset 0 -15px 35px rgba(0,0,0,0.15),
-                    inset 0 0 60px var(--theme-color),
-                    0 0 80px var(--theme-color),
-                    0 0 120px var(--theme-color);
-            }
-        }
-        .dw-fill { position:absolute; bottom:0; left:0; right:0; height:100%; background:linear-gradient(to top,var(--theme-color),transparent); opacity:0.4; transition:all 0.5s; border-radius:0 0 120px 120px; }
-        
-        /* ============================================ */
-        /* DAILY WAVE — 3D BTS DOOR LOGO                */
-        /* ============================================ */
-        .dw-logo {
-            font-size:50px;
-            font-family:serif;
-            font-weight:100;
-            letter-spacing:-8px;
-            color:#fff;
-            z-index:5;
-            display:inline-block;
-            transform:perspective(100px) rotateX(10deg);
-            filter:drop-shadow(0 0 15px var(--theme-color)) brightness(1.5);
-            transition:filter 0.5s, text-shadow 0.5s;
-        }
-        /* Base light reflection under logo */
-        .dw-logo::after {
-            content:'';
-            position:absolute;
-            bottom:-5px;
-            left:50%;
-            transform:translateX(-50%);
-            width:60%;
-            height:8px;
-            background:rgba(255,255,255,0.1);
-            border-radius:50%;
-            filter:blur(4px);
-            pointer-events:none;
-        }
-        
+        .dw-sphere { width:120px; height:120px; border-radius:50%; background:radial-gradient(circle at 30% 30%,rgba(255,255,255,0.15),rgba(0,0,0,0.4)); border:1px solid rgba(255,255,255,0.2); box-shadow:inset 0 0 30px var(--theme-color),0 0 25px var(--theme-color); position:relative; display:flex; align-items:center; justify-content:center; overflow:hidden; transition:box-shadow 0.5s; }
+        .dw-sphere.finale-glow { box-shadow:inset 0 0 40px var(--theme-color),0 0 50px var(--theme-color),0 0 100px var(--theme-color); animation:dw-finale-glow 1s ease-in-out infinite alternate; }
+        @keyframes dw-finale-glow { 0%{box-shadow:inset 0 0 40px var(--theme-color),0 0 50px var(--theme-color)} 100%{box-shadow:inset 0 0 60px var(--theme-color),0 0 80px var(--theme-color),0 0 120px var(--theme-color)} }
+        .dw-fill { position:absolute; bottom:0; left:0; right:0; height:100%; background:linear-gradient(to top,var(--theme-color),transparent); opacity:0.4; transition:all 0.5s; }
+        .dw-logo { font-size:40px; font-weight:700; color:#fff; z-index:5; text-shadow:0 0 15px var(--theme-color); transition:text-shadow 0.5s; }
         .dw-handle { width:30px; height:110px; background:linear-gradient(90deg,#1a1a1a,#2a2a2a 40%,#111); margin-top:-6px; border-radius:0 0 15px 15px; position:relative; z-index:2; }
         .dw-handle::before { content:''; position:absolute; top:15px; left:50%; transform:translateX(-50%); width:14px; height:22px; background:#000; border:1px solid #333; border-radius:8px; }
         .dw-lyrics { text-align:center; margin-top:25px; padding:0 20px; opacity:0; animation:dw-fade-up 0.8s forwards 0.6s; }
@@ -17303,7 +17204,7 @@ function addDailyWaveStyles() {
         
         @media (max-width:380px) {
             .dw-sphere { width:100px; height:100px; }
-            .dw-logo { font-size:40px; }
+            .dw-logo { font-size:32px; }
             .dw-handle { width:26px; height:90px; }
             .dw-title { font-size:22px; }
             .dw-era { font-size:32px; }
