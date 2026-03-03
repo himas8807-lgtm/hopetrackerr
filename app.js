@@ -16487,13 +16487,14 @@ function launchDailyWaveExperience(currentSong, isGrandFinale = false) {
             </div>
         </div>
         
-        <div class="dw-player-bar">
+<div class="dw-player-bar">
             <!-- Pattern Selection -->
             <div class="dw-controls">
-                <button class="dw-pat-btn ${currentSong.wave === 'slow-sway' ? 'active' : ''}" onclick="setWavePattern('slow-sway')">〰️ Sway</button>
-                <button class="dw-pat-btn ${currentSong.wave === 'drift' ? 'active' : ''}" onclick="setWavePattern('drift')">🪐 Drift</button>
-                <button class="dw-pat-btn ${currentSong.wave === 'ocean' ? 'active' : ''}" onclick="setWavePattern('ocean')">🌊 Ocean</button>
-                <button class="dw-pat-btn ${currentSong.wave === 'stars' ? 'active' : ''}" onclick="setWavePattern('stars')">✨ Stars</button>
+                <button class="dw-pat-btn" onclick="setWavePattern('slow-sway')">〰️ Sway</button>
+                <button class="dw-pat-btn" onclick="setWavePattern('drift')">🪐 Drift</button>
+                <button class="dw-pat-btn" onclick="setWavePattern('ocean')">🌊 Ocean</button>
+                <button class="dw-pat-btn" onclick="setWavePattern('stars')">✨ Stars</button>
+                <button class="dw-pat-btn" onclick="setWavePattern('flutter')">🦋 Flutter</button>
             </div>
             
             <!-- Speed Selection -->
@@ -16504,16 +16505,17 @@ function launchDailyWaveExperience(currentSong, isGrandFinale = false) {
                 <button class="dw-speed-btn" onclick="setWaveSpeed(1, this)">Fast</button>
             </div>
             
-            <!-- Color Selection -->
+            <!-- Color Selection (Added Green & Gold) -->
             <div class="dw-color-controls">
                 <span class="color-label">Color:</span>
                 <button class="dw-color-btn" style="--btn-color:#a855f7" onclick="setBombColor('#a855f7')"></button>
                 <button class="dw-color-btn" style="--btn-color:#e879f9" onclick="setBombColor('#e879f9')"></button>
                 <button class="dw-color-btn" style="--btn-color:#6366f1" onclick="setBombColor('#6366f1')"></button>
+                <button class="dw-color-btn" style="--btn-color:#22c55e" onclick="setBombColor('#22c55e')"></button>
+                <button class="dw-color-btn" style="--btn-color:#fbbf24" onclick="setBombColor('#fbbf24')"></button>
                 <button class="dw-color-btn rainbow" onclick="setBombColor('rainbow')">🌈</button>
             </div>
             
-            <!-- Spotify Embed -->
             <div class="dw-spotify-wrap">
                 <iframe style="border-radius:12px" src="https://open.spotify.com/embed/track/${currentSong.spotifyId}?utm_source=generator&theme=0" width="100%" height="80" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
             </div>
