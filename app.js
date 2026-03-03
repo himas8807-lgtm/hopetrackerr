@@ -16490,6 +16490,8 @@ function launchDailyWaveExperience(currentSong, isGrandFinale = false) {
         <div class="dw-player-bar">
             <div class="dw-controls">
                 <button class="dw-pat-btn ${currentSong.wave === 'slow-sway' ? 'active' : ''}" onclick="setWavePattern('slow-sway')">〰️ Sway</button>
+                <button class="dw-pat-btn ${currentSong.wave === 'slow-sway' ? 'active' : ''}" onclick="setWavePattern('slow-sway')">〰️ Sway</button>
+                <button class="dw-pat-btn ${currentSong.wave === 'drift' ? 'active' : ''}" onclick="setWavePattern('drift')">🪐 Drift</button>
                 <button class="dw-pat-btn ${currentSong.wave === 'ocean' ? 'active' : ''}" onclick="setWavePattern('ocean')">🌊 Ocean</button>
                 <button class="dw-pat-btn ${currentSong.wave === 'heartbeat' ? 'active' : ''}" onclick="setWavePattern('heartbeat')">💜 Heart</button>
                 <button class="dw-pat-btn ${currentSong.wave === 'stars' ? 'active' : ''}" onclick="setWavePattern('stars')">✨ Stars</button>
@@ -16519,7 +16521,7 @@ function launchDailyWaveExperience(currentSong, isGrandFinale = false) {
     document.body.appendChild(root);
     
     const pivot = document.getElementById('dw-bomb-pivot');
-    const duration = 60000 / currentSong.bpm * (currentSong.wave === 'slow-sway' ? 2 : 1);
+    const duration = 60000 / currentSong.bpm * (currentSong.wave === 'slow-sway' ? 4 : 1);
     pivot.style.animation = `dw-${currentSong.wave} ${duration}ms infinite ease-in-out`;
     
     setTimeout(() => root.classList.add('visible'), 50);
@@ -17322,6 +17324,12 @@ function addDailyWaveStyles() {
         @keyframes dw-heartbeat { 0%,100%{transform:scale(1)} 15%{transform:scale(1.08)} 30%{transform:scale(1)} 45%{transform:scale(1.05)} }
         @keyframes dw-stars { 0%,100%{transform:translateY(0) rotate(0)} 25%{transform:translateY(-12px) rotate(3deg)} 75%{transform:translateY(-8px) rotate(-3deg)} }
         @keyframes dw-flutter { 0%,100%{transform:rotate(0)} 25%{transform:rotate(-5deg) translate(-3px,-3px)} 50%{transform:rotate(0) translate(0,-5px)} 75%{transform:rotate(5deg) translate(3px,-3px)} }
+        @keyframes dw-drift { 
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(15px, -10px) rotate(3deg); }
+            50% { transform: translate(-5px, -20px) rotate(-2deg); }
+            75% { transform: translate(-15px, -5px) rotate(1deg); }
+        }
         .dw-player-bar { position:absolute; bottom:0; left:0; right:0; z-index:30; background:linear-gradient(to top,#000 90%,transparent); backdrop-filter:blur(15px); padding:15px 20px 35px; display:flex; flex-direction:column; gap:12px; border-top:1px solid rgba(255,255,255,0.05); }
         .dw-controls { display:flex; gap:8px; overflow-x:auto; padding-bottom:5px; justify-content:center; flex-wrap:wrap; }
         .dw-pat-btn { background:rgba(168,85,247,0.1); border:1px solid rgba(168,85,247,0.2); color:rgba(255,255,255,0.7); padding:8px 14px; border-radius:20px; font-size:11px; white-space:nowrap; cursor:pointer; transition:all 0.2s; }
