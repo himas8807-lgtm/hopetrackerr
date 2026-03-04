@@ -5692,7 +5692,7 @@ async function renderPageByRoute(pageName) {
     loading(true);
     try {
         switch(pageName) {
-            case 'home': await renderHome(); break;
+            case 'home': await (); break;
             case 'profile': await renderProfile(); break;
             case 'rankings': await renderRankings(); break;
             case 'goals': await renderGoals(); break;
@@ -6310,35 +6310,23 @@ async function renderHome() {
 
     const btsCountdownHtml = (typeof renderBTSCountdown === 'function') ? renderBTSCountdown() : '';
     
-    // ✅ FIXED: Removed invalid ${} wrapper - use plain ternary expression
+    // 1. Get Arirang Data
     let arirangWidgetData = null;
     try {
         arirangWidgetData = await api('getDefuseStatus', { agentNo: STATE.agentNo });
-    } catch (_e) { /* show static widget */ }
+    } catch (_e) { }
 
     const widgetHTML = renderArirangHomeWidget(arirangWidgetData);
-    
-    const refreshNotice = `
-        <div style="
-            display: flex; align-items: center; gap: 10px; padding: 10px 14px;
-            background: rgba(123,44,191,0.08); border: 1px solid rgba(123,44,191,0.15);
-            border-radius: 10px; margin-bottom: 16px;
-        ">
-            <span style="font-size: 14px;">⏰</span>
-            <span style="color: #aaa; font-size: 12px;">
-                Streams update hourly
-                ${STATE.lastUpdated ? ` • Last: ${formatLastUpdated(STATE.lastUpdated)}` : ''}
-            </span>
-        </div>
-    `;
 
     try {
+        // 2. FETCH ALL DATA FIRST
         const [summary, rankings, goals] = await Promise.all([
             api('getWeeklySummary', { week: selectedWeek }), 
             api('getRankings', { week: selectedWeek, limit: 5 }), 
             api('getGoalsProgress', { week: selectedWeek })
         ]);
         
+        // 3. UPDATE TIME STATE IMMEDIATELY
         if (summary.lastUpdated) { 
             const teamTime = new Date(summary.lastUpdated).getTime();
             const agentTime = STATE.lastUpdated ? new Date(STATE.lastUpdated).getTime() : 0;
@@ -6346,9 +6334,19 @@ async function renderHome() {
             if (teamTime > agentTime) {
                 STATE.lastUpdated = summary.lastUpdated; 
             }
-            
             updateTime(); 
         }
+
+        // 4. NOW DEFINE THE REFRESH NOTICE (So STATE.lastUpdated is not empty)
+        const refreshNotice = `
+            <div style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: rgba(123,44,191,0.08); border: 1px solid rgba(123,44,191,0.15); border-radius: 10px; margin-bottom: 16px;">
+                <span style="font-size: 14px;">⏰</span>
+                <span id="last-update" style="color: #aaa; font-size: 12px;">
+                    Streams update hourly
+                    ${STATE.lastUpdated ? ` • Last: ${formatLastUpdated(STATE.lastUpdated)}` : ' • Syncing...'}
+                </span>
+            </div>
+        `;
         
         const team = STATE.data?.profile?.team;
         const teamData = summary.teams?.[team] || {};
@@ -6404,6 +6402,7 @@ async function renderHome() {
             }, 50);
         }
 
+       
         const trackGoals = goals.trackGoals || {};
         const albumGoals = goals.albumGoals || {};
         const album2xStatus = STATE.data?.album2xStatus || {};
