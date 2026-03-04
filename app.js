@@ -5692,7 +5692,7 @@ async function renderPageByRoute(pageName) {
     loading(true);
     try {
         switch(pageName) {
-            case 'home': await renderhome(); break;
+            case 'home': await renderHome(); break;
             case 'profile': await renderProfile(); break;
             case 'rankings': await renderRankings(); break;
             case 'goals': await renderGoals(); break;
