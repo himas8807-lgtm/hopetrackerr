@@ -452,23 +452,21 @@ function getKSTToDateString() {
 function formatLastUpdated(dateStr) {
     if (!dateStr) return 'Unknown';
     try {
-        // 1. Remove Z so browser doesn't convert timezone
-        let cleanStr = dateStr.replace('Z', '').replace(/\+.*$/, '');
+        // Create a proper date object from the UTC string
+        const date = new Date(dateStr);
         
-        const date = new Date(cleanStr);
+        // If the date is invalid, return the raw string
         if (isNaN(date.getTime())) return dateStr;
 
-        let hours = date.getHours();
-        const minutes = String(date.getMinutes()).padStart(2, '0');
-        const ampm = hours >= 12 ? 'PM' : 'AM';
-        hours = hours % 12;
-        hours = hours ? hours : 12;
-        
-        const month = date.toLocaleString('en-US', { month: 'short' });
-        const day = date.getDate();
-
-        // Added "IST" at the end for clarity
-        return `${month} ${day}, ${hours}:${minutes} ${ampm} IST`; 
+        // Use the browser's built-in tool to convert to IST
+        return date.toLocaleString('en-US', {
+            timeZone: 'Asia/Kolkata',
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        }) + " IST";
     } catch (e) { 
         return dateStr; 
     }
@@ -5353,14 +5351,12 @@ async function updateActivityFeedUI() {
     const container = document.getElementById('activity-widget-container');
     if (!container) return;
 
-    ensureActivityCSS(); // Load CSS
+    ensureActivityCSS(); 
 
      try {
-        // 1. Fetch Activity Feed
         const response = await api('getActivityFeed', { limit: 15 });
         let activities = response.activities || [];
 
-        // 2. Fetch Urgent Announcements
         try {
             const announcementsData = await api('getAnnouncements', { week: STATE.week });
             const urgentNews = announcementsData.announcements.find(a => a.priority === 'high');
@@ -5375,17 +5371,13 @@ async function updateActivityFeedUI() {
             console.warn("Announcement fetch failed", annError);
         }
 
-        // --- 🔥 FIX START: Handle Empty State ---
         if (activities.length === 0) {
-            // Instead of hiding, show a placeholder
             activities.push({
                 type: 'system_msg',
                 data: { text: 'Waiting for live updates...' } 
             });
         }
-        // --- 🔥 FIX END ---
 
-        // 3. Filter and Format Items
         const itemsHtml = activities.map(act => {
             const data = act.data || {};
             let icon = '⚡';
@@ -5393,75 +5385,73 @@ async function updateActivityFeedUI() {
             let tColor = '#7b2cbf';
 
             switch (act.type) {
-                // --- 🚨 PRIORITY ALERTS ---
                 case 'priority_alert':
                     icon = '🗳️';
                     text = `<span style="color:#00d4ff; font-weight:800; text-shadow:0 0 10px #00d4ff;">PRIORITY:</span> ${sanitize(data.title)}`;
-                    ;
+                    break;
 
-                // --- 🎯 TEAM GOALS ---
                 case 'goal_completed':
                     tColor = teamColor(data.team);
                     icon = data.type === 'album2x' ? '✨' : (data.type === 'album' ? '💿' : '🎵');
                     text = `<strong style="color:${tColor}">${sanitize(data.team)}</strong> completed <span class="activity-highlight">${sanitize(data.goal)}</span>!`;
-                    ;
+                    break;
 
                 case 'goal_almost':
                     icon = '🚨';
                     text = `<strong style="color:${teamColor(data.team)}">${sanitize(data.team)}</strong> is at <span style="color:#ff4444; font-weight:bold;">${data.percent}%</span> on ${sanitize(data.goal)}! Push!`;
-                    ;
+                    break;
 
-                // --- 👑 WINNERS & LEADERS ---
                 case 'sotd_winner':
                     tColor = teamColor(data.team);
                     icon = '🧠';
                     text = `<strong style="color:${tColor}">${sanitize(data.team)}</strong> cracked the code for <span class="activity-highlight">${sanitize(data.song)}</span>!`;
-                    ;
+                    break;
 
                 case 'leader_update':
                     tColor = teamColor(data.team);
                     icon = '👑';
                     text = `<strong style="color:${tColor}">${sanitize(data.team)}</strong> is currently leading the battle with ${fmt(data.xp)} XP!`;
-                    ;
+                    break;
 
-                // --- 🎖️ BADGES ---
                 case 'xp_milestone':
                     icon = '🎖️';
                     text = `<span class="activity-highlight">${sanitize(data.name)}</span> earned <span style="color:#ffd700;">${fmt(data.xp)} XP Badge</span>`;
-                    ;
+                    break;
 
-                case 'badge_earned': // Fallback for older events
+                case 'badge_earned': 
                     icon = '🎖️';
                     text = `<span class="activity-highlight">${sanitize(data.name)}</span> earned <span style="color:#ffd700;">${sanitize(data.badge)}</span>`;
-                    ;
+                    break;
 
-                // --- 🕵️ SECRET MISSIONS ---
                 case 'secret_mission':
                     tColor = teamColor(data.team);
                     const isFail = (data.title || '').includes('(Failed)');
                     icon = isFail ? '💀' : '🕵️';
                     text = `<strong style="color:${tColor}">${sanitize(data.team)}</strong> ${isFail ? 'failed' : 'completed'}: <span class="activity-highlight">${sanitize(data.title)}</span>`;
-                    ;
+                    break;
 
-                // --- 🔥 STREAKS ---
                 case 'streak_update':
-                    if (data.streak < 7) return ''; // Only show 1 week+
+                    if (data.streak < 7) return ''; 
                     icon = '🔥';
                     text = `<span class="activity-highlight">${sanitize(data.name)}</span> hit a <span style="color:#ff6b35; font-weight:bold;">${data.streak}-day</span> streak!`;
-                    ;
+                    break;
                 
-                // --- 🚀 SURGES ---
+                // --- FIXED TEAM SURGE LOGIC ---
                 case 'team_surge':
+                    // 1. Convert to number and check if it is greater than 0
+                    const sVal = parseInt(data.streams);
+                    if (isNaN(sVal) || sVal <= 0) return ''; // If 0 or missing, return empty string (hides item)
+
                     tColor = teamColor(data.team);
                     icon = '🚀';
-                    text = `<strong style="color:${tColor}">${sanitize(data.team)}</strong> is surging! <span class="activity-highlight">${fmt(data.streams)} streams/hr</span>`;
+                    // 2. Use the validated sVal here
+                    text = `<strong style="color:${tColor}">${sanitize(data.team)}</strong> is surging! <span class="activity-highlight">${fmt(sVal)} streams/hr</span>`;
                     break;
 
                case 'mission_success':
                     icon = '📡';
-                    text = `<span style="color:#ff4444; font-weight:800; animation: blinkLive 0.8s infinite;">[HQ OVERRIDE]</span> HQ to Agents: The target took the bait. I repeat, the target took the bait. <span style="color:#00ff88; font-weight:bold;">Operation Rage Bait is successful.</span>`;
+                    text = `<span style="color:#ff4444; font-weight:800; animation: blinkLive 0.8s infinite;">[HQ OVERRIDE]</span> HQ to Agents: The target took the bait. <span style="color:#00ff88; font-weight:bold;">Operation Rage Bait successful.</span>`;
                     break;
-                    
 
                 default: return '';
             }
@@ -5474,9 +5464,9 @@ async function updateActivityFeedUI() {
                     <span>${text}</span>
                 </div>
             `;
-        }).join('<span style="margin:0 15px; color:#333;">|</span>'); // Separator
+        }).filter(item => item !== '').join('<span style="margin:0 15px; color:#333;">|</span>');
 
-        if (!itemsHtml) {
+        if (!itemsHtml || itemsHtml.trim() === "") {
             container.innerHTML = '';
             return;
         }
@@ -5490,7 +5480,6 @@ async function updateActivityFeedUI() {
                 <div class="activity-track-wrapper">
                     <div class="activity-track">
                         ${itemsHtml}
-                        <!-- Duplicate for seamless scrolling -->
                         <span style="margin:0 15px; color:#333;">|</span>
                         ${itemsHtml}
                     </div>
@@ -6310,23 +6299,35 @@ async function renderHome() {
 
     const btsCountdownHtml = (typeof renderBTSCountdown === 'function') ? renderBTSCountdown() : '';
     
-    // 1. Get Arirang Data
+    // ✅ FIXED: Removed invalid ${} wrapper - use plain ternary expression
     let arirangWidgetData = null;
     try {
         arirangWidgetData = await api('getDefuseStatus', { agentNo: STATE.agentNo });
-    } catch (_e) { }
+    } catch (_e) { /* show static widget */ }
 
     const widgetHTML = renderArirangHomeWidget(arirangWidgetData);
+    
+    const refreshNotice = `
+        <div style="
+            display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+            background: rgba(123,44,191,0.08); border: 1px solid rgba(123,44,191,0.15);
+            border-radius: 10px; margin-bottom: 16px;
+        ">
+            <span style="font-size: 14px;">⏰</span>
+            <span style="color: #aaa; font-size: 12px;">
+                Streams update hourly
+                ${STATE.lastUpdated ? ` • Last: ${formatLastUpdated(STATE.lastUpdated)}` : ''}
+            </span>
+        </div>
+    `;
 
     try {
-        // 2. FETCH ALL DATA FIRST
         const [summary, rankings, goals] = await Promise.all([
             api('getWeeklySummary', { week: selectedWeek }), 
             api('getRankings', { week: selectedWeek, limit: 5 }), 
             api('getGoalsProgress', { week: selectedWeek })
         ]);
         
-        // 3. UPDATE TIME STATE IMMEDIATELY
         if (summary.lastUpdated) { 
             const teamTime = new Date(summary.lastUpdated).getTime();
             const agentTime = STATE.lastUpdated ? new Date(STATE.lastUpdated).getTime() : 0;
@@ -6334,19 +6335,9 @@ async function renderHome() {
             if (teamTime > agentTime) {
                 STATE.lastUpdated = summary.lastUpdated; 
             }
+            
             updateTime(); 
         }
-
-        // 4. NOW DEFINE THE REFRESH NOTICE (So STATE.lastUpdated is not empty)
-        const refreshNotice = `
-            <div style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: rgba(123,44,191,0.08); border: 1px solid rgba(123,44,191,0.15); border-radius: 10px; margin-bottom: 16px;">
-                <span style="font-size: 14px;">⏰</span>
-                <span id="last-update" style="color: #aaa; font-size: 12px;">
-                    Streams update hourly
-                    ${STATE.lastUpdated ? ` • Last: ${formatLastUpdated(STATE.lastUpdated)}` : ' • Syncing...'}
-                </span>
-            </div>
-        `;
         
         const team = STATE.data?.profile?.team;
         const teamData = summary.teams?.[team] || {};
@@ -6402,7 +6393,6 @@ async function renderHome() {
             }, 50);
         }
 
-       
         const trackGoals = goals.trackGoals || {};
         const albumGoals = goals.albumGoals || {};
         const album2xStatus = STATE.data?.album2xStatus || {};
@@ -15377,8 +15367,7 @@ const _WAVE_SONGS = [
     { day: 1, id: 'spring-day', title: 'Spring Day', artist: 'BTS', album: 'You Never Walk Alone', era: '🌸', bpm: 107, color: '#e879f9', wave: 'slow-sway', spotifyId: '4upRoEWkMWhhMfEgPZMFRP', lyric: '"보고 싶다"', lyricEn: '"I miss you"' },
     { day: 2, id: 'epiphany', title: 'Epiphany', artist: 'Jin', album: 'LOVE YOURSELF 結 Answer', era: '🪞', bpm: 72, color: '#c084fc', wave: 'slow-sway', spotifyId: '6L88EH68XwlaXwvChlTS41', lyric: `"I'm the one I should love in this world"`, lyricEn: `"I'm the one I should love in this world"` },
     { day: 3, id: 'magic-shop', title: 'Magic Shop', artist: 'BTS', album: 'LOVE YOURSELF 轉 Tear', era: '✨', bpm: 80, color: '#818cf8', wave: 'stars', spotifyId: '5MTGPkmiUuud9NkA0sl2nI', lyric: '"You gave me the best of me"', lyricEn: '"So you’ll give you the best of you"' },    
-    { day: 4, id: 'euphoria', title: 'Euphoria', artist: 'Jungkook', album: 'LOVE YOURSELF 結 Answer', era: '🌊', bpm: 100, color: '#a78bfa', wave: 'ocean', spotifyId: '1hVmh3AKJuTxZ2ypBLmhZ2', lyric: '"너는 내 삶에 다시 빛을"', lyricEn: '"You brought light back into my life"' },
-    { day: 5, id: 'film-out', title: 'Film Out', artist: 'BTS', album: 'BTS, THE BEST', era: '🎬', bpm: 72, color: '#94a3b8', wave: 'slow-sway', spotifyId: '3P3UA61WRQqwCXaoFOTENd', lyric: '"지워야 될 내 맘이"', lyricEn: '"My heart that should be erased"' },
+{ day: 4, id: 'euphoria', title: 'Euphoria', artist: 'Jungkook', album: 'LOVE YOURSELF 結 Answer', era: '🌊', bpm: 100, color: '#a78bfa', wave: 'ocean', spotifyId: '5YMXGBD6vcYP7IolemyLtK', lyric: '"Take my hands now, you are the cause of my euphoria"', lyricEn: '"Take my hands now, you are the cause of my euphoria"' },    { day: 5, id: 'film-out', title: 'Film Out', artist: 'BTS', album: 'BTS, THE BEST', era: '🎬', bpm: 72, color: '#94a3b8', wave: 'slow-sway', spotifyId: '3P3UA61WRQqwCXaoFOTENd', lyric: '"지워야 될 내 맘이"', lyricEn: '"My heart that should be erased"' },
     { day: 6, id: 'louder-than-bombs', title: 'Louder Than Bombs', artist: 'BTS', album: 'MAP OF THE SOUL: 7', era: '💣', bpm: 81, color: '#6366f1', wave: 'heartbeat', spotifyId: '4PJLrKKcOgA5b6TXvBYfLJ', lyric: '"네 목소리를 들려줘"', lyricEn: '"Let me hear your voice"' },
     { day: 7, id: 'truth-untold', title: 'The Truth Untold', artist: 'BTS', album: 'LOVE YOURSELF 轉 Tear', era: '🌹', bpm: 76, color: '#a855f7', wave: 'slow-sway', spotifyId: '2kaeKp6wMkJe1k3UN6FoML', lyric: '"말하지 못한 진심"', lyricEn: '"The truth I couldn\'t say"' },
     { day: 8, id: 'butterfly', title: 'Butterfly', artist: 'BTS', album: 'HYYH pt.2', era: '🦋', bpm: 82, color: '#c4b5fd', wave: 'flutter', spotifyId: '3PcB8JkN4YODRLRghYAiUY', lyric: '"넌 내게로 날아와"', lyricEn: '"You flew to me"' },
