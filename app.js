@@ -17343,10 +17343,9 @@ function addDailyWaveStyles() {
         .dw-logo { font-size:40px; font-weight:700; color:#fff; z-index:5; text-shadow:0 0 15px var(--theme-color); transition:text-shadow 0.5s; }
         .dw-handle { width:30px; height:110px; background:linear-gradient(90deg,#1a1a1a,#2a2a2a 40%,#111); margin-top:-6px; border-radius:0 0 15px 15px; position:relative; z-index:2; }
         .dw-handle::before { content:''; position:absolute; top:15px; left:50%; transform:translateX(-50%); width:14px; height:22px; background:#000; border:1px solid #333; border-radius:8px; }
-        .dw-lyrics { text-align:center; margin-top:0; margin-bottom:20px; padding:0 20px; opacity:0; animation:dw-fade-up 0.8s forwards 0.6s; z-index:50; }
-        .dw-lyric-kr { font-size:15px; color:#fff; font-weight:700; text-shadow:0 0 10px var(--theme-color), 0 0 20px var(--theme-color); animation:dw-lyric-glow 3s ease-in-out infinite; }
-        @keyframes dw-lyric-glow { 0%,100%{opacity:0.8} 50%{opacity:1} }
-        .dw-lyric-en { font-size:12px; color:rgba(255,255,255,0.5); font-style:italic; margin-top:6px; }
+        .dw-lyrics { text-align:center; margin:10px 0 25px; padding:0 20px; opacity:0; animation:dw-fade-up 0.8s forwards 0.6s; z-index:50; } @keyframes dw-fade-up { from{opacity:0;transform:translateY(15px)} to{opacity:1;transform:translateY(0)} }
+        .dw-lyric-kr { font-size:14px; color:#fff; font-weight:700; text-shadow:0 0 10px var(--theme-color); animation:dw-lyric-glow 3s ease-in-out infinite; line-height:1.4; } @keyframes dw-lyric-glow { 0%,100%{opacity:0.7;text-shadow:0 0 8px var(--theme-color)} 50%{opacity:1;text-shadow:0 0 18px var(--theme-color)} }
+        .dw-lyric-en { font-size:13px; color:rgba(255,255,255,0.7); font-style:italic; margin-top:8px; line-height:1.4; }
         @keyframes dw-slow-sway { 0%,100%{transform:rotate(0)} 25%{transform:rotate(-10deg) translateX(-12px)} 75%{transform:rotate(10deg) translateX(12px)} }
         @keyframes dw-ocean { 0%,100%{transform:translateY(0) rotate(0)} 50%{transform:translateY(-20px) rotate(4deg)} }
         @keyframes dw-heartbeat { 0%,100%{transform:scale(1)} 15%{transform:scale(1.08)} 30%{transform:scale(1)} 45%{transform:scale(1.05)} }
