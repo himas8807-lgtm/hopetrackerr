@@ -17325,7 +17325,7 @@ function addDailyWaveStyles() {
         .dw-badge-text { font-size:10px; font-weight:700; color:#fff; letter-spacing:1.5px; }
         .dw-close { background:rgba(255,255,255,0.1); border:none; color:#fff; width:40px; height:40px; border-radius:50%; font-size:20px; cursor:pointer; transition:all 0.2s; backdrop-filter:blur(10px); }
         .dw-close:hover { background:rgba(255,255,255,0.2); transform:scale(1.1); }
-        .dw-main { position:relative; z-index:10; flex:1; width:100%; display:flex; flex-direction:column; align-items:center; justify-content: flex-center; padding:60px 20px 160px; }       .dw-info { text-align:center; margin-bottom:20px; transform:translateY(20px); opacity:0; animation:dw-fade-up 0.8s forwards 0.2s; }
+        .dw-main { position:relative; z-index:10; flex:1; width:100%; display:flex; flex-direction:column; align-items:center; justify-content: center; padding:60px 20px 160px; }       .dw-info { text-align:center; margin-bottom:20px; transform:translateY(20px); opacity:0; animation:dw-fade-up 0.8s forwards 0.2s; }
         .dw-era { font-size:40px; display:block; margin-bottom:8px; text-shadow:0 0 30px var(--theme-color); animation:dw-era-pulse 3s ease-in-out infinite; }
         @keyframes dw-era-pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
         .dw-title { font-size:28px; font-weight:800; color:#fff; margin:0; letter-spacing:-0.5px; text-shadow:0 0 20px rgba(0,0,0,0.5); }
@@ -17343,8 +17343,7 @@ function addDailyWaveStyles() {
         .dw-logo { font-size:40px; font-weight:700; color:#fff; z-index:5; text-shadow:0 0 15px var(--theme-color); transition:text-shadow 0.5s; }
         .dw-handle { width:30px; height:110px; background:linear-gradient(90deg,#1a1a1a,#2a2a2a 40%,#111); margin-top:-6px; border-radius:0 0 15px 15px; position:relative; z-index:2; }
         .dw-handle::before { content:''; position:absolute; top:15px; left:50%; transform:translateX(-50%); width:14px; height:22px; background:#000; border:1px solid #333; border-radius:8px; }
-        .dw-lyrics { text-align:center; margin:10px 0 25px; padding:0 20px; opacity:0; animation:dw-fade-up 0.8s forwards 0.6s; z-index:50; } @keyframes dw-fade-up { from{opacity:0;transform:translateY(15px)} to{opacity:1;transform:translateY(0)} }
-        .dw-lyric-kr { font-size:14px; color:#fff; font-weight:700; text-shadow:0 0 10px var(--theme-color); animation:dw-lyric-glow 3s ease-in-out infinite; line-height:1.4; } @keyframes dw-lyric-glow { 0%,100%{opacity:0.7;text-shadow:0 0 8px var(--theme-color)} 50%{opacity:1;text-shadow:0 0 18px var(--theme-color)} }
+        .dw-lyrics { text-align:center; margin:20px 0; padding:0 20px; opacity:0; animation:dw-fade-up 0.8s forwards 0.6s; z-index:100; position:relative; }        .dw-lyric-kr { font-size:14px; color:#fff; font-weight:700; text-shadow:0 0 10px var(--theme-color); animation:dw-lyric-glow 3s ease-in-out infinite; line-height:1.4; } @keyframes dw-lyric-glow { 0%,100%{opacity:0.7;text-shadow:0 0 8px var(--theme-color)} 50%{opacity:1;text-shadow:0 0 18px var(--theme-color)} }
         .dw-lyric-en { font-size:13px; color:rgba(255,255,255,0.7); font-style:italic; margin-top:8px; line-height:1.4; }
         @keyframes dw-slow-sway { 0%,100%{transform:rotate(0)} 25%{transform:rotate(-10deg) translateX(-12px)} 75%{transform:rotate(10deg) translateX(12px)} }
         @keyframes dw-ocean { 0%,100%{transform:translateY(0) rotate(0)} 50%{transform:translateY(-20px) rotate(4deg)} }
