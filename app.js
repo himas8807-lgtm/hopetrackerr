@@ -15359,7 +15359,7 @@ window.renderArirangVault = renderArirangVault;
 let _arirangGeneration = 0;
 const _eraDataCache = {};
 let _dailyWaveActive = false;
-
+{ day: 7, id: 'truth-untold', title: 'The Truth Untold', artist: 'BTS', album: 'LOVE YOURSELF 結 Answer', era: '🌹', bpm: 76, color: '#a855f7', wave: 'slow-sway', spotifyId: '4eP8Syl3aBEQw3Jy5Bhq0D', lyric: '"말하지 못한 진심"', lyricEn: '"The truth I couldn\'t say"' },
 // =============================================
 // INTERNAL SONG DATA (NEVER SHOWN ON PAGE)
 // =============================================
@@ -15367,8 +15367,9 @@ const _WAVE_SONGS = [
     { day: 1, id: 'spring-day', title: 'Spring Day', artist: 'BTS', album: 'You Never Walk Alone', era: '🌸', bpm: 107, color: '#e879f9', wave: 'slow-sway', spotifyId: '4upRoEWkMWhhMfEgPZMFRP', lyric: '"보고 싶다"', lyricEn: '"I miss you"' },
     { day: 2, id: 'epiphany', title: 'Epiphany', artist: 'Jin', album: 'LOVE YOURSELF 結 Answer', era: '🪞', bpm: 72, color: '#c084fc', wave: 'slow-sway', spotifyId: '6L88EH68XwlaXwvChlTS41', lyric: `"I'm the one I should love in this world"`, lyricEn: `"I'm the one I should love in this world"` },
     { day: 3, id: 'magic-shop', title: 'Magic Shop', artist: 'BTS', album: 'LOVE YOURSELF 轉 Tear', era: '✨', bpm: 80, color: '#818cf8', wave: 'stars', spotifyId: '5MTGPkmiUuud9NkA0sl2nI', lyric: '"You gave me the best of me"', lyricEn: '"So you’ll give you the best of you"' },    
-{ day: 4, id: 'euphoria', title: 'Euphoria', artist: 'Jungkook', album: 'LOVE YOURSELF 結 Answer', era: '🌊', bpm: 100, color: '#a78bfa', wave: 'ocean', spotifyId: '5YMXGBD6vcYP7IolemyLtK', lyric: '"Take my hands now, you are the cause of my euphoria"', lyricEn: '"Take my hands now, you are the cause of my euphoria"' },    { day: 5, id: 'film-out', title: 'Film Out', artist: 'BTS', album: 'BTS, THE BEST', era: '🎬', bpm: 72, color: '#94a3b8', wave: 'slow-sway', spotifyId: '3P3UA61WRQqwCXaoFOTENd', lyric: '"지워야 될 내 맘이"', lyricEn: '"My heart that should be erased"' },
-    { day: 6, id: 'louder-than-bombs', title: 'Louder Than Bombs', artist: 'BTS', album: 'MAP OF THE SOUL: 7', era: '💣', bpm: 81, color: '#6366f1', wave: 'heartbeat', spotifyId: '4PJLrKKcOgA5b6TXvBYfLJ', lyric: '"네 목소리를 들려줘"', lyricEn: '"Let me hear your voice"' },
+    { day: 4, id: 'euphoria', title: 'Euphoria', artist: 'Jungkook', album: 'LOVE YOURSELF 結 Answer', era: '🌊', bpm: 100, color: '#a78bfa', wave: 'ocean', spotifyId: '5YMXGBD6vcYP7IolemyLtK', lyric: '"Take my hands now, you are the cause of my euphoria"', lyricEn: '"Take my hands now, you are the cause of my euphoria"' },    
+    { day: 5, id: 'film-out', title: 'Film Out', artist: 'BTS', album: 'BTS, THE BEST', era: '🎬', bpm: 72, color: '#94a3b8', wave: 'slow-sway', spotifyId: '6g9Vd4z3JnVUiAIRwFlVCG', lyric: '"Tantan to furitsumotta kioku no naka de, kimi dake wo hiroi atsumete tsunagete"', lyricEn: '"I gather up the memories of you, link them together"' },    
+    { day: 6, id: 'louder-than-bombs', title: 'Louder Than Bombs', artist: 'BTS', album: 'MAP OF THE SOUL: 7', era: '💣', bpm: 81, color: '#6366f1', wave: 'heartbeat', spotifyId: '4Aw8n6r2vuU0KUo1a2nftp', lyric: '"네 목소리를 들려줘"', lyricEn: '"Let me hear your voice"' },   
     { day: 7, id: 'truth-untold', title: 'The Truth Untold', artist: 'BTS', album: 'LOVE YOURSELF 轉 Tear', era: '🌹', bpm: 76, color: '#a855f7', wave: 'slow-sway', spotifyId: '2kaeKp6wMkJe1k3UN6FoML', lyric: '"말하지 못한 진심"', lyricEn: '"The truth I couldn\'t say"' },
     { day: 8, id: 'butterfly', title: 'Butterfly', artist: 'BTS', album: 'HYYH pt.2', era: '🦋', bpm: 82, color: '#c4b5fd', wave: 'flutter', spotifyId: '3PcB8JkN4YODRLRghYAiUY', lyric: '"넌 내게로 날아와"', lyricEn: '"You flew to me"' },
     { day: 9, id: 'mikrokosmos', title: 'Mikrokosmos', artist: 'BTS', album: 'MAP OF THE SOUL: PERSONA', era: '🌌', bpm: 86, color: '#818cf8', wave: 'stars', spotifyId: '0jSccBRnhNU4KtACMQPvco', lyric: '"별빛처럼"', lyricEn: '"Like starlight"' },
@@ -16505,7 +16506,7 @@ function launchDailyWaveExperience(currentSong, isGrandFinale = false) {
             </div>
             
             <div class="dw-spotify-wrap">
-                <iframe style="border-radius:12px" src="https://open.spotify.com/embed/track/${currentSong.spotifyId}?utm_source=generator&theme=0" width="100%" height="80" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+               <iframe style="border-radius:12px" src="https://open.spotify.com/embed/track/${currentSong.spotifyId}?utm_source=generator&autoplay=1" width="100%" height="80" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
             </div>
         </div>
     `;
@@ -17309,7 +17310,7 @@ function addDailyWaveStyles() {
     const style = document.createElement('style');
     style.id = 'daily-wave-styles';
     style.textContent = `
-        #daily-wave-root { position:fixed; inset:0; z-index:100000; background:#050508; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; overflow:hidden; opacity:0; transition:opacity 0.5s; display:flex; flex-direction:column; align-items:center; }
+        #daily-wave-root { position:fixed; inset:0; z-index: 9999999; background:#050508; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; overflow:hidden; opacity:0; transition:opacity 0.5s; display:flex; flex-direction:column; align-items:center; }
         #daily-wave-root.visible { opacity:1; }
         .dw-bg-layer { position:absolute; inset:0; z-index:0; }
         .dw-gradient { position:absolute; inset:0; background:radial-gradient(ellipse at center 40%,var(--bg-glow,#a855f7) 0%,transparent 70%); opacity:0.2; transition:background 1s; }
@@ -17327,7 +17328,7 @@ function addDailyWaveStyles() {
         .dw-badge-text { font-size:10px; font-weight:700; color:#fff; letter-spacing:1.5px; }
         .dw-close { background:rgba(255,255,255,0.1); border:none; color:#fff; width:40px; height:40px; border-radius:50%; font-size:20px; cursor:pointer; transition:all 0.2s; backdrop-filter:blur(10px); }
         .dw-close:hover { background:rgba(255,255,255,0.2); transform:scale(1.1); }
-        .dw-main { position:relative; z-index:10; flex:1; width:100%; display:flex; flex-direction:column; align-items:center; justify-content: flex-start; padding:60px 20px 240px; }        .dw-info { text-align:center; margin-bottom:20px; transform:translateY(20px); opacity:0; animation:dw-fade-up 0.8s forwards 0.2s; }
+        .dw-main { position:relative; z-index:10; flex:1; width:100%; display:flex; flex-direction:column; align-items:center; justify-content: flex-center; padding:60px 20px 160px; }       .dw-info { text-align:center; margin-bottom:20px; transform:translateY(20px); opacity:0; animation:dw-fade-up 0.8s forwards 0.2s; }
         .dw-era { font-size:40px; display:block; margin-bottom:8px; text-shadow:0 0 30px var(--theme-color); animation:dw-era-pulse 3s ease-in-out infinite; }
         @keyframes dw-era-pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
         .dw-title { font-size:28px; font-weight:800; color:#fff; margin:0; letter-spacing:-0.5px; text-shadow:0 0 20px rgba(0,0,0,0.5); }
@@ -17346,7 +17347,7 @@ function addDailyWaveStyles() {
         .dw-handle { width:30px; height:110px; background:linear-gradient(90deg,#1a1a1a,#2a2a2a 40%,#111); margin-top:-6px; border-radius:0 0 15px 15px; position:relative; z-index:2; }
         .dw-handle::before { content:''; position:absolute; top:15px; left:50%; transform:translateX(-50%); width:14px; height:22px; background:#000; border:1px solid #333; border-radius:8px; }
         .dw-lyrics { text-align:center; margin-top:0; margin-bottom:20px; padding:0 20px; opacity:0; animation:dw-fade-up 0.8s forwards 0.6s; z-index:50; }
-        .dw-lyric-kr { font-size:18px; color:#fff; font-weight:700; text-shadow:0 0 10px var(--theme-color), 0 0 20px var(--theme-color); animation:dw-lyric-glow 3s ease-in-out infinite; }
+        .dw-lyric-kr { font-size:15px; color:#fff; font-weight:700; text-shadow:0 0 10px var(--theme-color), 0 0 20px var(--theme-color); animation:dw-lyric-glow 3s ease-in-out infinite; }
         @keyframes dw-lyric-glow { 0%,100%{opacity:0.8} 50%{opacity:1} }
         .dw-lyric-en { font-size:12px; color:rgba(255,255,255,0.5); font-style:italic; margin-top:6px; }
         @keyframes dw-slow-sway { 0%,100%{transform:rotate(0)} 25%{transform:rotate(-10deg) translateX(-12px)} 75%{transform:rotate(10deg) translateX(12px)} }
