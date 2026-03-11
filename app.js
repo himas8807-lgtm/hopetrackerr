@@ -17150,24 +17150,48 @@ function addArirangStyles() {
         .lb-empty { text-align:center; padding:40px 20px; color:#555; }
         .lb-empty span { font-size:32px; display:block; margin-bottom:10px; }
         
-        /* ========================================================= */
-        /* PREMIUM FIXES — Sphere + Logo Blending (5 surgical fixes) */
+                /* ========================================================= */
+        /* PREMIUM FIXES — Kill Circle-in-Circle + Logo Blending     */
         /* ========================================================= */
         
-        /* FIX 1: Soft glow above liquid surface — hides the hard horizontal line */
+        /* FIX 1: STRONG gradient fade on top of liquid — kills the hard line */
         .energy-fill-level::before {
             content:'';
             position:absolute;
-            top:-12px; left:5%; right:5%;
-            height:24px;
-            background:linear-gradient(to top, rgba(168,85,247,0.2), transparent);
-            filter:blur(10px);
+            top:-20px; left:0; right:0;
+            height:40px;
+            background:linear-gradient(to bottom, 
+                transparent 0%, 
+                rgba(0,0,0,0.3) 30%,
+                rgba(0,0,0,0.1) 60%,
+                transparent 100%
+            );
+            filter:blur(6px);
             z-index:3;
             pointer-events:none;
-            opacity:0.6;
         }
         
-        /* FIX 2: Inner sphere glow — glass reacts to energy */
+        /* FIX 2: Colored mist above liquid — blends liquid into empty space */
+        .energy-fill-level::after {
+            content:'';
+            position:absolute;
+            top:-30px; left:10%; right:10%;
+            height:35px;
+            border-radius:50%;
+            filter:blur(12px);
+            z-index:3;
+            pointer-events:none;
+            opacity:0;
+            transition:opacity 1.5s ease;
+        }
+        .bomb-tier-dim .energy-fill-level::after { background:rgba(109,40,217,0.15); opacity:0.4; }
+        .bomb-tier-flickering .energy-fill-level::after { background:rgba(124,58,237,0.2); opacity:0.5; }
+        .bomb-tier-warming .energy-fill-level::after { background:rgba(139,92,246,0.25); opacity:0.6; }
+        .bomb-tier-energized .energy-fill-level::after { background:rgba(168,85,247,0.3); opacity:0.7; }
+        .bomb-tier-blazing .energy-fill-level::after { background:rgba(192,132,252,0.35); opacity:0.8; }
+        .army-bomb.fully-charged .energy-fill-level::after { background:rgba(232,121,249,0.4); opacity:0.9; }
+        
+        /* FIX 3: Inner sphere glow — fills the gap between liquid edge and sphere border */
         .charge-sphere::after {
             content:'';
             position:absolute;
@@ -17177,42 +17201,53 @@ function addArirangStyles() {
             pointer-events:none;
             transition:box-shadow 1.5s ease;
         }
-        .bomb-tier-dark .charge-sphere::after { box-shadow:inset 0 0 15px rgba(30,27,75,0.05); }
-        .bomb-tier-dim .charge-sphere::after { box-shadow:inset 0 0 20px rgba(109,40,217,0.06); }
-        .bomb-tier-flickering .charge-sphere::after { box-shadow:inset 0 0 25px rgba(124,58,237,0.08); }
-        .bomb-tier-warming .charge-sphere::after { box-shadow:inset 0 0 30px rgba(139,92,246,0.12); }
-        .bomb-tier-energized .charge-sphere::after { box-shadow:inset 0 0 35px rgba(168,85,247,0.15); }
-        .bomb-tier-blazing .charge-sphere::after { box-shadow:inset 0 0 40px rgba(192,132,252,0.2); }
-        .army-bomb.fully-charged .charge-sphere::after { box-shadow:inset 0 0 50px rgba(232,121,249,0.25), inset 0 0 80px rgba(232,121,249,0.1); }
+        .bomb-tier-dark .charge-sphere::after { box-shadow:inset 0 0 20px rgba(0,0,0,0.3); }
+        .bomb-tier-dim .charge-sphere::after { box-shadow:inset 0 0 25px rgba(109,40,217,0.08), inset 0 0 40px rgba(0,0,0,0.2); }
+        .bomb-tier-flickering .charge-sphere::after { box-shadow:inset 0 0 30px rgba(124,58,237,0.1), inset 0 0 50px rgba(0,0,0,0.15); }
+        .bomb-tier-warming .charge-sphere::after { box-shadow:inset 0 0 35px rgba(139,92,246,0.15), inset 0 0 60px rgba(0,0,0,0.1); }
+        .bomb-tier-energized .charge-sphere::after { box-shadow:inset 0 0 40px rgba(168,85,247,0.2), inset 0 0 60px rgba(0,0,0,0.08); }
+        .bomb-tier-blazing .charge-sphere::after { box-shadow:inset 0 0 50px rgba(192,132,252,0.25), inset 0 0 70px rgba(0,0,0,0.05); }
+        .army-bomb.fully-charged .charge-sphere::after { box-shadow:inset 0 0 60px rgba(232,121,249,0.3), inset 0 0 80px rgba(232,121,249,0.1); }
         
-        /* FIX 3: Sphere border brightens with charge */
-        .bomb-tier-dark .charge-sphere { border-color:rgba(30,27,75,0.2); }
-        .bomb-tier-dim .charge-sphere { border-color:rgba(109,40,217,0.2); }
-        .bomb-tier-flickering .charge-sphere { border-color:rgba(124,58,237,0.25); }
-        .bomb-tier-warming .charge-sphere { border-color:rgba(139,92,246,0.3); }
-        .bomb-tier-energized .charge-sphere { border-color:rgba(168,85,247,0.35); }
-        .bomb-tier-blazing .charge-sphere { border-color:rgba(192,132,252,0.45); }
-        .army-bomb.fully-charged .charge-sphere { border-color:rgba(232,121,249,0.55); }
+        /* FIX 4: Sphere border dims at low charge, glows at high — less visible = less "circle" */
+        .bomb-tier-dark .charge-sphere { border-color:rgba(30,27,75,0.12); }
+        .bomb-tier-dim .charge-sphere { border-color:rgba(109,40,217,0.15); }
+        .bomb-tier-flickering .charge-sphere { border-color:rgba(124,58,237,0.18); }
+        .bomb-tier-warming .charge-sphere { border-color:rgba(139,92,246,0.22); }
+        .bomb-tier-energized .charge-sphere { border-color:rgba(168,85,247,0.28); }
+        .bomb-tier-blazing .charge-sphere { border-color:rgba(192,132,252,0.4); }
+        .army-bomb.fully-charged .charge-sphere { border-color:rgba(232,121,249,0.5); }
         
-        /* FIX 4: Radial cloud behind logo — hides liquid cutting through logo */
+        /* FIX 5: Vignette overlay — darkens sphere edges so border blends into background */
+        .charge-sphere .sphere-reflection ~ .charge-core::after {
+            content:'';
+            position:fixed;
+            inset:-5px;
+            border-radius:50%;
+            box-shadow:inset 0 0 30px 15px rgba(0,0,0,0.5);
+            z-index:0;
+            pointer-events:none;
+        }
+        
+        /* FIX 6: Radial cloud behind logo — hides liquid cutting through logo */
         .charge-core::before {
             content:'';
             position:absolute;
             width:70px; height:70px;
             border-radius:50%;
-            background:radial-gradient(circle, rgba(0,0,0,0.4) 0%, transparent 70%);
+            background:radial-gradient(circle, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.2) 40%, transparent 70%);
             z-index:-1;
             pointer-events:none;
             transition:all 1.5s ease;
         }
-        .bomb-tier-dim .charge-core::before { background:radial-gradient(circle, rgba(109,40,217,0.15) 0%, transparent 70%); }
-        .bomb-tier-flickering .charge-core::before { background:radial-gradient(circle, rgba(124,58,237,0.2) 0%, transparent 70%); }
-        .bomb-tier-warming .charge-core::before { background:radial-gradient(circle, rgba(139,92,246,0.25) 0%, transparent 70%); }
-        .bomb-tier-energized .charge-core::before { background:radial-gradient(circle, rgba(168,85,247,0.3) 0%, transparent 70%); }
-        .bomb-tier-blazing .charge-core::before { background:radial-gradient(circle, rgba(192,132,252,0.35) 0%, transparent 65%); width:80px; height:80px; }
-        .army-bomb.fully-charged .charge-core::before { background:radial-gradient(circle, rgba(232,121,249,0.3) 0%, transparent 60%); width:90px; height:90px; }
+        .bomb-tier-dim .charge-core::before { background:radial-gradient(circle, rgba(30,20,60,0.5) 0%, rgba(109,40,217,0.15) 40%, transparent 70%); }
+        .bomb-tier-flickering .charge-core::before { background:radial-gradient(circle, rgba(40,20,80,0.45) 0%, rgba(124,58,237,0.2) 40%, transparent 70%); }
+        .bomb-tier-warming .charge-core::before { background:radial-gradient(circle, rgba(50,25,100,0.4) 0%, rgba(139,92,246,0.25) 40%, transparent 70%); }
+        .bomb-tier-energized .charge-core::before { background:radial-gradient(circle, rgba(60,30,120,0.35) 0%, rgba(168,85,247,0.3) 40%, transparent 70%); width:80px; height:80px; }
+        .bomb-tier-blazing .charge-core::before { background:radial-gradient(circle, rgba(80,40,140,0.3) 0%, rgba(192,132,252,0.35) 40%, transparent 65%); width:85px; height:85px; }
+        .army-bomb.fully-charged .charge-core::before { background:radial-gradient(circle, rgba(100,50,160,0.25) 0%, rgba(232,121,249,0.3) 35%, transparent 60%); width:95px; height:95px; }
         
-        /* FIX 5: Logo subtle outline — pops against both empty AND liquid */
+        /* FIX 7: Logo outline — pops against both dark and liquid */
         .bts-logo {
             -webkit-text-stroke:0.5px rgba(255,255,255,0.08);
             paint-order:stroke fill;
@@ -17221,6 +17256,13 @@ function addArirangStyles() {
         .bomb-tier-energized .bts-logo { -webkit-text-stroke:0.5px rgba(168,85,247,0.2); }
         .bomb-tier-blazing .bts-logo { -webkit-text-stroke:0.5px rgba(192,132,252,0.25); }
         .army-bomb.fully-charged .bts-logo { -webkit-text-stroke:0px; }
+        
+        /* FIX 8: Liquid fill top edge — rounded instead of straight line */
+        .energy-fill-gradient {
+            border-radius:50% 50% 0 0 / 15% 15% 0 0;
+        }
+        
+        /* ========== END PREMIUM FIXES ========== */
         
         /* ========== END PREMIUM FIXES ========== */
         
