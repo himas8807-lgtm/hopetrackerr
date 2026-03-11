@@ -15654,99 +15654,51 @@ function renderChargingBomb(bombPower, stats, fullyCharged) {
     const pct = stats.percentComplete || 0;
     const tier = bombPower.tier;
 
-    // Restored from V1: dim-to-purple gradient tiers
+    // Tiers for the ambient glow and liquid fill
     const sphereGlows = {
-        'dark':          'inset 0 0 15px rgba(30,27,75,0.4), 0 0 5px rgba(30,27,75,0.1)',
-        'dim':           'inset 0 0 20px rgba(109,40,217,0.15), 0 0 10px rgba(109,40,217,0.1)',
-        'flickering':    'inset 0 0 25px rgba(124,58,237,0.25), 0 0 15px rgba(124,58,237,0.15)',
-        'warming':       'inset 0 0 30px rgba(139,92,246,0.35), 0 0 20px rgba(139,92,246,0.2)',
-        'energized':     'inset 0 0 35px rgba(168,85,247,0.45), 0 0 30px rgba(168,85,247,0.25)',
-        'blazing':       'inset 0 0 40px rgba(192,132,252,0.55), 0 0 40px rgba(192,132,252,0.3)',
-        'fully-charged': 'inset 0 0 50px rgba(232,121,249,0.6), 0 0 60px rgba(232,121,249,0.4), 0 0 100px rgba(232,121,249,0.2)'
-    };
-
-    const sphereBorder = {
-        'dark': 'rgba(30,27,75,0.3)',
-        'dim': 'rgba(109,40,217,0.3)',
-        'flickering': 'rgba(124,58,237,0.35)',
-        'warming': 'rgba(139,92,246,0.4)',
-        'energized': 'rgba(168,85,247,0.5)',
-        'blazing': 'rgba(192,132,252,0.6)',
-        'fully-charged': 'rgba(232,121,249,0.7)'
+        'dark':          'inset 0 0 15px rgba(30,27,75,0.4)',
+        'dim':           'inset 0 0 20px rgba(109,40,217,0.15)',
+        'flickering':    'inset 0 0 25px rgba(124,58,237,0.25)',
+        'warming':       'inset 0 0 30px rgba(139,92,246,0.35)',
+        'energized':     'inset 0 0 35px rgba(168,85,247,0.45)',
+        'blazing':       'inset 0 0 40px rgba(192,132,252,0.55)',
+        'fully-charged': 'inset 0 0 60px rgba(232,121,249,0.6)'
     };
 
     return `
         <div class="charging-bomb-display">
-            <!-- Concert Stars — density scales with charge (restored from V1) -->
+            <!-- Background Stars -->
             <div class="concert-stars">
-                ${Array(Math.max(5, Math.floor(pct / 3))).fill(0).map((_, i) => `
-                    <div class="concert-star" style="
-                        left:${Math.random()*100}%;
-                        top:${Math.random()*100}%;
-                        animation-delay:${Math.random()*4}s;
-                        opacity:${0.15 + (pct/200)};
-                        --star-color:${['#a855f7','#c084fc','#e879f9','#f0abfc','#7c3aed'][Math.floor(Math.random()*5)]};
-                        --star-size:${1 + Math.random()*(1 + pct/40)}px;
-                    "></div>
+                ${Array(Math.max(5, Math.floor(pct / 3))).fill(0).map(() => `
+                    <div class="concert-star" style="left:${Math.random()*100}%; top:${Math.random()*100}%; animation-delay:${Math.random()*4}s; --star-color:#a855f7; --star-size:${1 + Math.random()*2}px;"></div>
                 `).join('')}
             </div>
             
-            <!-- Ambient Glow — scales with tier -->
             <div class="charge-ambient-glow charge-ambient-${tier}"></div>
             
-            <div class="army-bomb ${fullyCharged ? 'fully-charged' : ''} bomb-tier-${tier}">
-                <!-- V2: THE RED FUSE (SIDE POSITION) -->
+            <div class="army-bomb ${fullyCharged ? 'fully-charged' : ''}">
+                <!-- THE RED FUSE (Side Position) -->
                 <div class="bomb-fuse-tip"></div>
                 
-                <!-- V2 structure (glass-sphere) + V1 inline glow styles -->
-                <div class="glass-sphere" style="
-                    box-shadow:${sphereGlows[tier] || sphereGlows.dark};
-                    border-color:${sphereBorder[tier] || sphereBorder.dark};
-                ">
-                    <!-- V2: Glare -->
-                    <div class="sphere-glare" style="opacity:${0.1 + pct/200}"></div>
+                <!-- THE TRANSPARENT GLASS GLOBE -->
+                <div class="glass-sphere" style="box-shadow:${sphereGlows[tier] || sphereGlows.dark}">
+                    <div class="sphere-glare"></div>
                     
-                    <!-- V2: INTERNAL LOGO PLATE (Flat panel inside) -->
+                    <!-- THE FLAT INTERNAL PLATE -->
                     <div class="internal-logo-plate">
-                        <span class="bts-logo-main" style="opacity:${0.4 + pct/170}">⟭⟬</span>
+                        <span class="bts-logo-main">⟭⟬</span>
                     </div>
 
-                    <!-- ENERGY FILL (Inside the glass) -->
+                    <!-- THE LIQUID ENERGY (Fills the bottom) -->
                     <div class="energy-fill-level" style="height:${pct}%">
                         <div class="energy-fill-gradient fill-${tier}"></div>
-                        <div class="energy-fill-surface" style="opacity:${0.3 + pct/150}"></div>
-                        
-                        <!-- Restored from V1: Multi-layer Liquid Bubbles -->
                         <div class="energy-fill-bubbles">
-                            ${pct > 15 ? Array(Math.floor(pct/10)).fill(0).map(() => `
-                                <span class="fill-bubble" style="
-                                    left:${10+Math.random()*80}%;
-                                    animation-delay:${Math.random()*4}s;
-                                    --bubble-size:${2+Math.random()*3}px;
-                                "></span>
-                            `).join('') : ''}
+                            ${pct > 15 ? Array(Math.floor(pct/10)).fill(0).map(() => `<span class="fill-bubble"></span>`).join('') : ''}
                         </div>
                     </div>
-                    
-                    <!-- Restored from V1: Inner Energy Ring -->
-                    ${pct > 30 ? `
-                    <div class="energy-ring ring-${tier}"></div>
-                    ` : ''}
-                    
-                    <!-- Restored from V1: Particles -->
-                    ${pct > 10 ? `
-                    <div class="charge-particles particles-${tier}">
-                        ${Array(Math.min(8, Math.floor(pct/12))).fill(0).map((_, i) => `
-                            <span style="
-                                left:${15+Math.random()*70}%;
-                                bottom:${10+Math.random()*40}%;
-                                animation-delay:${i*0.5}s;
-                            "></span>
-                        `).join('')}
-                    </div>` : ''}
                 </div>
                 
-                <!-- V2: Handle Unit with stick, button, logo, LED -->
+                <!-- THE HANDLE STICK -->
                 <div class="handle-unit">
                     <div class="handle-neck"></div>
                     <div class="stick">
@@ -16768,7 +16720,7 @@ function addArirangStyles() {
         .power-bar-label { font-size:11px; color:#888; margin-top:8px; }
         
         /* ============================================ */
-        /* ARMY BOMB CORE — V2 STRUCTURE               */
+        /* ARMY BOMB — CLEAN SINGLE-GLOBE STRUCTURE    */
         /* ============================================ */
         .arirang-bomb-core { background:#030306; border:1px solid rgba(168,85,247,0.12); overflow:hidden; }
         .charging-bomb-display { position:relative; display:flex; flex-direction:column; align-items:center; padding:50px 20px 40px; min-height:380px; }
@@ -16791,60 +16743,68 @@ function addArirangStyles() {
         
         /* Army Bomb container */
         .army-bomb { position:relative; display:flex; flex-direction:column; align-items:center; z-index:10; transition:filter 1s ease; }
-        .bomb-tier-dark { filter:drop-shadow(0 5px 10px rgba(30,27,75,0.2)); }
-        .bomb-tier-dim { filter:drop-shadow(0 5px 15px rgba(109,40,217,0.2)); }
-        .bomb-tier-flickering { filter:drop-shadow(0 8px 20px rgba(124,58,237,0.25)); }
-        .bomb-tier-warming { filter:drop-shadow(0 10px 25px rgba(139,92,246,0.3)); }
-        .bomb-tier-energized { filter:drop-shadow(0 10px 30px rgba(168,85,247,0.35)); }
-        .bomb-tier-blazing { filter:drop-shadow(0 12px 40px rgba(192,132,252,0.4)); }
         .army-bomb.fully-charged { filter:drop-shadow(0 15px 60px rgba(232,121,249,0.5)); }
         
-        /* ---- V2: RED FUSE (side position) ---- */
+        /* ---- RED FUSE — 3D rounded nub on rim ---- */
         .bomb-fuse-tip {
-            position:absolute; top:8px; right:28px;
-            width:12px; height:10px; background:#ef4444;
-            border-radius:3px; transform:rotate(15deg);
-            z-index:10; box-shadow:0 0 10px rgba(239,68,68,0.4);
+            position:absolute; top:6px; right:26px;
+            width:14px; height:11px;
+            background:#ff4d4d;
+            border-radius:4px 4px 2px 2px;
+            transform:rotate(20deg);
+            z-index:10;
+            box-shadow:0 0 10px rgba(255,77,77,0.4);
+            border-bottom:2px solid #991b1b;
         }
         
-        /* ---- V2: GLASS SPHERE (replaces charge-sphere) ---- */
+        /* ---- THE OUTER GLASS — transparent, clean, single globe ---- */
         .glass-sphere {
             width:130px; height:130px; border-radius:50%;
-            background:rgba(255,255,255,0.03);
-            border:1px solid rgba(255,255,255,0.15);
+            background:rgba(255,255,255,0.02);
+            border:1.5px solid rgba(255,255,255,0.15);
             position:relative; display:flex; align-items:center; justify-content:center;
-            overflow:hidden; backdrop-filter:blur(1px); z-index:3;
-            transition:box-shadow 1s ease, border-color 1s ease;
+            overflow:hidden; z-index:3;
+            transition:box-shadow 1s ease;
         }
         
-        /* V2: Sphere glare (replaces sphere-reflection) */
+        /* Glass glare — makes it look 3D/round */
         .sphere-glare {
-            position:absolute; top:15px; right:20px;
-            width:25px; height:15px;
-            background:rgba(255,255,255,0.25);
-            border-radius:50%; transform:rotate(45deg);
-            filter:blur(3px); z-index:10;
-            transition:opacity 0.5s;
+            position:absolute;
+            top:15%; left:20%;
+            width:40%; height:20%;
+            background:linear-gradient(to bottom,rgba(255,255,255,0.2),transparent);
+            border-radius:50%;
+            transform:rotate(-25deg);
+            filter:blur(4px);
+            z-index:6;
+            pointer-events:none;
         }
         
-        /* ---- V2: INTERNAL LOGO PLATE (flat panel inside glass) ---- */
+        /* ---- INTERNAL PLATE — frosted rectangular panel (NO circle) ---- */
         .internal-logo-plate {
             position:absolute; z-index:5;
-            width:55px; height:80px;
-            background:rgba(255,255,255,0.05);
-            border:1px solid rgba(255,255,255,0.1);
+            width:58px; height:85px;
+            background:rgba(255,255,255,0.08);
+            border:1px solid rgba(255,255,255,0.2);
+            border-radius:4px;
             display:flex; align-items:center; justify-content:center;
-        }
-        .bts-logo-main {
-            font-size:40px; color:#fff; letter-spacing:-2px;
-            font-weight:700; transition:all 1s ease;
+            pointer-events:none;
         }
         
-        /* ---- ENERGY LIQUID FILL (inside the glass) ---- */
+        /* BTS Logo on the plate */
+        .bts-logo-main {
+            font-size:42px; color:#fff; opacity:0.9;
+            letter-spacing:-2px; font-weight:700;
+            filter:drop-shadow(0 0 10px rgba(255,255,255,0.3));
+            transition:all 1s ease;
+        }
+        
+        /* ---- LIQUID ENERGY — follows globe curve at bottom ---- */
         .energy-fill-level {
             position:absolute; bottom:0; left:0; right:0; width:100%;
-            border-radius:0 0 130px 130px; overflow:hidden;
-            transition:height 1.2s cubic-bezier(0.4,0,0.2,1); z-index:2;
+            border-radius:0 0 130px 130px;
+            overflow:hidden; z-index:2;
+            transition:height 1.2s cubic-bezier(0.4,0,0.2,1);
         }
         .energy-fill-gradient { width:100%; height:100%; position:relative; }
         .energy-fill-gradient::after {
@@ -16863,50 +16823,18 @@ function addArirangStyles() {
         .fill-blazing { background:linear-gradient(to top,#8b5cf6 0%,#a855f7 30%,#c084fc 70%,#e879f9 100%); opacity:0.85; }
         .fill-fully-charged { background:linear-gradient(to top,#a855f7 0%,#c084fc 25%,#e879f9 60%,#f0abfc 85%,rgba(255,255,255,0.6) 100%); opacity:0.9; }
         
-        /* Liquid surface line */
-        .energy-fill-surface {
-            position:absolute; top:0; left:0; right:0; height:4px;
-            background:rgba(255,255,255,0.6);
-            box-shadow:0 0 12px rgba(255,255,255,0.8);
-            animation:surface-bob 3s ease-in-out infinite;
-            transition:opacity 0.5s;
-        }
-        @keyframes surface-bob { 0%,100%{transform:translateX(0)} 50%{transform:translateX(-6px)} }
-        
-        /* Restored from V1: Bubbles */
+        /* Bubbles */
         .energy-fill-bubbles { position:absolute; inset:0; pointer-events:none; z-index:2; }
         .fill-bubble {
             position:absolute; bottom:0;
+            left:calc(10% + var(--r, 40%) * 0.8);
             width:var(--bubble-size,3px); height:var(--bubble-size,3px);
             background:rgba(255,255,255,0.6); border-radius:50%;
             animation:bubble-rise 4s infinite ease-in; opacity:0;
         }
         @keyframes bubble-rise { 0%{transform:translateY(0) scale(0);opacity:0} 20%{opacity:0.8} 100%{transform:translateY(-80px) scale(1.2);opacity:0} }
         
-        /* Restored from V1: Energy Ring */
-        .energy-ring {
-            position:absolute; width:80%; height:80%; border-radius:50%;
-            border:1px solid; z-index:2;
-            animation:ring-pulse 3s ease-in-out infinite;
-        }
-        .ring-warming { border-color:rgba(139,92,246,0.15); }
-        .ring-energized { border-color:rgba(168,85,247,0.2); }
-        .ring-blazing { border-color:rgba(192,132,252,0.25); animation-duration:2s; }
-        .ring-fully-charged { border-color:rgba(232,121,249,0.3); animation-duration:1.5s; box-shadow:0 0 15px rgba(232,121,249,0.15); }
-        @keyframes ring-pulse { 0%,100%{transform:scale(0.95);opacity:0.5} 50%{transform:scale(1.05);opacity:1} }
-        
-        /* Restored from V1: Particles */
-        .charge-particles { position:absolute; inset:0; pointer-events:none; z-index:2; }
-        .charge-particles span { position:absolute; width:3px; height:3px; background:#fff; border-radius:50%; animation:particle-float 3s infinite ease-in; opacity:0; }
-        .particles-dim span { box-shadow:0 0 4px rgba(109,40,217,0.6); }
-        .particles-flickering span { box-shadow:0 0 5px rgba(124,58,237,0.7); }
-        .particles-warming span { box-shadow:0 0 6px rgba(139,92,246,0.7); }
-        .particles-energized span { box-shadow:0 0 8px rgba(168,85,247,0.8); }
-        .particles-blazing span { box-shadow:0 0 10px rgba(192,132,252,0.9); width:4px; height:4px; }
-        .particles-fully-charged span { box-shadow:0 0 12px #e879f9; width:4px; height:4px; }
-        @keyframes particle-float { 0%{transform:translateY(0) scale(0);opacity:0} 40%{opacity:0.9} 100%{transform:translateY(-60px) scale(1.5);opacity:0} }
-        
-        /* ---- V2: HANDLE UNIT (replaces bomb-handle) ---- */
+        /* ---- HANDLE UNIT ---- */
         .handle-unit { display:flex; flex-direction:column; align-items:center; margin-top:-2px; z-index:2; }
         .handle-neck { width:44px; height:12px; background:#1a1a1a; border-radius:4px 4px 0 0; border-top:1px solid #222; }
         
@@ -16917,7 +16845,7 @@ function addArirangStyles() {
             padding-top:15px; position:relative;
         }
         
-        /* V2: Button on stick */
+        /* Button on stick */
         .stick-button {
             width:14px; height:22px; background:#222;
             border:1px solid #333; border-radius:10px;
@@ -16925,13 +16853,15 @@ function addArirangStyles() {
             margin-bottom:20px;
         }
         
-        /* V2: Logo on stick */
+        /* Stick logo — etched dark look */
         .stick-logo {
-            font-size:10px; color:#333; font-weight:800;
-            letter-spacing:-1px; opacity:0.6; margin-top:5px;
+            font-size:11px; color:#000; font-weight:800;
+            letter-spacing:-1px; margin-top:8px;
+            opacity:0.4;
+            text-shadow:0 1px 1px rgba(255,255,255,0.1);
         }
         
-        /* V2: LED on stick (replaces grip-light) */
+        /* LED on stick */
         .stick-led {
             width:4px; height:4px; border-radius:50%;
             margin-top:10px; transition:all 1s;
@@ -16945,7 +16875,7 @@ function addArirangStyles() {
         .led-fully-charged { background:#e879f9; box-shadow:0 0 18px #e879f9; }
         @keyframes led-blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
         
-        /* V2: Stick base */
+        /* Stick base */
         .stick-base { width:38px; height:12px; background:#0a0a0a; border-radius:0 0 8px 8px; }
         
         /* Power label */
@@ -17260,7 +17190,7 @@ function addArirangStyles() {
         }
         
         @media (prefers-reduced-motion:reduce) {
-            .wire-flow,.charge-sparks span,.power-bar-shimmer,.energy-fill-gradient::after,.energy-fill-surface,.concert-star,.fill-bubble,.energy-ring { animation:none !important; }
+            .wire-flow,.charge-sparks span,.power-bar-shimmer,.energy-fill-gradient::after,.concert-star,.fill-bubble { animation:none !important; }
             .charge-wire.wire-live { animation:none; }
             .charge-ambient-blazing,.charge-ambient-fully-charged { animation:none; }
             .bomb-fuse-tip { box-shadow:none; }
@@ -17268,7 +17198,6 @@ function addArirangStyles() {
     `;
     document.head.appendChild(style);
 }
-
 // =============================================
 // DAILY WAVE STYLES
 // =============================================
