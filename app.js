@@ -15369,9 +15369,11 @@ const _WAVE_SONGS = [
     { day: 4, id: 'euphoria', title: 'Euphoria', artist: 'Jungkook', album: 'LOVE YOURSELF 結 Answer', era: '🌊', bpm: 100, color: '#a78bfa', wave: 'ocean', spotifyId: '5YMXGBD6vcYP7IolemyLtK', lyric: '"Take my hands now, you are the cause of my euphoria"', lyricEn: '"Take my hands now, you are the cause of my euphoria"' },    
     { day: 5, id: 'film-out', title: 'Film Out', artist: 'BTS', album: 'BTS, THE BEST', era: '🎬', bpm: 72, color: '#94a3b8', wave: 'slow-sway', spotifyId: '6g9Vd4z3JnVUiAIRwFlVCG', lyric: '"Tantan to furitsumotta kioku no naka de, kimi dake wo hiroi atsumete tsunagete"', lyricEn: '"I gather up the memories of you, link them together"' },    
     { day: 6, id: 'louder-than-bombs', title: 'Louder Than Bombs', artist: 'BTS', album: 'MAP OF THE SOUL: 7', era: '💣', bpm: 81, color: '#6366f1', wave: 'heartbeat', spotifyId: '4Aw8n6r2vuU0KUo1a2nftp', lyric: '"네 목소리를 들려줘"', lyricEn: '"Let me hear your voice"' },   
-    { day: 7, id: 'truth-untold', title: 'The Truth Untold', artist: 'BTS, Steve Aoki', album: 'LOVE YOURSELF 結 Answer', era: '🌹', bpm: 76, color: '#a855f7', wave: 'slow-sway', spotifyId: '4eP8Syl3aBEQw3Jy5Bhq0D', lyric: "Show you me, give you me... Chorahan moseub boyeojul sun eopseo", lyricEn: "Tto gamyeoneul sseugo neol mannareo ga... But I still want you" },    { day: 9, id: 'mikrokosmos', title: 'Mikrokosmos', artist: 'BTS', album: 'MAP OF THE SOUL: PERSONA', era: '🌌', bpm: 86, color: '#818cf8', wave: 'stars', spotifyId: '0jSccBRnhNU4KtACMQPvco', lyric: '"별빛처럼"', lyricEn: '"Like starlight"' },
-    { day: 10, id: 'blue-grey', title: 'Blue & Grey', artist: 'BTS', album: 'BE', era: '🌧️', bpm: 93, color: '#64748b', wave: 'ocean', spotifyId: '4Kq11CVRD3egq3kCvK5OhY', lyric: '"어디서부터 잘못됐는지"', lyricEn: '"Where did it go wrong"' },
-    { day: 11, id: 'life-goes-on', title: 'Life Goes On', artist: 'BTS', album: 'BE', era: '🌿', bpm: 80, color: '#86efac', wave: 'slow-sway', spotifyId: '249gnXbHph4OHyFSi1LPcO', lyric: '"살아가겠지 뭐"', lyricEn: '"Life goes on, like this"' },
+    { day: 7, id: 'truth-untold', title: 'The Truth Untold', artist: 'BTS, Steve Aoki', album: 'LOVE YOURSELF 結 Answer', era: '🌹', bpm: 76, color: '#a855f7', wave: 'slow-sway', spotifyId: '4eP8Syl3aBEQw3Jy5Bhq0D', lyric: "Show you me, give you me... Chorahan moseub boyeojul sun eopseo", lyricEn: "Tto gamyeoneul sseugo neol mannareo ga... But I still want you" },
+    { day: 8, id: 'butterfly', title: 'Butterfly', artist: 'BTS', album: 'The Most Beautiful Moment in Life pt.2', era: '🦋', bpm: 78, color: '#fbbf24', wave: 'flutter', spotifyId: '3bjg5cbmuwDoS7e2dAWyRG', lyric: '"Butterfly (butterfly), like a butterfly (butterfly)"', lyricEn: '"Butterfly (fly), like a butterfly (butterfly)"' },
+    { day: 9, id: 'mikrokosmos', title: 'Mikrokosmos', artist: 'BTS', album: 'MAP OF THE SOUL: PERSONA', era: '🌌', bpm: 86, color: '#818cf8', wave: 'stars', spotifyId: '0jSccBRnhNU4KtACMQPvco', lyric: '"You got me / Nan neoleul bomyeo kkum-eul kkwo"', lyricEn: '"I got you / Chilheug gatdeon bamdeul sog / Seologa bon seoloui bich"' },    
+    { day: 10, id: 'young-forever', title: 'EPILOGUE: Young Forever', artist: 'BTS', album: 'The Most Beautiful Moment in Life: Young Forever', era: '🕊️', bpm: 86, color: '#38bdf8', wave: 'slow-sway', spotifyId: '6BskTMfDjXVzeqQHOau5Vi', lyric: '"Neomeojyeo dachigo apado Kkeuteopsi dalline kkumeul hyanghae"', lyricEn: '"Forever ever ever ever Forever we are young"' },
+    { day: 11, id: 'life-goes-on', title: 'Life Goes On', artist: 'BTS', album: 'Proof', era: '🌿', bpm: 80, color: '#86efac', wave: 'slow-sway', spotifyId: '1VjqXwHU3isibdXLEtXc4q', lyric: '"Like an echo in the forest"', lyricEn: '"Like an arrow in the blue sky / Life goes on"' },
     { day: 12, id: 'serendipity', title: 'Serendipity', artist: 'Jimin', album: 'LOVE YOURSELF 承 Her', era: '🌙', bpm: 90, color: '#fbbf24', wave: 'flutter', spotifyId: '2PjVvqX4USbPJhaFaX4QM0', lyric: '"내 삶 속의 모든 것"', lyricEn: '"Everything in my life"' },
     { day: 13, id: 'zero-oclock', title: '00:00 (Zero O\'Clock)', artist: 'BTS', album: 'MAP OF THE SOUL: 7', era: '🕛', bpm: 67, color: '#f0abfc', wave: 'slow-sway', spotifyId: '1GxIWsMD5SMpNwITh0Xu40', lyric: '"넌 그래도 괜찮아"', lyricEn: '"You\'re still okay"' },
     { day: 14, id: 'wab-eternal', title: 'We Are Bulletproof: The Eternal', artist: 'BTS', album: 'MAP OF THE SOUL: 7', era: '🛡️', bpm: 75, color: '#7c3aed', wave: 'ocean', spotifyId: '133ocfbXXG4HTk76qgSeUb', lyric: '"영원히 함께야"', lyricEn: '"Together forever"' },
@@ -15652,7 +15654,7 @@ function renderChargingBomb(bombPower, stats, fullyCharged) {
     const pct = stats.percentComplete || 0;
     const tier = bombPower.tier;
 
-    // dim-to-purple gradient tiers
+    // Restored from V1: dim-to-purple gradient tiers
     const sphereGlows = {
         'dark':          'inset 0 0 15px rgba(30,27,75,0.4), 0 0 5px rgba(30,27,75,0.1)',
         'dim':           'inset 0 0 20px rgba(109,40,217,0.15), 0 0 10px rgba(109,40,217,0.1)',
@@ -15675,7 +15677,7 @@ function renderChargingBomb(bombPower, stats, fullyCharged) {
 
     return `
         <div class="charging-bomb-display">
-            <!-- Concert Stars — density scales with charge -->
+            <!-- Concert Stars — density scales with charge (restored from V1) -->
             <div class="concert-stars">
                 ${Array(Math.max(5, Math.floor(pct / 3))).fill(0).map((_, i) => `
                     <div class="concert-star" style="
@@ -15693,18 +15695,28 @@ function renderChargingBomb(bombPower, stats, fullyCharged) {
             <div class="charge-ambient-glow charge-ambient-${tier}"></div>
             
             <div class="army-bomb ${fullyCharged ? 'fully-charged' : ''} bomb-tier-${tier}">
-                <div class="charge-button charge-btn-${tier}"></div>
+                <!-- V2: THE RED FUSE (SIDE POSITION) -->
+                <div class="bomb-fuse-tip"></div>
                 
-                <div class="charge-sphere" style="
+                <!-- V2 structure (glass-sphere) + V1 inline glow styles -->
+                <div class="glass-sphere" style="
                     box-shadow:${sphereGlows[tier] || sphereGlows.dark};
                     border-color:${sphereBorder[tier] || sphereBorder.dark};
                 ">
-                    <div class="sphere-reflection" style="opacity:${0.1 + pct/200}"></div>
+                    <!-- V2: Glare -->
+                    <div class="sphere-glare" style="opacity:${0.1 + pct/200}"></div>
                     
-                    <!-- Multi-layer Liquid Fill -->
+                    <!-- V2: INTERNAL LOGO PLATE (Flat panel inside) -->
+                    <div class="internal-logo-plate">
+                        <span class="bts-logo-main" style="opacity:${0.4 + pct/170}">⟭⟬</span>
+                    </div>
+
+                    <!-- ENERGY FILL (Inside the glass) -->
                     <div class="energy-fill-level" style="height:${pct}%">
                         <div class="energy-fill-gradient fill-${tier}"></div>
                         <div class="energy-fill-surface" style="opacity:${0.3 + pct/150}"></div>
+                        
+                        <!-- Restored from V1: Multi-layer Liquid Bubbles -->
                         <div class="energy-fill-bubbles">
                             ${pct > 15 ? Array(Math.floor(pct/10)).fill(0).map(() => `
                                 <span class="fill-bubble" style="
@@ -15716,12 +15728,12 @@ function renderChargingBomb(bombPower, stats, fullyCharged) {
                         </div>
                     </div>
                     
-                    <!-- Inner Energy Ring -->
+                    <!-- Restored from V1: Inner Energy Ring -->
                     ${pct > 30 ? `
                     <div class="energy-ring ring-${tier}"></div>
                     ` : ''}
                     
-                    <!-- Particles -->
+                    <!-- Restored from V1: Particles -->
                     ${pct > 10 ? `
                     <div class="charge-particles particles-${tier}">
                         ${Array(Math.min(8, Math.floor(pct/12))).fill(0).map((_, i) => `
@@ -15732,19 +15744,17 @@ function renderChargingBomb(bombPower, stats, fullyCharged) {
                             "></span>
                         `).join('')}
                     </div>` : ''}
-                    
-                    <!-- BTS Logo -->
-                    <div class="charge-core core-${tier}">
-                        <span class="bts-logo"  style="opacity:${0.4 + pct/170}">⟭⟬</span>
-                    </div>
                 </div>
                 
-                <div class="bomb-handle">
-                    <div class="handle-connector"></div>
-                    <div class="handle-grip">
-                        <div class="grip-light grip-light-${tier}"></div>
+                <!-- V2: Handle Unit with stick, button, logo, LED -->
+                <div class="handle-unit">
+                    <div class="handle-neck"></div>
+                    <div class="stick">
+                        <div class="stick-button"></div>
+                        <div class="stick-logo">⟭⟬</div>
+                        <div class="stick-led led-${tier}"></div>
                     </div>
-                    <div class="handle-base"></div>
+                    <div class="stick-base"></div>
                 </div>
             </div>
             
@@ -16757,10 +16767,13 @@ function addArirangStyles() {
         .power-fill-fully-charged { background:linear-gradient(90deg,#c084fc,#e879f9,#f0abfc); }
         .power-bar-label { font-size:11px; color:#888; margin-top:8px; }
         
-        /* ARMY BOMB CORE */
+        /* ============================================ */
+        /* ARMY BOMB CORE — V2 STRUCTURE               */
+        /* ============================================ */
         .arirang-bomb-core { background:#030306; border:1px solid rgba(168,85,247,0.12); overflow:hidden; }
         .charging-bomb-display { position:relative; display:flex; flex-direction:column; align-items:center; padding:50px 20px 40px; min-height:380px; }
         
+        /* Concert Stars */
         .concert-stars { position:absolute; inset:0; pointer-events:none; overflow:hidden; }
         .concert-star { position:absolute; width:var(--star-size,2px); height:var(--star-size,2px); background:var(--star-color,#a855f7); border-radius:50%; animation:star-twinkle 3s ease-in-out infinite; box-shadow:0 0 4px var(--star-color); }
         @keyframes star-twinkle { 0%,100%{opacity:0.15;transform:scale(0.8)} 50%{opacity:0.9;transform:scale(1.3)} }
@@ -16776,6 +16789,7 @@ function addArirangStyles() {
         .charge-ambient-fully-charged { background:radial-gradient(circle,rgba(232,121,249,0.5),transparent 60%); opacity:0.65; animation:ambient-breathe 2s ease-in-out infinite; }
         @keyframes ambient-breathe { 0%,100%{transform:scale(1);opacity:var(--o,0.5)} 50%{transform:scale(1.15);opacity:calc(var(--o,0.5) + 0.15)} }
         
+        /* Army Bomb container */
         .army-bomb { position:relative; display:flex; flex-direction:column; align-items:center; z-index:10; transition:filter 1s ease; }
         .bomb-tier-dark { filter:drop-shadow(0 5px 10px rgba(30,27,75,0.2)); }
         .bomb-tier-dim { filter:drop-shadow(0 5px 15px rgba(109,40,217,0.2)); }
@@ -16785,33 +16799,60 @@ function addArirangStyles() {
         .bomb-tier-blazing { filter:drop-shadow(0 12px 40px rgba(192,132,252,0.4)); }
         .army-bomb.fully-charged { filter:drop-shadow(0 15px 60px rgba(232,121,249,0.5)); }
         
-        .charge-button { width:24px; height:8px; background:#0f0f0f; border-radius:4px 4px 0 0; position:relative; margin-bottom:-2px; z-index:4; }
-        .charge-btn-dark { box-shadow:none; }
-        .charge-btn-dim { box-shadow:inset 0 1px 2px rgba(109,40,217,0.1); }
-        .charge-btn-flickering { box-shadow:inset 0 1px 3px rgba(124,58,237,0.15); }
-        .charge-btn-warming { box-shadow:inset 0 1px 3px rgba(139,92,246,0.2); }
-        .charge-btn-energized { box-shadow:inset 0 1px 4px rgba(168,85,247,0.25); }
-        .charge-btn-blazing { box-shadow:inset 0 1px 5px rgba(192,132,252,0.3); }
-        .charge-btn-fully-charged { box-shadow:inset 0 1px 6px rgba(232,121,249,0.4); }
+        /* ---- V2: RED FUSE (side position) ---- */
+        .bomb-fuse-tip {
+            position:absolute; top:8px; right:28px;
+            width:12px; height:10px; background:#ef4444;
+            border-radius:3px; transform:rotate(15deg);
+            z-index:10; box-shadow:0 0 10px rgba(239,68,68,0.4);
+        }
         
-        .charge-sphere { width:130px; height:130px; border-radius:50%; background:radial-gradient(circle at 30% 30%,rgba(168,85,247,0.08) 0%,rgba(0,0,0,0.4) 100%); border:1.5px solid; position:relative; display:flex; align-items:center; justify-content:center; overflow:hidden; z-index:3; transition:box-shadow 1s ease, border-color 1s ease; }
-        .sphere-reflection { position:absolute; top:15px; right:20px; width:25px; height:15px; background:rgba(255,255,255,0.2); border-radius:50%; transform:rotate(45deg); filter:blur(3px); z-index:10; transition:opacity 0.5s; }
+        /* ---- V2: GLASS SPHERE (replaces charge-sphere) ---- */
+        .glass-sphere {
+            width:130px; height:130px; border-radius:50%;
+            background:rgba(255,255,255,0.03);
+            border:1px solid rgba(255,255,255,0.15);
+            position:relative; display:flex; align-items:center; justify-content:center;
+            overflow:hidden; backdrop-filter:blur(1px); z-index:3;
+            transition:box-shadow 1s ease, border-color 1s ease;
+        }
         
-        .charge-core { position:relative; z-index:5; display:flex; align-items:center; justify-content:center; width:100%; height:100%; }
-        .bts-logo { font-size:42px; font-weight:700; transition:all 1s ease; letter-spacing:-2px; }
-        .core-dark .bts-logo { color:rgba(30,27,75,0.5); text-shadow:none; }
-        .core-dim .bts-logo { color:rgba(109,40,217,0.6); text-shadow:0 0 5px rgba(109,40,217,0.2); }
-        .core-flickering .bts-logo { color:rgba(124,58,237,0.7); text-shadow:0 0 8px rgba(124,58,237,0.3); }
-        .core-warming .bts-logo { color:rgba(139,92,246,0.8); text-shadow:0 0 12px rgba(139,92,246,0.4); }
-        .core-energized .bts-logo { color:rgba(168,85,247,0.85); text-shadow:0 0 15px rgba(168,85,247,0.5); }
-        .core-blazing .bts-logo { color:rgba(192,132,252,0.9); text-shadow:0 0 20px rgba(192,132,252,0.6); }
-        .core-fully-charged .bts-logo { color:#fff; text-shadow:0 0 20px #e879f9, 0 0 40px #a855f7; animation:logo-glow 2s ease-in-out infinite; }
-        @keyframes logo-glow { 0%,100%{text-shadow:0 0 20px #e879f9,0 0 40px #a855f7} 50%{text-shadow:0 0 30px #f0abfc,0 0 60px #c084fc} }
+        /* V2: Sphere glare (replaces sphere-reflection) */
+        .sphere-glare {
+            position:absolute; top:15px; right:20px;
+            width:25px; height:15px;
+            background:rgba(255,255,255,0.25);
+            border-radius:50%; transform:rotate(45deg);
+            filter:blur(3px); z-index:10;
+            transition:opacity 0.5s;
+        }
         
-        /* Liquid Fill */
-        .energy-fill-level { position:absolute; bottom:0; left:0; right:0; width:100%; border-radius:0 0 130px 130px; overflow:hidden; transition:height 1.2s cubic-bezier(0.4,0,0.2,1); z-index:1; }
+        /* ---- V2: INTERNAL LOGO PLATE (flat panel inside glass) ---- */
+        .internal-logo-plate {
+            position:absolute; z-index:5;
+            width:55px; height:80px;
+            background:rgba(255,255,255,0.05);
+            border:1px solid rgba(255,255,255,0.1);
+            display:flex; align-items:center; justify-content:center;
+        }
+        .bts-logo-main {
+            font-size:40px; color:#fff; letter-spacing:-2px;
+            font-weight:700; transition:all 1s ease;
+        }
+        
+        /* ---- ENERGY LIQUID FILL (inside the glass) ---- */
+        .energy-fill-level {
+            position:absolute; bottom:0; left:0; right:0; width:100%;
+            border-radius:0 0 130px 130px; overflow:hidden;
+            transition:height 1.2s cubic-bezier(0.4,0,0.2,1); z-index:2;
+        }
         .energy-fill-gradient { width:100%; height:100%; position:relative; }
-        .energy-fill-gradient::after { content:''; position:absolute; inset:0; background-image:radial-gradient(rgba(255,255,255,0.4) 1px,transparent 1px); background-size:12px 12px; opacity:0.25; animation:liquid-sparkle 4s linear infinite; }
+        .energy-fill-gradient::after {
+            content:''; position:absolute; inset:0;
+            background-image:radial-gradient(rgba(255,255,255,0.4) 1px,transparent 1px);
+            background-size:12px 12px; opacity:0.25;
+            animation:liquid-sparkle 4s linear infinite;
+        }
         @keyframes liquid-sparkle { 0%{background-position:0 0} 100%{background-position:0 24px} }
         
         .fill-dark { background:linear-gradient(to top,#1e1b4b 0%,#312e81 100%); opacity:0.5; }
@@ -16822,22 +16863,39 @@ function addArirangStyles() {
         .fill-blazing { background:linear-gradient(to top,#8b5cf6 0%,#a855f7 30%,#c084fc 70%,#e879f9 100%); opacity:0.85; }
         .fill-fully-charged { background:linear-gradient(to top,#a855f7 0%,#c084fc 25%,#e879f9 60%,#f0abfc 85%,rgba(255,255,255,0.6) 100%); opacity:0.9; }
         
-        .energy-fill-surface { position:absolute; top:0; left:0; right:0; height:4px; background:rgba(255,255,255,0.6); box-shadow:0 0 12px rgba(255,255,255,0.8); animation:surface-bob 3s ease-in-out infinite; transition:opacity 0.5s; }
+        /* Liquid surface line */
+        .energy-fill-surface {
+            position:absolute; top:0; left:0; right:0; height:4px;
+            background:rgba(255,255,255,0.6);
+            box-shadow:0 0 12px rgba(255,255,255,0.8);
+            animation:surface-bob 3s ease-in-out infinite;
+            transition:opacity 0.5s;
+        }
         @keyframes surface-bob { 0%,100%{transform:translateX(0)} 50%{transform:translateX(-6px)} }
         
+        /* Restored from V1: Bubbles */
         .energy-fill-bubbles { position:absolute; inset:0; pointer-events:none; z-index:2; }
-        .fill-bubble { position:absolute; bottom:0; width:var(--bubble-size,3px); height:var(--bubble-size,3px); background:rgba(255,255,255,0.6); border-radius:50%; animation:bubble-rise 4s infinite ease-in; opacity:0; }
+        .fill-bubble {
+            position:absolute; bottom:0;
+            width:var(--bubble-size,3px); height:var(--bubble-size,3px);
+            background:rgba(255,255,255,0.6); border-radius:50%;
+            animation:bubble-rise 4s infinite ease-in; opacity:0;
+        }
         @keyframes bubble-rise { 0%{transform:translateY(0) scale(0);opacity:0} 20%{opacity:0.8} 100%{transform:translateY(-80px) scale(1.2);opacity:0} }
         
-        /* Energy Ring */
-        .energy-ring { position:absolute; width:80%; height:80%; border-radius:50%; border:1px solid; z-index:2; animation:ring-pulse 3s ease-in-out infinite; }
+        /* Restored from V1: Energy Ring */
+        .energy-ring {
+            position:absolute; width:80%; height:80%; border-radius:50%;
+            border:1px solid; z-index:2;
+            animation:ring-pulse 3s ease-in-out infinite;
+        }
         .ring-warming { border-color:rgba(139,92,246,0.15); }
         .ring-energized { border-color:rgba(168,85,247,0.2); }
         .ring-blazing { border-color:rgba(192,132,252,0.25); animation-duration:2s; }
         .ring-fully-charged { border-color:rgba(232,121,249,0.3); animation-duration:1.5s; box-shadow:0 0 15px rgba(232,121,249,0.15); }
         @keyframes ring-pulse { 0%,100%{transform:scale(0.95);opacity:0.5} 50%{transform:scale(1.05);opacity:1} }
         
-        /* Particles */
+        /* Restored from V1: Particles */
         .charge-particles { position:absolute; inset:0; pointer-events:none; z-index:2; }
         .charge-particles span { position:absolute; width:3px; height:3px; background:#fff; border-radius:50%; animation:particle-float 3s infinite ease-in; opacity:0; }
         .particles-dim span { box-shadow:0 0 4px rgba(109,40,217,0.6); }
@@ -16848,21 +16906,49 @@ function addArirangStyles() {
         .particles-fully-charged span { box-shadow:0 0 12px #e879f9; width:4px; height:4px; }
         @keyframes particle-float { 0%{transform:translateY(0) scale(0);opacity:0} 40%{opacity:0.9} 100%{transform:translateY(-60px) scale(1.5);opacity:0} }
         
-        /* Handle */
-        .bomb-handle { display:flex; flex-direction:column; align-items:center; margin-top:-5px; z-index:2; }
-        .handle-connector { width:44px; height:12px; background:#0a0a0a; border-radius:2px; border-top:1px solid #222; }
-        .handle-grip { width:32px; height:140px; background:linear-gradient(90deg,#111,#1f1f1f 40%,#0d0d0d); position:relative; }
-        .grip-light { position:absolute; top:50px; left:50%; transform:translateX(-50%); width:4px; height:4px; border-radius:50%; transition:all 1s; }
-        .grip-light-dark { background:#111; box-shadow:none; }
-        .grip-light-dim { background:#4c1d95; box-shadow:0 0 3px #4c1d95; }
-        .grip-light-flickering { background:#6d28d9; box-shadow:0 0 5px #6d28d9; animation:grip-blink 2s infinite; }
-        .grip-light-warming { background:#7c3aed; box-shadow:0 0 8px #7c3aed; }
-        .grip-light-energized { background:#a855f7; box-shadow:0 0 10px #a855f7; }
-        .grip-light-blazing { background:#c084fc; box-shadow:0 0 14px #c084fc; animation:grip-blink 1s infinite; }
-        .grip-light-fully-charged { background:#e879f9; box-shadow:0 0 18px #e879f9; }
-        @keyframes grip-blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
-        .handle-base { width:36px; height:10px; background:#0a0a0a; border-radius:0 0 4px 4px; margin-top:-2px; }
+        /* ---- V2: HANDLE UNIT (replaces bomb-handle) ---- */
+        .handle-unit { display:flex; flex-direction:column; align-items:center; margin-top:-2px; z-index:2; }
+        .handle-neck { width:44px; height:12px; background:#1a1a1a; border-radius:4px 4px 0 0; border-top:1px solid #222; }
         
+        .stick {
+            width:38px; height:110px;
+            background:linear-gradient(90deg,#0f0f0f,#1e1e1e 50%,#0a0a0a);
+            display:flex; flex-direction:column; align-items:center;
+            padding-top:15px; position:relative;
+        }
+        
+        /* V2: Button on stick */
+        .stick-button {
+            width:14px; height:22px; background:#222;
+            border:1px solid #333; border-radius:10px;
+            box-shadow:inset 0 2px 4px rgba(0,0,0,0.5);
+            margin-bottom:20px;
+        }
+        
+        /* V2: Logo on stick */
+        .stick-logo {
+            font-size:10px; color:#333; font-weight:800;
+            letter-spacing:-1px; opacity:0.6; margin-top:5px;
+        }
+        
+        /* V2: LED on stick (replaces grip-light) */
+        .stick-led {
+            width:4px; height:4px; border-radius:50%;
+            margin-top:10px; transition:all 1s;
+        }
+        .led-dark { background:#111; box-shadow:none; }
+        .led-dim { background:#4c1d95; box-shadow:0 0 3px #4c1d95; }
+        .led-flickering { background:#6d28d9; box-shadow:0 0 5px #6d28d9; animation:led-blink 2s infinite; }
+        .led-warming { background:#7c3aed; box-shadow:0 0 8px #7c3aed; }
+        .led-energized { background:#a855f7; box-shadow:0 0 10px #a855f7; }
+        .led-blazing { background:#c084fc; box-shadow:0 0 14px #c084fc; animation:led-blink 1s infinite; }
+        .led-fully-charged { background:#e879f9; box-shadow:0 0 18px #e879f9; }
+        @keyframes led-blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
+        
+        /* V2: Stick base */
+        .stick-base { width:38px; height:12px; background:#0a0a0a; border-radius:0 0 8px 8px; }
+        
+        /* Power label */
         .bomb-power-label { margin-top:15px; font-size:13px; font-weight:700; letter-spacing:1.5px; padding:6px 16px; border-radius:20px; transition:all 1s; }
         .label-dark { color:#4c1d95; background:rgba(30,27,75,0.2); border:1px solid rgba(30,27,75,0.3); }
         .label-dim { color:#6d28d9; background:rgba(109,40,217,0.1); border:1px solid rgba(109,40,217,0.25); }
@@ -16894,7 +16980,7 @@ function addArirangStyles() {
         .era-locked .era-name { color:#444; }
         .era-cell:hover { transform:scale(1.05); }
         
-        /* Phase dots — per-phase color */
+        /* Phase dots */
         .phase-dot-grid { display:flex; flex-wrap:wrap; gap:4px; justify-content:center; margin-bottom:12px; }
         .phase-dot { width:28px; height:28px; border-radius:6px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:9px; font-weight:700; transition:all 0.2s; min-width:44px; min-height:34px; }
         .dot-charged { background:var(--phase-bg); border:1.5px solid var(--phase-accent); color:var(--phase-accent); box-shadow:0 0 8px color-mix(in srgb,var(--phase-glow) 30%,transparent); }
@@ -17057,160 +17143,38 @@ function addArirangStyles() {
         .action-subtitle { font-size:11px; color:#666; }
         .action-arrow { font-size:18px; color:#555; }
         
-       
-                /* ARIRANG MISSION WIDGET */
-                .arirang-home-widget {
-                    display: flex;
-                    align-items: center;
-                    gap: 16px;
-                    padding: 18px;
-                    background: rgba(123, 44, 191, 0.04);
-                    border: 1px solid rgba(123, 44, 191, 0.15);
-                    border-radius: 12px;
-                    margin-bottom: 20px;
-                    cursor: pointer;
-                    transition: all 0.3s ease;
-                    position: relative;
-                }
-        
-                .arirang-home-widget:hover {
-                    background: rgba(123, 44, 191, 0.08);
-                    border-color: rgba(168, 85, 247, 0.4);
-                    transform: translateY(-1px);
-                }
-        
-                .widget-left {
-                    flex-shrink: 0;
-                }
-        
-                .widget-bomb-charge {
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                }
-        
-                .widget-sphere-charge {
-                    width: 38px;
-                    height: 38px;
-                    border-radius: 50%;
-                    background: #08080a;
-                    border: 1.5px solid rgba(168, 85, 247, 0.3);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    position: relative;
-                    overflow: hidden;
-                }
-        
-                .widget-fill {
-                    position: absolute;
-                    bottom: 0;
-                    left: 0;
-                    right: 0;
-                    background: linear-gradient(0deg, #7c3aed, #e879f9);
-                    opacity: 0.7;
-                    transition: height 1.5s ease-out;
-                }
-        
-                . widget-logo {
-                    font-size: 14px;
-                    color: rgba(255, 255, 255, 0.5);
-                    position: relative;
-                    z-index: 1;
-                    font-weight: bold;
-                }
-        
-                .widget-handle-c {
-                    width: 12px;
-                    height: 16px;
-                    background: #15151a;
-                    border-radius: 0 0 3px 3px;
-                    margin-top: -3px;
-                    border: 1px solid #222;
-                }
-        
-                .widget-info {
-                    flex: 1;
-                    min-width: 0;
-                }
-        
-                .widget-header {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    margin-bottom: 8px;
-                }
-        
-                .widget-label {
-                    font-size: 10px;
-                    font-weight: 800;
-                    color: #7b2cbf;
-                    letter-spacing: 1.5px;
-                }
-        
-                .widget-timer {
-                    font-size: 9px;
-                    color: #ffd700;
-                    font-weight: 700;
-                    opacity: 0.8;
-                }
-        
-                .widget-goal-row {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: flex-end;
-                    margin-bottom: 5px;
-                }
-        
-                .widget-goal-text {
-                    font-size: 13px;
-                    color: #888;
-                }
-        
-                .widget-goal-text strong {
-                    color: #fff;
-                    font-size: 15px;
-                    font-family: monospace;
-                }
-        
-                .widget-pct-text {
-                    font-size: 11px;
-                    font-weight: 700;
-                    color: #aaa;
-                }
-        
-                .widget-progress-bar {
-                    height: 5px;
-                    background: rgba(255, 255, 255, 0.03);
-                    border-radius: 10px;
-                    overflow: hidden;
-                    margin-bottom: 8px;
-                }
-        
-                .widget-progress-fill {
-                    height: 100%;
-                    background: linear-gradient(90deg, #7c3aed, #e879f9);
-                    transition: width 1s ease-in-out;
-                    box-shadow: 0 0 8px rgba(168, 85, 247, 0.3);
-                }
-        
-                .widget-footer {
-                    display: flex;
-                    justify-content: flex-start;
-                }
-        
-                .protocol-status {
-                    font-size: 9px;
-                    color: #444;
-                    font-weight: 800;
-                    letter-spacing: 1px;
-                }
-        
-                .widget-arrow {
-                    font-size: 20px;
-                    color: #222;
-                    margin-left: 8px;
-                }
+        /* ARIRANG MISSION WIDGET */
+        .arirang-home-widget {
+            display:flex; align-items:center; gap:16px; padding:18px;
+            background:rgba(123,44,191,0.04); border:1px solid rgba(123,44,191,0.15);
+            border-radius:12px; margin-bottom:20px; cursor:pointer;
+            transition:all 0.3s ease; position:relative;
+        }
+        .arirang-home-widget:hover { background:rgba(123,44,191,0.08); border-color:rgba(168,85,247,0.4); transform:translateY(-1px); }
+        .widget-left { flex-shrink:0; }
+        .widget-bomb-charge { display:flex; flex-direction:column; align-items:center; }
+        .widget-sphere-charge {
+            width:38px; height:38px; border-radius:50%; background:#08080a;
+            border:1.5px solid rgba(168,85,247,0.3);
+            display:flex; align-items:center; justify-content:center;
+            position:relative; overflow:hidden;
+        }
+        .widget-fill { position:absolute; bottom:0; left:0; right:0; background:linear-gradient(0deg,#7c3aed,#e879f9); opacity:0.7; transition:height 1.5s ease-out; }
+        .widget-logo { font-size:14px; color:rgba(255,255,255,0.5); position:relative; z-index:1; font-weight:bold; }
+        .widget-handle-c { width:12px; height:16px; background:#15151a; border-radius:0 0 3px 3px; margin-top:-3px; border:1px solid #222; }
+        .widget-info { flex:1; min-width:0; }
+        .widget-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+        .widget-label { font-size:10px; font-weight:800; color:#7b2cbf; letter-spacing:1.5px; }
+        .widget-timer { font-size:9px; color:#ffd700; font-weight:700; opacity:0.8; }
+        .widget-goal-row { display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:5px; }
+        .widget-goal-text { font-size:13px; color:#888; }
+        .widget-goal-text strong { color:#fff; font-size:15px; font-family:monospace; }
+        .widget-pct-text { font-size:11px; font-weight:700; color:#aaa; }
+        .widget-progress-bar { height:5px; background:rgba(255,255,255,0.03); border-radius:10px; overflow:hidden; margin-bottom:8px; }
+        .widget-progress-fill { height:100%; background:linear-gradient(90deg,#7c3aed,#e879f9); transition:width 1s ease-in-out; box-shadow:0 0 8px rgba(168,85,247,0.3); }
+        .widget-footer { display:flex; justify-content:flex-start; }
+        .protocol-status { font-size:9px; color:#444; font-weight:800; letter-spacing:1px; }
+        .widget-arrow { font-size:20px; color:#222; margin-left:8px; }
         
         /* MODALS */
         .phase-detail-modal,.arirang-badge-modal,.arirang-lb-modal { position:fixed; inset:0; z-index:10000; display:flex; align-items:center; justify-content:center; padding:20px; opacity:0; transition:opacity 0.3s; }
@@ -17276,10 +17240,15 @@ function addArirangStyles() {
         .lb-empty { text-align:center; padding:40px 20px; color:#555; }
         .lb-empty span { font-size:32px; display:block; margin-bottom:10px; }
         
+        /* ============================================ */
+        /* RESPONSIVE                                   */
+        /* ============================================ */
         @media (max-width:380px) {
             .charging-bomb-display { transform:scale(0.85); transform-origin:center top; padding:40px 10px 10px; margin-bottom:-40px; }
-            .charge-sphere { width:100px; height:100px; }
-            .bts-logo { font-size:32px; }
+            .glass-sphere { width:100px; height:100px; }
+            .bts-logo-main { font-size:32px; }
+            .internal-logo-plate { width:45px; height:65px; }
+            .stick { height:90px; }
             .power-stats-grid { gap:8px; }
             .power-stat { padding:8px 12px; }
             .power-stat-value { font-size:18px; }
@@ -17294,6 +17263,7 @@ function addArirangStyles() {
             .wire-flow,.charge-sparks span,.power-bar-shimmer,.energy-fill-gradient::after,.energy-fill-surface,.concert-star,.fill-bubble,.energy-ring { animation:none !important; }
             .charge-wire.wire-live { animation:none; }
             .charge-ambient-blazing,.charge-ambient-fully-charged { animation:none; }
+            .bomb-fuse-tip { box-shadow:none; }
         }
     `;
     document.head.appendChild(style);
