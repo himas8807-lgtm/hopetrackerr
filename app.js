@@ -15654,7 +15654,6 @@ function renderChargingBomb(bombPower, stats, fullyCharged) {
     const pct = stats.percentComplete || 0;
     const tier = bombPower.tier;
 
-    // Tiers for the ambient glow and liquid fill
     const sphereGlows = {
         'dark':          'inset 0 0 15px rgba(30,27,75,0.4)',
         'dim':           'inset 0 0 20px rgba(109,40,217,0.15)',
@@ -15667,7 +15666,6 @@ function renderChargingBomb(bombPower, stats, fullyCharged) {
 
     return `
         <div class="charging-bomb-display">
-            <!-- Background Stars -->
             <div class="concert-stars">
                 ${Array(Math.max(5, Math.floor(pct / 3))).fill(0).map(() => `
                     <div class="concert-star" style="left:${Math.random()*100}%; top:${Math.random()*100}%; animation-delay:${Math.random()*4}s; --star-color:#a855f7; --star-size:${1 + Math.random()*2}px;"></div>
@@ -15677,19 +15675,10 @@ function renderChargingBomb(bombPower, stats, fullyCharged) {
             <div class="charge-ambient-glow charge-ambient-${tier}"></div>
             
             <div class="army-bomb ${fullyCharged ? 'fully-charged' : ''}">
-                <!-- THE RED FUSE (Side Position) -->
                 <div class="bomb-fuse-tip"></div>
                 
-                <!-- THE TRANSPARENT GLASS GLOBE -->
                 <div class="glass-sphere" style="box-shadow:${sphereGlows[tier] || sphereGlows.dark}">
                     <div class="sphere-glare"></div>
-                    
-                    <!-- THE FLAT INTERNAL PLATE -->
-                    <div class="internal-logo-plate">
-                        <span class="bts-logo-main">⟭⟬</span>
-                    </div>
-
-                    <!-- THE LIQUID ENERGY (Fills the bottom) -->
                     <div class="energy-fill-level" style="height:${pct}%">
                         <div class="energy-fill-gradient fill-${tier}"></div>
                         <div class="energy-fill-bubbles">
@@ -15698,13 +15687,10 @@ function renderChargingBomb(bombPower, stats, fullyCharged) {
                     </div>
                 </div>
                 
-                <!-- THE HANDLE STICK -->
                 <div class="handle-unit">
                     <div class="handle-neck"></div>
                     <div class="stick">
-                        <div class="stick-button"></div>
                         <div class="stick-logo">⟭⟬</div>
-                        <div class="stick-led led-${tier}"></div>
                     </div>
                     <div class="stick-base"></div>
                 </div>
@@ -15716,7 +15702,6 @@ function renderChargingBomb(bombPower, stats, fullyCharged) {
         </div>
     `;
 }
-
 // =============================================
 // ERA TIMELINE
 // =============================================
@@ -16720,7 +16705,7 @@ function addArirangStyles() {
         .power-bar-label { font-size:11px; color:#888; margin-top:8px; }
         
         /* ============================================ */
-        /* ARMY BOMB — CLEAN SINGLE-GLOBE STRUCTURE    */
+        /* ARMY BOMB — CLEAN SINGLE-GLOBE, CLEAN STICK */
         /* ============================================ */
         .arirang-bomb-core { background:#030306; border:1px solid rgba(168,85,247,0.12); overflow:hidden; }
         .charging-bomb-display { position:relative; display:flex; flex-direction:column; align-items:center; padding:50px 20px 40px; min-height:380px; }
@@ -16745,7 +16730,7 @@ function addArirangStyles() {
         .army-bomb { position:relative; display:flex; flex-direction:column; align-items:center; z-index:10; transition:filter 1s ease; }
         .army-bomb.fully-charged { filter:drop-shadow(0 15px 60px rgba(232,121,249,0.5)); }
         
-        /* ---- RED FUSE — 3D rounded nub on rim ---- */
+        /* RED FUSE — 3D rounded nub on rim */
         .bomb-fuse-tip {
             position:absolute; top:6px; right:26px;
             width:14px; height:11px;
@@ -16757,7 +16742,7 @@ function addArirangStyles() {
             border-bottom:2px solid #991b1b;
         }
         
-        /* ---- THE OUTER GLASS — transparent, clean, single globe ---- */
+        /* GLASS SPHERE — transparent, clean, single globe */
         .glass-sphere {
             width:130px; height:130px; border-radius:50%;
             background:rgba(255,255,255,0.02);
@@ -16767,7 +16752,7 @@ function addArirangStyles() {
             transition:box-shadow 1s ease;
         }
         
-        /* Glass glare — makes it look 3D/round */
+        /* Glass glare — 3D round look */
         .sphere-glare {
             position:absolute;
             top:15%; left:20%;
@@ -16780,26 +16765,7 @@ function addArirangStyles() {
             pointer-events:none;
         }
         
-        /* ---- INTERNAL PLATE — frosted rectangular panel (NO circle) ---- */
-        .internal-logo-plate {
-            position:absolute; z-index:5;
-            width:58px; height:85px;
-            background:rgba(255,255,255,0.08);
-            border:1px solid rgba(255,255,255,0.2);
-            border-radius:4px;
-            display:flex; align-items:center; justify-content:center;
-            pointer-events:none;
-        }
-        
-        /* BTS Logo on the plate */
-        .bts-logo-main {
-            font-size:42px; color:#fff; opacity:0.9;
-            letter-spacing:-2px; font-weight:700;
-            filter:drop-shadow(0 0 10px rgba(255,255,255,0.3));
-            transition:all 1s ease;
-        }
-        
-        /* ---- LIQUID ENERGY — follows globe curve at bottom ---- */
+        /* LIQUID ENERGY — follows globe curve */
         .energy-fill-level {
             position:absolute; bottom:0; left:0; right:0; width:100%;
             border-radius:0 0 130px 130px;
@@ -16827,14 +16793,13 @@ function addArirangStyles() {
         .energy-fill-bubbles { position:absolute; inset:0; pointer-events:none; z-index:2; }
         .fill-bubble {
             position:absolute; bottom:0;
-            left:calc(10% + var(--r, 40%) * 0.8);
             width:var(--bubble-size,3px); height:var(--bubble-size,3px);
             background:rgba(255,255,255,0.6); border-radius:50%;
             animation:bubble-rise 4s infinite ease-in; opacity:0;
         }
         @keyframes bubble-rise { 0%{transform:translateY(0) scale(0);opacity:0} 20%{opacity:0.8} 100%{transform:translateY(-80px) scale(1.2);opacity:0} }
         
-        /* ---- HANDLE UNIT ---- */
+        /* HANDLE UNIT — clean stick, logo only */
         .handle-unit { display:flex; flex-direction:column; align-items:center; margin-top:-2px; z-index:2; }
         .handle-neck { width:44px; height:12px; background:#1a1a1a; border-radius:4px 4px 0 0; border-top:1px solid #222; }
         
@@ -16842,38 +16807,17 @@ function addArirangStyles() {
             width:38px; height:110px;
             background:linear-gradient(90deg,#0f0f0f,#1e1e1e 50%,#0a0a0a);
             display:flex; flex-direction:column; align-items:center;
-            padding-top:15px; position:relative;
+            padding-top:12px;
+            position:relative;
         }
         
-        /* Button on stick */
-        .stick-button {
-            width:14px; height:22px; background:#222;
-            border:1px solid #333; border-radius:10px;
-            box-shadow:inset 0 2px 4px rgba(0,0,0,0.5);
-            margin-bottom:20px;
-        }
-        
-        /* Stick logo — etched dark look */
+        /* Logo at top of stick — etched look */
         .stick-logo {
             font-size:11px; color:#000; font-weight:800;
-            letter-spacing:-1px; margin-top:8px;
+            letter-spacing:-1px;
             opacity:0.4;
             text-shadow:0 1px 1px rgba(255,255,255,0.1);
         }
-        
-        /* LED on stick */
-        .stick-led {
-            width:4px; height:4px; border-radius:50%;
-            margin-top:10px; transition:all 1s;
-        }
-        .led-dark { background:#111; box-shadow:none; }
-        .led-dim { background:#4c1d95; box-shadow:0 0 3px #4c1d95; }
-        .led-flickering { background:#6d28d9; box-shadow:0 0 5px #6d28d9; animation:led-blink 2s infinite; }
-        .led-warming { background:#7c3aed; box-shadow:0 0 8px #7c3aed; }
-        .led-energized { background:#a855f7; box-shadow:0 0 10px #a855f7; }
-        .led-blazing { background:#c084fc; box-shadow:0 0 14px #c084fc; animation:led-blink 1s infinite; }
-        .led-fully-charged { background:#e879f9; box-shadow:0 0 18px #e879f9; }
-        @keyframes led-blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
         
         /* Stick base */
         .stick-base { width:38px; height:12px; background:#0a0a0a; border-radius:0 0 8px 8px; }
@@ -17170,14 +17114,10 @@ function addArirangStyles() {
         .lb-empty { text-align:center; padding:40px 20px; color:#555; }
         .lb-empty span { font-size:32px; display:block; margin-bottom:10px; }
         
-        /* ============================================ */
-        /* RESPONSIVE                                   */
-        /* ============================================ */
+        /* RESPONSIVE */
         @media (max-width:380px) {
             .charging-bomb-display { transform:scale(0.85); transform-origin:center top; padding:40px 10px 10px; margin-bottom:-40px; }
             .glass-sphere { width:100px; height:100px; }
-            .bts-logo-main { font-size:32px; }
-            .internal-logo-plate { width:45px; height:65px; }
             .stick { height:90px; }
             .power-stats-grid { gap:8px; }
             .power-stat { padding:8px 12px; }
