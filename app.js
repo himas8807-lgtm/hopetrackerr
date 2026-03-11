@@ -15654,21 +15654,11 @@ function renderChargingBomb(bombPower, stats, fullyCharged) {
     const pct = stats.percentComplete || 0;
     const tier = bombPower.tier;
 
-    const sphereGlows = {
-        'dark':          'inset 0 0 15px rgba(30,27,75,0.4)',
-        'dim':           'inset 0 0 20px rgba(109,40,217,0.15)',
-        'flickering':    'inset 0 0 25px rgba(124,58,237,0.25)',
-        'warming':       'inset 0 0 30px rgba(139,92,246,0.35)',
-        'energized':     'inset 0 0 35px rgba(168,85,247,0.45)',
-        'blazing':       'inset 0 0 40px rgba(192,132,252,0.55)',
-        'fully-charged': 'inset 0 0 60px rgba(232,121,249,0.6)'
-    };
-
     return `
         <div class="charging-bomb-display">
             <div class="concert-stars">
                 ${Array(Math.max(5, Math.floor(pct / 3))).fill(0).map(() => `
-                    <div class="concert-star" style="left:${Math.random()*100}%; top:${Math.random()*100}%; animation-delay:${Math.random()*4}s; --star-color:#a855f7; --star-size:${1 + Math.random()*2}px;"></div>
+                    <div class="concert-star" style="left:${Math.random()*100}%; top:${Math.random()*100}%; animation-delay:${Math.random()*4}s; --star-color:#fff; --star-size:${1 + Math.random()*2}px;"></div>
                 `).join('')}
             </div>
             
@@ -15677,19 +15667,25 @@ function renderChargingBomb(bombPower, stats, fullyCharged) {
             <div class="army-bomb ${fullyCharged ? 'fully-charged' : ''}">
                 <div class="bomb-fuse-tip"></div>
                 
-                <div class="glass-sphere" style="box-shadow:${sphereGlows[tier] || sphereGlows.dark}">
+                <div class="glass-sphere">
                     <div class="sphere-glare"></div>
+                    
+                    <!-- 1. LIQUID (Back Layer z-index:2) -->
                     <div class="energy-fill-level" style="height:${pct}%">
                         <div class="energy-fill-gradient fill-${tier}"></div>
-                        <div class="energy-fill-bubbles">
-                            ${pct > 15 ? Array(Math.floor(pct/10)).fill(0).map(() => `<span class="fill-bubble"></span>`).join('') : ''}
-                        </div>
+                    </div>
+
+                    <!-- 2. INTERNAL PLATE (Front Layer z-index:5) -->
+                    <div class="internal-logo-plate">
+                        <span class="bts-logo-main">⟭⟬</span>
                     </div>
                 </div>
                 
                 <div class="handle-unit">
                     <div class="handle-neck"></div>
                     <div class="stick">
+                        <div class="stick-highlight"></div>
+                        <div class="stick-button"></div>
                         <div class="stick-logo">⟭⟬</div>
                     </div>
                     <div class="stick-base"></div>
@@ -16606,8 +16602,10 @@ function addArirangStyles() {
             --arirang-glow: #e879f9;
             --arirang-bg: #0a0a12;
         }
-        
-        /* LOADING */
+
+        /* ============================================ */
+        /* LOADING                                      */
+        /* ============================================ */
         .arirang-loading { text-align:center; padding:60px 20px; }
         .arirang-loading p { color:#888; font-size:13px; margin-top:20px; }
         .loading-bomb-charge { display:inline-flex; flex-direction:column; align-items:center; }
@@ -16618,17 +16616,24 @@ function addArirangStyles() {
             animation:loading-pulse 2s ease-in-out infinite;
         }
         .loading-handle-charge { width:20px; height:30px; background:linear-gradient(180deg,#333,#1a1a1a); border-radius:0 0 6px 6px; margin-top:-5px; }
-        @keyframes loading-pulse { 0%,100%{transform:scale(1);box-shadow:0 0 20px rgba(168,85,247,0.3)} 50%{transform:scale(1.05);box-shadow:0 0 40px rgba(168,85,247,0.5)} }
-        
-        /* GUIDE */
+        @keyframes loading-pulse {
+            0%,100% { transform:scale(1); box-shadow:0 0 20px rgba(168,85,247,0.3); }
+            50% { transform:scale(1.05); box-shadow:0 0 40px rgba(168,85,247,0.5); }
+        }
+
+        /* ============================================ */
+        /* GUIDE                                        */
+        /* ============================================ */
         .arirang-guide { background:rgba(168,85,247,0.05); border:1px solid rgba(168,85,247,0.15); border-left:3px solid #a855f7; }
         .guide-content { display:flex; gap:12px; align-items:flex-start; }
         .guide-icon { font-size:22px; }
         .guide-text strong { color:#c084fc; font-size:13px; display:block; margin-bottom:4px; }
         .guide-text p { color:#888; font-size:12px; margin:3px 0; line-height:1.5; }
         .guide-text .highlight { color:#e879f9; font-weight:600; }
-        
-        /* HOBI HELP */
+
+        /* ============================================ */
+        /* HOBI HELP                                    */
+        /* ============================================ */
         .btn-hobi-help { display:inline-flex; align-items:center; gap:8px; background:linear-gradient(135deg,rgba(168,85,247,0.1),rgba(124,58,237,0.05)); border:1px solid rgba(168,85,247,0.3); padding:10px 20px; border-radius:25px; color:#c084fc; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.3s; }
         .btn-hobi-help:hover { border-color:#a855f7; background:rgba(168,85,247,0.15); transform:scale(1.02); }
         .hobi-icon { font-size:18px; }
@@ -16649,8 +16654,10 @@ function addArirangStyles() {
         .step-text p { color:#888; font-size:11px; margin:0; line-height:1.5; }
         .hobi-footer-note { color:#666; font-size:11px; text-align:center; padding:15px; background:rgba(168,85,247,0.03); border-radius:10px; margin-top:10px; }
         .btn-hobi-confirm { width:calc(100% - 40px); margin:20px; padding:14px; background:linear-gradient(135deg,#a855f7,#7c3aed); border:none; border-radius:12px; color:#fff; font-size:14px; font-weight:700; cursor:pointer; }
-        
-        /* HEADER */
+
+        /* ============================================ */
+        /* HEADER                                       */
+        /* ============================================ */
         .arirang-header-card { background:linear-gradient(135deg,#0a0a15,#12121f); border:1px solid rgba(168,85,247,0.2); border-radius:16px; padding:20px; }
         .arirang-header-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; }
         .arirang-badge-pill { display:inline-flex; align-items:center; gap:6px; background:rgba(168,85,247,0.1); padding:5px 12px; border-radius:20px; border:1px solid rgba(168,85,247,0.2); }
@@ -16661,7 +16668,10 @@ function addArirangStyles() {
         .title-icon { font-size:20px; }
         .arirang-subtitle { color:#888; font-size:12px; margin:6px 0 0; display:flex; align-items:center; gap:8px; }
         .subtitle-dot { width:4px; height:4px; border-radius:50%; background:#a855f7; }
-        
+
+        /* ============================================ */
+        /* POWER LEVEL BADGES                           */
+        /* ============================================ */
         .power-level-badge { display:flex; align-items:center; gap:6px; padding:4px 10px; border-radius:20px; font-size:10px; font-weight:600; letter-spacing:0.5px; }
         .power-dot { width:6px; height:6px; border-radius:50%; animation:blink 2s ease-in-out infinite; }
         @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
@@ -16679,7 +16689,10 @@ function addArirangStyles() {
         .power-blazing .power-dot { background:#c084fc; animation:blink 1s ease-in-out infinite; }
         .power-fully-charged { background:rgba(232,121,249,0.2); color:#f0abfc; }
         .power-fully-charged .power-dot { background:#f0abfc; animation:none; box-shadow:0 0 10px #f0abfc; }
-        
+
+        /* ============================================ */
+        /* POWER STATS GRID                             */
+        /* ============================================ */
         .power-stats-grid { display:flex; justify-content:center; gap:20px; margin-bottom:20px; }
         .power-stat { text-align:center; padding:12px 20px; background:rgba(168,85,247,0.03); border-radius:12px; border:1px solid rgba(168,85,247,0.1); }
         .power-stat-icon { font-size:16px; margin-bottom:4px; }
@@ -16689,7 +16702,10 @@ function addArirangStyles() {
         .power-stat.remaining .power-stat-value { color:#c084fc; }
         .power-stat.missed .power-stat-value { color:#ef4444; }
         .power-stat.clean .power-stat-value { color:#888; }
-        
+
+        /* ============================================ */
+        /* POWER BAR                                    */
+        /* ============================================ */
         .power-bar-section { text-align:center; }
         .power-bar-track { height:6px; background:rgba(168,85,247,0.08); border-radius:10px; overflow:hidden; }
         .power-bar-fill { height:100%; border-radius:10px; transition:width 0.5s ease; position:relative; overflow:hidden; }
@@ -16703,20 +16719,35 @@ function addArirangStyles() {
         .power-fill-blazing { background:linear-gradient(90deg,#a855f7,#c084fc); }
         .power-fill-fully-charged { background:linear-gradient(90deg,#c084fc,#e879f9,#f0abfc); }
         .power-bar-label { font-size:11px; color:#888; margin-top:8px; }
-        
+
         /* ============================================ */
-        /* ARMY BOMB — CLEAN SINGLE-GLOBE, CLEAN STICK */
+        /* ARMY BOMB — PREMIUM GLASS + 3D STICK        */
         /* ============================================ */
         .arirang-bomb-core { background:#030306; border:1px solid rgba(168,85,247,0.12); overflow:hidden; }
-        .charging-bomb-display { position:relative; display:flex; flex-direction:column; align-items:center; padding:50px 20px 40px; min-height:380px; }
-        
+        .charging-bomb-display {
+            position:relative; display:flex; flex-direction:column;
+            align-items:center; padding:50px 20px 40px; min-height:380px;
+        }
+
         /* Concert Stars */
         .concert-stars { position:absolute; inset:0; pointer-events:none; overflow:hidden; }
-        .concert-star { position:absolute; width:var(--star-size,2px); height:var(--star-size,2px); background:var(--star-color,#a855f7); border-radius:50%; animation:star-twinkle 3s ease-in-out infinite; box-shadow:0 0 4px var(--star-color); }
-        @keyframes star-twinkle { 0%,100%{opacity:0.15;transform:scale(0.8)} 50%{opacity:0.9;transform:scale(1.3)} }
-        
-        /* Ambient glow per tier */
-        .charge-ambient-glow { position:absolute; width:280px; height:280px; border-radius:50%; filter:blur(90px); top:10px; z-index:0; transition:all 1s ease; }
+        .concert-star {
+            position:absolute;
+            width:var(--star-size,2px); height:var(--star-size,2px);
+            background:var(--star-color,#fff); border-radius:50%;
+            animation:star-twinkle 3s ease-in-out infinite;
+            box-shadow:0 0 4px var(--star-color);
+        }
+        @keyframes star-twinkle {
+            0%,100% { opacity:0.1; transform:scale(0.8); }
+            50% { opacity:0.8; transform:scale(1.3); }
+        }
+
+        /* Ambient Glow — per tier */
+        .charge-ambient-glow {
+            position:absolute; width:280px; height:280px; border-radius:50%;
+            filter:blur(90px); top:10px; z-index:0; transition:all 1s ease;
+        }
         .charge-ambient-dark { background:radial-gradient(circle,rgba(30,27,75,0.2),transparent 70%); opacity:0.3; }
         .charge-ambient-dim { background:radial-gradient(circle,rgba(109,40,217,0.25),transparent 70%); opacity:0.35; }
         .charge-ambient-flickering { background:radial-gradient(circle,rgba(124,58,237,0.3),transparent 70%); opacity:0.4; }
@@ -16724,48 +16755,97 @@ function addArirangStyles() {
         .charge-ambient-energized { background:radial-gradient(circle,rgba(168,85,247,0.4),transparent 70%); opacity:0.5; }
         .charge-ambient-blazing { background:radial-gradient(circle,rgba(192,132,252,0.45),transparent 70%); opacity:0.55; animation:ambient-breathe 3s ease-in-out infinite; }
         .charge-ambient-fully-charged { background:radial-gradient(circle,rgba(232,121,249,0.5),transparent 60%); opacity:0.65; animation:ambient-breathe 2s ease-in-out infinite; }
-        @keyframes ambient-breathe { 0%,100%{transform:scale(1);opacity:var(--o,0.5)} 50%{transform:scale(1.15);opacity:calc(var(--o,0.5) + 0.15)} }
-        
-        /* Army Bomb container */
-        .army-bomb { position:relative; display:flex; flex-direction:column; align-items:center; z-index:10; transition:filter 1s ease; }
-        .army-bomb.fully-charged { filter:drop-shadow(0 15px 60px rgba(232,121,249,0.5)); }
-        
-        /* RED FUSE — 3D rounded nub on rim */
+        @keyframes ambient-breathe {
+            0%,100% { transform:scale(1); opacity:var(--o,0.5); }
+            50% { transform:scale(1.15); opacity:calc(var(--o,0.5) + 0.15); }
+        }
+
+        /* Army Bomb Container */
+        .army-bomb {
+            position:relative; display:flex; flex-direction:column;
+            align-items:center; z-index:10; transition:filter 1s ease;
+        }
+        .army-bomb.fully-charged {
+            filter:drop-shadow(0 15px 60px rgba(232,121,249,0.5));
+            animation:bomb-fully-charged-pulse 3s ease-in-out infinite;
+        }
+        @keyframes bomb-fully-charged-pulse {
+            0%,100% { filter:drop-shadow(0 15px 60px rgba(232,121,249,0.5)); }
+            50% { filter:drop-shadow(0 20px 80px rgba(232,121,249,0.7)); }
+        }
+
+        /* ---- RED FUSE — 3D nub on globe rim ---- */
         .bomb-fuse-tip {
             position:absolute; top:6px; right:26px;
             width:14px; height:11px;
-            background:#ff4d4d;
+            background:linear-gradient(180deg,#ff5555,#cc2222);
             border-radius:4px 4px 2px 2px;
             transform:rotate(20deg);
             z-index:10;
-            box-shadow:0 0 10px rgba(255,77,77,0.4);
-            border-bottom:2px solid #991b1b;
+            box-shadow:0 0 12px rgba(255,50,50,0.5), inset 0 1px 0 rgba(255,255,255,0.3);
+            border-bottom:2px solid #800;
         }
-        
-        /* GLASS SPHERE — transparent, clean, single globe */
+
+        /* ---- GLASS SPHERE — transparent, premium ---- */
         .glass-sphere {
             width:130px; height:130px; border-radius:50%;
-            background:rgba(255,255,255,0.02);
-            border:1.5px solid rgba(255,255,255,0.15);
+            background:radial-gradient(circle at 35% 35%,rgba(255,255,255,0.08),rgba(255,255,255,0.02) 60%,rgba(0,0,0,0.1));
+            border:1.5px solid rgba(255,255,255,0.3);
             position:relative; display:flex; align-items:center; justify-content:center;
-            overflow:hidden; z-index:3;
+            overflow:hidden; backdrop-filter:blur(2px); z-index:3;
+            box-shadow:
+                inset 0 0 30px rgba(255,255,255,0.04),
+                inset 0 -10px 20px rgba(0,0,0,0.15),
+                0 8px 32px rgba(0,0,0,0.4);
             transition:box-shadow 1s ease;
         }
-        
-        /* Glass glare — 3D round look */
+
+        /* Glass Glare — makes globe look 3D/round */
         .sphere-glare {
             position:absolute;
-            top:15%; left:20%;
-            width:40%; height:20%;
-            background:linear-gradient(to bottom,rgba(255,255,255,0.2),transparent);
+            top:12%; left:18%;
+            width:42%; height:22%;
+            background:linear-gradient(180deg,rgba(255,255,255,0.3),rgba(255,255,255,0.05),transparent);
             border-radius:50%;
             transform:rotate(-25deg);
-            filter:blur(4px);
-            z-index:6;
+            filter:blur(3px);
+            z-index:8;
             pointer-events:none;
         }
-        
-        /* LIQUID ENERGY — follows globe curve */
+
+        /* Secondary bottom reflection */
+        .glass-sphere::after {
+            content:'';
+            position:absolute;
+            bottom:8%; right:15%;
+            width:20%; height:10%;
+            background:radial-gradient(ellipse,rgba(255,255,255,0.1),transparent);
+            border-radius:50%;
+            z-index:7;
+            pointer-events:none;
+        }
+
+        /* ---- INTERNAL LOGO PLATE — frosted panel, in front of liquid ---- */
+        .internal-logo-plate {
+            position:absolute; z-index:5;
+            width:55px; height:85px;
+            background:linear-gradient(180deg,rgba(255,255,255,0.1),rgba(255,255,255,0.04));
+            border:1px solid rgba(255,255,255,0.18);
+            border-radius:4px;
+            display:flex; align-items:center; justify-content:center;
+            box-shadow:
+                0 4px 15px rgba(0,0,0,0.4),
+                inset 0 1px 0 rgba(255,255,255,0.1);
+            pointer-events:none;
+        }
+        .bts-logo-main {
+            font-size:40px; color:#fff; opacity:0.95;
+            letter-spacing:-2px; font-weight:700;
+            filter:drop-shadow(0 0 8px rgba(255,255,255,0.4));
+            transition:all 1s ease;
+        }
+
+        /* ---- LIQUID ENERGY — behind plate (z-index:2) ---- */
         .energy-fill-level {
             position:absolute; bottom:0; left:0; right:0; width:100%;
             border-radius:0 0 130px 130px;
@@ -16775,55 +16855,137 @@ function addArirangStyles() {
         .energy-fill-gradient { width:100%; height:100%; position:relative; }
         .energy-fill-gradient::after {
             content:''; position:absolute; inset:0;
-            background-image:radial-gradient(rgba(255,255,255,0.4) 1px,transparent 1px);
-            background-size:12px 12px; opacity:0.25;
+            background-image:radial-gradient(rgba(255,255,255,0.5) 1px,transparent 1px);
+            background-size:10px 10px; opacity:0.2;
             animation:liquid-sparkle 4s linear infinite;
         }
-        @keyframes liquid-sparkle { 0%{background-position:0 0} 100%{background-position:0 24px} }
-        
+        @keyframes liquid-sparkle { 0%{background-position:0 0} 100%{background-position:0 20px} }
+
+        /* Liquid surface shimmer */
+        .energy-fill-level::before {
+            content:'';
+            position:absolute; top:0; left:0; right:0; height:3px;
+            background:linear-gradient(90deg,transparent,rgba(255,255,255,0.6),transparent);
+            z-index:3;
+            animation:surface-shimmer 3s ease-in-out infinite;
+        }
+        @keyframes surface-shimmer {
+            0%,100% { opacity:0.4; transform:translateX(-20%); }
+            50% { opacity:0.8; transform:translateX(20%); }
+        }
+
         .fill-dark { background:linear-gradient(to top,#1e1b4b 0%,#312e81 100%); opacity:0.5; }
         .fill-dim { background:linear-gradient(to top,#312e81 0%,#4c1d95 50%,#6d28d9 100%); opacity:0.6; }
         .fill-flickering { background:linear-gradient(to top,#4c1d95 0%,#6d28d9 50%,#7c3aed 100%); opacity:0.7; }
         .fill-warming { background:linear-gradient(to top,#6d28d9 0%,#7c3aed 40%,#8b5cf6 100%); opacity:0.75; }
         .fill-energized { background:linear-gradient(to top,#7c3aed 0%,#8b5cf6 40%,#a855f7 100%); opacity:0.8; }
         .fill-blazing { background:linear-gradient(to top,#8b5cf6 0%,#a855f7 30%,#c084fc 70%,#e879f9 100%); opacity:0.85; }
-        .fill-fully-charged { background:linear-gradient(to top,#a855f7 0%,#c084fc 25%,#e879f9 60%,#f0abfc 85%,rgba(255,255,255,0.6) 100%); opacity:0.9; }
-        
-        /* Bubbles */
-        .energy-fill-bubbles { position:absolute; inset:0; pointer-events:none; z-index:2; }
-        .fill-bubble {
-            position:absolute; bottom:0;
-            width:var(--bubble-size,3px); height:var(--bubble-size,3px);
-            background:rgba(255,255,255,0.6); border-radius:50%;
-            animation:bubble-rise 4s infinite ease-in; opacity:0;
+        .fill-fully-charged {
+            background:linear-gradient(to top,#a855f7 0%,#c084fc 25%,#e879f9 60%,#f0abfc 85%,rgba(255,255,255,0.6) 100%);
+            opacity:0.9;
         }
-        @keyframes bubble-rise { 0%{transform:translateY(0) scale(0);opacity:0} 20%{opacity:0.8} 100%{transform:translateY(-80px) scale(1.2);opacity:0} }
-        
-        /* HANDLE UNIT — clean stick, logo only */
-        .handle-unit { display:flex; flex-direction:column; align-items:center; margin-top:-2px; z-index:2; }
-        .handle-neck { width:44px; height:12px; background:#1a1a1a; border-radius:4px 4px 0 0; border-top:1px solid #222; }
-        
+
+        /* ---- HANDLE UNIT ---- */
+        .handle-unit {
+            display:flex; flex-direction:column;
+            align-items:center; margin-top:-2px; z-index:2;
+        }
+        .handle-neck {
+            width:44px; height:14px;
+            background:linear-gradient(180deg,#222,#111);
+            border-radius:4px 4px 0 0;
+            border-top:1px solid #333;
+            box-shadow:inset 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        /* ---- STICK — 3D cylindrical ---- */
         .stick {
-            width:38px; height:110px;
-            background:linear-gradient(90deg,#0f0f0f,#1e1e1e 50%,#0a0a0a);
+            width:40px; height:110px;
+            background:linear-gradient(90deg,#0a0a0a,#181818 35%,#111 65%,#080808);
             display:flex; flex-direction:column; align-items:center;
-            padding-top:12px;
-            position:relative;
+            padding-top:15px; position:relative; overflow:hidden;
         }
-        
-        /* Logo at top of stick — etched look */
-        .stick-logo {
-            font-size:11px; color:#000; font-weight:800;
+
+        /* 3D center highlight stripe */
+        .stick-highlight {
+            position:absolute; top:0; left:50%; transform:translateX(-50%);
+            width:14px; height:100%;
+            background:linear-gradient(90deg,
+                transparent,
+                rgba(255,255,255,0.04) 30%,
+                rgba(255,255,255,0.07) 50%,
+                rgba(255,255,255,0.04) 70%,
+                transparent
+            );
+            pointer-events:none; z-index:1;
+        }
+
+        /* Edge shadow for cylindrical depth */
+        .stick::before {
+            content:'';
+            position:absolute; top:0; left:0;
+            width:4px; height:100%;
+            background:linear-gradient(90deg,rgba(0,0,0,0.4),transparent);
+            z-index:1;
+        }
+        .stick::after {
+            content:'';
+            position:absolute; top:0; right:0;
+            width:4px; height:100%;
+            background:linear-gradient(270deg,rgba(0,0,0,0.4),transparent);
+            z-index:1;
+        }
+
+        /* ---- LOGO BUTTON — logo IS the button ---- */
+        .stick-logo-button {
+            width:26px; height:26px;
+            background:linear-gradient(180deg,#1e1e1e,#111);
+            border:1px solid #3a3a3a;
+            border-radius:6px;
+            display:flex; align-items:center; justify-content:center;
+            font-size:10px; color:#555; font-weight:900;
             letter-spacing:-1px;
-            opacity:0.4;
-            text-shadow:0 1px 1px rgba(255,255,255,0.1);
+            box-shadow:
+                inset 0 2px 4px rgba(0,0,0,0.6),
+                inset 0 -1px 0 rgba(255,255,255,0.05),
+                0 2px 4px rgba(0,0,0,0.5),
+                0 0 0 1px rgba(0,0,0,0.3);
+            margin-top:14px;
+            z-index:2;
+            position:relative;
+            transition:all 0.15s ease;
         }
-        
+        .stick-logo-button::after {
+            content:'';
+            position:absolute; top:2px; left:4px; right:4px; height:6px;
+            background:linear-gradient(180deg,rgba(255,255,255,0.08),transparent);
+            border-radius:3px 3px 0 0;
+            pointer-events:none;
+        }
+        .stick-logo-button:active {
+            transform:scale(0.92);
+            box-shadow:
+                inset 0 3px 8px rgba(0,0,0,0.8),
+                0 1px 2px rgba(0,0,0,0.3);
+        }
+
         /* Stick base */
-        .stick-base { width:38px; height:12px; background:#0a0a0a; border-radius:0 0 8px 8px; }
-        
-        /* Power label */
-        .bomb-power-label { margin-top:15px; font-size:13px; font-weight:700; letter-spacing:1.5px; padding:6px 16px; border-radius:20px; transition:all 1s; }
+        .stick-base {
+            width:42px; height:14px;
+            background:linear-gradient(180deg,#0d0d0d,#050505);
+            border-radius:0 0 10px 10px;
+            box-shadow:0 2px 6px rgba(0,0,0,0.5);
+            border-top:1px solid #1a1a1a;
+        }
+
+        /* ============================================ */
+        /* POWER LABEL                                  */
+        /* ============================================ */
+        .bomb-power-label {
+            margin-top:15px; font-size:13px; font-weight:700;
+            letter-spacing:1.5px; padding:6px 16px; border-radius:20px;
+            transition:all 1s;
+        }
         .label-dark { color:#4c1d95; background:rgba(30,27,75,0.2); border:1px solid rgba(30,27,75,0.3); }
         .label-dim { color:#6d28d9; background:rgba(109,40,217,0.1); border:1px solid rgba(109,40,217,0.25); }
         .label-flickering { color:#7c3aed; background:rgba(124,58,237,0.1); border:1px solid rgba(124,58,237,0.3); }
@@ -16831,9 +16993,14 @@ function addArirangStyles() {
         .label-energized { color:#a855f7; background:rgba(168,85,247,0.1); border:1px solid rgba(168,85,247,0.3); text-shadow:0 0 8px rgba(168,85,247,0.4); }
         .label-blazing { color:#c084fc; background:rgba(192,132,252,0.12); border:1px solid rgba(192,132,252,0.35); text-shadow:0 0 12px rgba(192,132,252,0.5); }
         .label-fully-charged { color:#e879f9; background:rgba(232,121,249,0.12); border:1px solid rgba(232,121,249,0.4); text-shadow:0 0 15px rgba(232,121,249,0.6); animation:label-shine 3s ease-in-out infinite; }
-        @keyframes label-shine { 0%,100%{box-shadow:0 0 10px rgba(232,121,249,0.1)} 50%{box-shadow:0 0 25px rgba(232,121,249,0.3)} }
-        
-        /* ERA TIMELINE */
+        @keyframes label-shine {
+            0%,100% { box-shadow:0 0 10px rgba(232,121,249,0.1); }
+            50% { box-shadow:0 0 25px rgba(232,121,249,0.3); }
+        }
+
+        /* ============================================ */
+        /* ERA TIMELINE                                 */
+        /* ============================================ */
         .era-timeline { margin-top:25px; padding-top:25px; border-top:1px solid rgba(168,85,247,0.08); }
         .timeline-header { display:flex; align-items:center; gap:8px; justify-content:center; margin-bottom:15px; }
         .timeline-icon { font-size:14px; }
@@ -16853,8 +17020,10 @@ function addArirangStyles() {
         .era-locked { background:rgba(40,40,50,0.3); }
         .era-locked .era-name { color:#444; }
         .era-cell:hover { transform:scale(1.05); }
-        
-        /* Phase dots */
+
+        /* ============================================ */
+        /* PHASE DOTS                                   */
+        /* ============================================ */
         .phase-dot-grid { display:flex; flex-wrap:wrap; gap:4px; justify-content:center; margin-bottom:12px; }
         .phase-dot { width:28px; height:28px; border-radius:6px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:9px; font-weight:700; transition:all 0.2s; min-width:44px; min-height:34px; }
         .dot-charged { background:var(--phase-bg); border:1.5px solid var(--phase-accent); color:var(--phase-accent); box-shadow:0 0 8px color-mix(in srgb,var(--phase-glow) 30%,transparent); }
@@ -16863,7 +17032,7 @@ function addArirangStyles() {
         .dot-missed { background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.3); color:#ef4444; }
         .dot-locked { background:rgba(40,40,50,0.4); border:1px solid #222; color:#444; }
         .phase-dot:hover { transform:scale(1.1); }
-        
+
         .phase-legend { display:flex; justify-content:center; gap:12px; flex-wrap:wrap; }
         .legend-item { display:flex; align-items:center; gap:4px; font-size:10px; color:#555; }
         .legend-item .dot { width:6px; height:6px; border-radius:50%; }
@@ -16871,8 +17040,10 @@ function addArirangStyles() {
         .dot.active { background:#e879f9; }
         .dot.locked { background:#444; }
         .dot.missed { background:#ef4444; }
-        
-        /* TODAY'S PHASE */
+
+        /* ============================================ */
+        /* TODAY'S PHASE CARD                           */
+        /* ============================================ */
         .arirang-phase-card { border:1px solid var(--phase-border,rgba(168,85,247,0.2)); transition:all 0.3s; }
         .arirang-phase-card.phase-charged { border-color:var(--phase-accent,#a855f7); background:linear-gradient(135deg,var(--phase-bg,rgba(168,85,247,0.05)),transparent); box-shadow:0 0 20px color-mix(in srgb,var(--phase-glow) 15%,transparent); }
         .phase-header-styled { border-bottom:2px solid var(--phase-accent,#a855f7)22; }
@@ -16880,11 +17051,11 @@ function addArirangStyles() {
         .phase-codename-badge { font-size:10px; padding:3px 10px; border-radius:10px; border:1px solid; font-weight:600; }
         .era-tag { font-size:9px; padding:2px 6px; border-radius:6px; }
         .charged-badge { padding:4px 10px; border-radius:10px; font-size:11px; font-weight:600; border:1px solid; }
-        
+
         .phase-identity-strip { display:flex; justify-content:space-between; align-items:center; padding:10px 14px; border-radius:8px; margin-bottom:14px; }
         .phase-day-label { font-size:11px; color:#888; font-weight:500; }
         .phase-era-label { font-size:10px; font-weight:700; }
-        
+
         .album-spotify-row { display:flex; flex-direction:column; gap:8px; margin-bottom:15px; }
         .album-spotify-item { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; background:rgba(168,85,247,0.02); border-radius:10px; border:1px solid rgba(168,85,247,0.08); transition:border-color 0.3s; }
         .album-info { display:flex; align-items:center; gap:8px; flex:1; min-width:0; }
@@ -16893,8 +17064,10 @@ function addArirangStyles() {
         .spotify-btn { display:inline-flex; align-items:center; gap:5px; padding:6px 12px; background:#1DB954; color:#fff; border-radius:20px; font-size:11px; font-weight:600; text-decoration:none; white-space:nowrap; flex-shrink:0; transition:all 0.2s; }
         .spotify-btn:hover { background:#1ed760; transform:scale(1.03); }
         .spotify-pill { display:inline-flex; align-items:center; gap:4px; padding:4px 10px; background:rgba(29,185,84,0.15); color:#1DB954; border-radius:12px; font-size:10px; font-weight:600; text-decoration:none; flex-shrink:0; }
-        
-        /* Dual Charge */
+
+        /* ============================================ */
+        /* DUAL CHARGE                                  */
+        /* ============================================ */
         .dual-charge-section { margin:20px 0 15px; padding:16px; background:rgba(168,85,247,0.02); border-radius:12px; border:1px solid; }
         .charge-unit-header { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
         .charge-letter { width:22px; height:22px; border-radius:50%; background:color-mix(in srgb,var(--letter-color,#a855f7) 15%,transparent); border:1.5px solid color-mix(in srgb,var(--letter-color,#a855f7) 50%,transparent); color:var(--letter-color,#a855f7); font-size:10px; font-weight:800; display:flex; align-items:center; justify-content:center; }
@@ -16903,7 +17076,7 @@ function addArirangStyles() {
         .charge-status { font-size:10px; font-weight:700; padding:3px 8px; border-radius:8px; letter-spacing:0.5px; }
         .cs-live { background:color-mix(in srgb,var(--cs-color,#a855f7) 10%,transparent); color:var(--cs-color,#a855f7); }
         .cs-charged { background:color-mix(in srgb,var(--cs-color,#a855f7) 18%,transparent); color:var(--cs-color,#a855f7); }
-        
+
         .charge-wire-container { padding:12px 0; }
         .charge-wire { position:relative; height:4px; display:flex; align-items:center; border-radius:2px; }
         .charge-wire.wire-live { background:var(--charge-color,#7c3aed); box-shadow:0 0 10px var(--charge-color); animation:wire-pulse 2s ease-in-out infinite; }
@@ -16923,7 +17096,7 @@ function addArirangStyles() {
         .charge-sparks span:nth-child(2) { top:-4px; right:4px; animation:spark-fly 1.5s ease-out 0.3s infinite; --sx:10px; --sy:-8px; }
         .charge-sparks span:nth-child(3) { bottom:-6px; left:10px; animation:spark-fly 1.5s ease-out 0.6s infinite; --sx:-5px; --sy:10px; }
         @keyframes spark-fly { 0%{opacity:1;transform:translate(0,0) scale(1)} 50%{opacity:0.8} 100%{opacity:0;transform:translate(var(--sx),var(--sy)) scale(0)} }
-        
+
         .charge-unit-status,.status-done,.status-pending { font-size:11px; margin-top:4px; }
         .status-done { font-weight:600; }
         .status-pending { color:#888; }
@@ -16933,25 +17106,31 @@ function addArirangStyles() {
         .charge-connector { display:flex; align-items:center; gap:10px; margin:14px 0; }
         .conn-line { flex:1; height:1px; }
         .conn-label { font-size:9px; color:#666; text-transform:uppercase; letter-spacing:1px; white-space:nowrap; }
-        
+
+        /* ============================================ */
+        /* PHASE RESULT                                 */
+        /* ============================================ */
         .phase-result-box { display:flex; align-items:center; justify-content:center; gap:10px; padding:15px; margin-top:15px; border-radius:12px; background:rgba(168,85,247,0.03); border:1px solid rgba(168,85,247,0.1); }
         .phase-result-box.result-charged { background:linear-gradient(135deg,color-mix(in srgb,var(--result-accent) 10%,transparent),transparent); border-color:color-mix(in srgb,var(--result-accent) 30%,transparent); flex-direction:column; }
         .result-icon { font-size:22px; }
         .result-msg { font-size:14px; color:#888; }
         .result-content { display:flex; flex-direction:column; align-items:center; gap:10px; }
         .phase-result-box.result-charged .result-msg { color:var(--result-accent,#e879f9); font-weight:700; font-size:16px; }
-        
+
         .surprise-btn { display:flex; align-items:center; gap:8px; border:none; padding:12px 24px; border-radius:25px; color:#fff; font-size:14px; font-weight:700; cursor:pointer; transition:all 0.3s; animation:surprise-pulse 2s ease-in-out infinite; }
         .surprise-btn:hover { transform:scale(1.05); box-shadow:0 0 20px rgba(168,85,247,0.5); }
         @keyframes surprise-pulse { 0%,100%{box-shadow:0 0 10px rgba(168,85,247,0.3)} 50%{box-shadow:0 0 25px rgba(168,85,247,0.6)} }
         .surprise-icon { font-size:18px; }
         .surprise-sparkle { font-size:16px; animation:sparkle-rotate 2s linear infinite; }
         @keyframes sparkle-rotate { 0%{transform:rotate(0)} 100%{transform:rotate(360deg)} }
-        
+
         .xp-reward-preview { display:flex; align-items:center; justify-content:center; gap:8px; margin-top:12px; padding:10px; border-radius:10px; }
         .xp-icon { font-size:18px; }
         .xp-text { font-size:12px; font-weight:600; }
-        
+
+        /* ============================================ */
+        /* TRACK CHECKLIST                              */
+        /* ============================================ */
         .track-checklist-details { border-top:1px solid rgba(168,85,247,0.06); margin-top:10px; }
         .checklist-summary { display:flex; justify-content:space-between; align-items:center; padding:12px 0; font-size:12px; color:#888; cursor:pointer; list-style:none; user-select:none; }
         .checklist-summary::-webkit-details-marker { display:none; }
@@ -16966,15 +17145,19 @@ function addArirangStyles() {
         .track-name { flex:1; min-width:0; font-size:12px; color:#ccc; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
         .track-count { font-size:11px; color:#666; padding:2px 8px; border-radius:8px; margin-left:8px; }
         .track-count.complete { font-weight:500; }
-        
-        /* REST CARD */
+
+        /* ============================================ */
+        /* REST CARD                                    */
+        /* ============================================ */
         .arirang-rest-card { background:linear-gradient(135deg,rgba(168,85,247,0.03),transparent); }
         .rest-content { display:flex; align-items:center; gap:15px; padding:10px; }
         .rest-icon { font-size:36px; opacity:0.6; }
         .rest-text h3 { font-size:14px; color:#888; margin:0; }
         .rest-text p { font-size:12px; color:#555; margin:4px 0 0; }
-        
-        /* VAULT */
+
+        /* ============================================ */
+        /* VAULT                                        */
+        /* ============================================ */
         .arirang-vault-card .card-header { display:flex; justify-content:space-between; align-items:center; }
         .unclaimed-count { background:rgba(232,121,249,0.15); color:#e879f9; padding:3px 8px; border-radius:8px; font-size:10px; font-weight:600; }
         .vault-grid { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; }
@@ -16989,8 +17172,10 @@ function addArirangStyles() {
         .vault-box.missed { background:rgba(239,68,68,0.06); border:1px solid rgba(239,68,68,0.15); opacity:0.5; }
         .vault-box.active { background:var(--vault-bg,rgba(168,85,247,0.05)); border:1px solid var(--vault-border,rgba(168,85,247,0.2)); }
         .vault-box.pending { background:rgba(60,60,70,0.08); border:1px solid #1f1f25; }
-        
-        /* ACTIVATION */
+
+        /* ============================================ */
+        /* ACTIVATION                                   */
+        /* ============================================ */
         .arirang-activation-card { background:linear-gradient(135deg,rgba(168,85,247,0.04),rgba(124,58,237,0.02)); border:1px dashed rgba(168,85,247,0.2); }
         .arirang-activation-card.activated { border:1px solid rgba(232,121,249,0.4); animation:activation-shine 3s ease-in-out infinite; }
         @keyframes activation-shine { 0%,100%{box-shadow:0 0 20px rgba(232,121,249,0.1)} 50%{box-shadow:0 0 40px rgba(232,121,249,0.2)} }
@@ -17006,8 +17191,10 @@ function addArirangStyles() {
         .activation-bar { flex:1; height:4px; background:rgba(168,85,247,0.08); border-radius:10px; overflow:hidden; }
         .activation-fill { height:100%; background:linear-gradient(90deg,#7c3aed,#a855f7); border-radius:10px; }
         .activation-count { font-size:11px; color:#666; }
-        
-        /* ACTION CARD */
+
+        /* ============================================ */
+        /* ACTION CARD                                  */
+        /* ============================================ */
         .arirang-action-card { cursor:pointer; transition:all 0.2s; }
         .arirang-action-card:hover { border-color:rgba(168,85,247,0.3); }
         .action-content { display:flex; align-items:center; gap:12px; }
@@ -17016,8 +17203,10 @@ function addArirangStyles() {
         .action-title { font-size:13px; color:#fff; font-weight:600; display:block; }
         .action-subtitle { font-size:11px; color:#666; }
         .action-arrow { font-size:18px; color:#555; }
-        
-        /* ARIRANG MISSION WIDGET */
+
+        /* ============================================ */
+        /* HOME WIDGET                                  */
+        /* ============================================ */
         .arirang-home-widget {
             display:flex; align-items:center; gap:16px; padding:18px;
             background:rgba(123,44,191,0.04); border:1px solid rgba(123,44,191,0.15);
@@ -17049,12 +17238,14 @@ function addArirangStyles() {
         .widget-footer { display:flex; justify-content:flex-start; }
         .protocol-status { font-size:9px; color:#444; font-weight:800; letter-spacing:1px; }
         .widget-arrow { font-size:20px; color:#222; margin-left:8px; }
-        
-        /* MODALS */
+
+        /* ============================================ */
+        /* MODALS                                       */
+        /* ============================================ */
         .phase-detail-modal,.arirang-badge-modal,.arirang-lb-modal { position:fixed; inset:0; z-index:10000; display:flex; align-items:center; justify-content:center; padding:20px; opacity:0; transition:opacity 0.3s; }
         .phase-detail-modal.show,.arirang-badge-modal.show,.arirang-lb-modal.show { opacity:1; }
         .modal-bg { position:absolute; inset:0; background:rgba(0,0,0,0.9); }
-        
+
         .phase-detail-card { position:relative; background:#0a0a12; border-radius:14px; border:1px solid color-mix(in srgb,var(--pd-accent,#a855f7) 25%,transparent); padding:20px; max-width:320px; width:100%; }
         .phase-detail-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px; }
         .phase-detail-header h3 { font-size:15px; color:#fff; margin:0; }
@@ -17075,13 +17266,16 @@ function addArirangStyles() {
         .charge-badge { margin-left:auto; font-size:10px; font-weight:700; padding:2px 8px; border-radius:6px; }
         .charge-row.met .charge-badge { background:color-mix(in srgb,var(--cr-accent,#a855f7) 15%,transparent); color:var(--cr-accent,#a855f7); }
         .charge-row.unmet .charge-badge { background:rgba(239,68,68,0.1); color:#ef4444; }
-        
+
         .btn-phase-surprise { width:100%; padding:12px; border:none; border-radius:10px; color:#fff; font-size:13px; font-weight:700; cursor:pointer; margin-bottom:10px; transition:all 0.3s; }
         .btn-phase-surprise:hover { transform:scale(1.02); box-shadow:0 0 15px rgba(168,85,247,0.4); }
-        
+
         .btn-close-phase { width:100%; padding:10px; background:rgba(168,85,247,0.08); border:1px solid rgba(168,85,247,0.15); border-radius:8px; color:#888; font-size:12px; cursor:pointer; transition:all 0.2s; }
         .btn-close-phase:hover { background:rgba(168,85,247,0.12); color:#fff; }
-        
+
+        /* ============================================ */
+        /* BADGE REVEAL                                 */
+        /* ============================================ */
         .badge-reveal { position:relative; text-align:center; padding:30px; max-width:280px; background:#0a0a12; border-radius:16px; border:1px solid rgba(232,121,249,0.3); }
         .badge-sparkle { font-size:24px; margin-bottom:10px; animation:sparkle-spin 2s ease-in-out infinite; }
         @keyframes sparkle-spin { 0%,100%{transform:rotate(-5deg) scale(1)} 50%{transform:rotate(5deg) scale(1.1)} }
@@ -17094,7 +17288,10 @@ function addArirangStyles() {
         .badge-desc { color:#888; font-size:11px; margin:5px 0 0; }
         .badge-era { color:#a855f7; font-size:10px; margin:4px 0 0; }
         .badge-xp { color:#c084fc; font-size:18px; font-weight:700; margin-top:15px; }
-        
+
+        /* ============================================ */
+        /* LEADERBOARD                                  */
+        /* ============================================ */
         .lb-panel { position:relative; background:#0a0a12; border-radius:16px; width:100%; max-width:360px; max-height:70vh; overflow:hidden; border:1px solid rgba(168,85,247,0.2); }
         .lb-header { display:flex; justify-content:space-between; align-items:center; padding:15px 20px; border-bottom:1px solid rgba(168,85,247,0.1); }
         .lb-header h3 { margin:0; font-size:15px; color:#fff; }
@@ -17113,12 +17310,19 @@ function addArirangStyles() {
         .lb-xp { font-size:10px; color:#666; display:block; }
         .lb-empty { text-align:center; padding:40px 20px; color:#555; }
         .lb-empty span { font-size:32px; display:block; margin-bottom:10px; }
-        
-        /* RESPONSIVE */
+
+        /* ============================================ */
+        /* RESPONSIVE                                   */
+        /* ============================================ */
         @media (max-width:380px) {
             .charging-bomb-display { transform:scale(0.85); transform-origin:center top; padding:40px 10px 10px; margin-bottom:-40px; }
             .glass-sphere { width:100px; height:100px; }
-            .stick { height:90px; }
+            .internal-logo-plate { width:42px; height:65px; }
+            .bts-logo-main { font-size:30px; }
+            .stick { height:90px; width:34px; }
+            .stick-logo-button { width:22px; height:22px; font-size:8px; }
+            .stick-base { width:36px; }
+            .handle-neck { width:38px; }
             .power-stats-grid { gap:8px; }
             .power-stat { padding:8px 12px; }
             .power-stat-value { font-size:18px; }
@@ -17128,11 +17332,14 @@ function addArirangStyles() {
             .spotify-btn span { display:none; }
             .spotify-btn { padding:6px 8px; }
         }
-        
+
         @media (prefers-reduced-motion:reduce) {
-            .wire-flow,.charge-sparks span,.power-bar-shimmer,.energy-fill-gradient::after,.concert-star,.fill-bubble { animation:none !important; }
+            .wire-flow,.charge-sparks span,.power-bar-shimmer,
+            .energy-fill-gradient::after,.concert-star,
+            .energy-fill-level::before { animation:none !important; }
             .charge-wire.wire-live { animation:none; }
             .charge-ambient-blazing,.charge-ambient-fully-charged { animation:none; }
+            .army-bomb.fully-charged { animation:none; }
             .bomb-fuse-tip { box-shadow:none; }
         }
     `;
